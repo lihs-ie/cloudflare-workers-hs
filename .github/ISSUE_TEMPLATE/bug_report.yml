@@ -1,0 +1,56 @@
+name: Bug report
+description: 期待動作と実動作が異なる問題の報告
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 1-2 行で何が起きているか
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 最小再現手順を順序付きで
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待動作
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実動作
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: 環境
+      placeholder: |
+        - OS:
+        - version:
+        - 関連 dep version:
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ / スタックトレース
+      render: shell
+    validations:
+      required: false

@@ -1,0 +1,18 @@
+# lihs 標準 dependabot preset
+# 検出 ecosystem: github-actions のみ
+# (Haskell の cabal/stack は dependabot 未対応のため entry 化しない)
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5

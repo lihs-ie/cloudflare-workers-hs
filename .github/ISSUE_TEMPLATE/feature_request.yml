@@ -1,0 +1,35 @@
+name: Feature request
+description: 新機能 / 改善提案
+labels: ["feat"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題
+      description: なぜこの機能が必要か。 現状の何が不便か
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案
+      description: どう解決するか。 alternative も書ければ
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: スコープ / 非スコープ
+      description: 含む / 含まない範囲
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: 参考リンク・関連 issue・先行事例
+    validations:
+      required: false
