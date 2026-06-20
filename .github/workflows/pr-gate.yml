@@ -1,0 +1,142 @@
+name: pr-gate
+
+# agent-policy merge gate: 文書ではなくハードゲート。
+# 決定論ゲート (no-prod-doubles / test-bypass / wiring / no-stub-placeholder / allowlist-expiry) を
+# required check にする。build/test は cabal プロジェクト配置後に有効化 (下記 build_and_tests は
+# *.cabal/cabal.project が存在するときだけ実行され、未配置なら no-op)。
+#
+# AI review (codex / claude) は secret を持つ repo だけで有効化する opt-in job:
+#   - codex_review:  repo variable ENABLE_CODEX_REVIEW=true + secret OPENAI_API_KEY
+#   - claude_review: repo variable ENABLE_CLAUDE_REVIEW=true + secret ANTHROPIC_API_KEY
+# どちらも未設定なら skip され、merge gate は決定論ゲート + build/test + smoke の required だけで判定する
+# (secret 無し repo でも CI が通る)。
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No production test doubles
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/verify-no-prod-doubles.sh
+      - name: No test-only bypass
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/verify-test-bypass.sh
+      - name: Wiring follows implementation
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/verify-wiring.sh
+      - name: No placeholder stub left in production
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/verify-no-stub-placeholder.sh
+      - name: Allowlist not expired
+        run: bash scripts/verify-allowlist-expiry.sh
+      - name: Upload policy evidence
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-evidence
+          path: |
+            .agent-evidence/**
+          if-no-files-found: ignore
+
+  # CI 未整備リポジトリ向け build/test。cabal プロジェクト配置後に自動で有効化される。
+  build_and_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Haskell (cabal) project
+        id: detect
+        run: |
+          if [ -n "$(find . -name '*.cabal' -not -path './dist-newstyle/*' 2>/dev/null)" ] || [ -f cabal.project ]; then
+            echo "has_cabal=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_cabal=false" >> "$GITHUB_OUTPUT"
+            echo "cabal プロジェクト未配置: build/test は skip (ソース配置後に有効化)。"
+          fi
+      - name: Build & test (ADR-0015 / ADR-0017)
+        if: steps.detect.outputs.has_cabal == 'true'
+        run: |
+          echo "TODO(wire after cabal): ghc-wasm-meta で wasm32-wasi GHC を取得し cabal build / cabal test を実行。"
+          echo "  例: nix develop -c bash -lc 'cabal build all && cabal test all'"
+          # ここを実コマンドに置換する (ADR-0015 build / ADR-0017 test)。
+
+  integration_smoke:
+    needs: [policy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke (v1 declare-only)
+        run: |
+          echo "integration_smoke: v1 では smoke は wiring_manifest.yml に宣言のみ。" | tee smoke.log
+          echo "宣言された smoke コマンド:" | tee -a smoke.log
+          grep -nE '^[[:space:]]*smoke:' wiring_manifest.yml | tee -a smoke.log || echo "(なし)" | tee -a smoke.log
+          echo "follow-up で実行を有効化する。" | tee -a smoke.log
+      - name: Upload smoke evidence
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-evidence
+          path: smoke.log
+
+  # --- opt-in AI review (merge gate の required には含めない / 助言的) ---
+  codex_review:
+    if: ${{ vars.ENABLE_CODEX_REVIEW == 'true' }}
+    needs: [policy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Codex review (AGENTS.md の review guideline に従う)
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/review.md
+          output-file: codex-output.md
+      - name: Upload codex review
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-review
+          path: codex-output.md
+          if-no-files-found: ignore
+
+  claude_review:
+    if: ${{ vars.ENABLE_CLAUDE_REVIEW == 'true' }}
+    needs: [policy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Claude review (CLAUDE.md / AGENTS.md の review guideline に従う)
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "Review this PR against AGENTS.md review guidelines: 配線漏れ・偽成功・本番 test double を最優先で検査。"
+
+  summary:
+    if: ${{ success() || failure() }}
+    needs: [policy, integration_smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write job summary
+        run: |
+          {
+            echo "## PR Gate Summary"
+            echo "- policy (決定論ゲート, required): ${{ needs.policy.result }}"
+            echo "- integration_smoke (v1 declare-only): ${{ needs.integration_smoke.result }}"
+            echo "- AI review は opt-in (ENABLE_CODEX_REVIEW / ENABLE_CLAUDE_REVIEW)。merge gate の required ではない。"
+            echo "- evidence artifacts uploaded"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -21,3 +21,6 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+
+# agent-policy local evidence (CI で再生成)
+.agent-evidence/

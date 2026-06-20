@@ -1,0 +1,27 @@
+# agent-policy: 本番 TypeScript/TSX に mocking library 呼び出しを禁止する。
+# テストダブルは test 系ディレクトリのみ許可。allowlist は ci/allowlist.yml で管理。
+id: no-prod-doubles
+language: typescript
+severity: error
+message: "本番コードに test double を入れてはいけない (vi.mock/jest.mock/sinon 等)。テストは test 配下に置くか、ci/allowlist.yml で owner/expiry 付きで許可する。"
+files:
+  - "**/src/**/*.ts"
+  - "**/src/**/*.tsx"
+ignores:
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/fixtures/**"
+  - "**/mocks/**"
+  - "**/stubs/**"
+  - "**/fakes/**"
+rule:
+  any:
+    - pattern: vi.mock($$$)
+    - pattern: jest.mock($$$)
+    - pattern: jest.fn($$$)
+    - pattern: sinon.$METHOD($$$)
+    - pattern: createMock($$$)

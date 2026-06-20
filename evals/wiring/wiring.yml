@@ -1,0 +1,17 @@
+# eval (wiring): 配線が end-to-end で生きていることを固定する。
+# failure-miner が再発防止に作り、CI / runtime-verifier が回す。1 ファイル 1 シナリオ。
+id: <save-settings-persists>
+kind: wiring
+intent: "<UI 操作後に persistence まで到達することを保証>"
+entrypoint: "<POST /api/settings / ボタン click 等>"
+steps:
+  - "<操作: 設定を変更して保存>"
+  - "<reload する>"
+expect:
+  - "<read-back: reload 後も新しい値が維持される>"
+  - "<DB state diff: settings row が更新されている>"
+forbid:
+  - "success toast のみで persistence 無し"
+evidence_required:
+  - db_state_diff
+  - reload_assertion

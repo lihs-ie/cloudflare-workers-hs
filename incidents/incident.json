@@ -1,0 +1,16 @@
+{
+  "id": "<2026-06-12-pr-481>",
+  "date": "<2026-06-12>",
+  "source": "code_review | ci | production | manual_correction",
+  "failure_class": "<dataflow_unwired | prod_mock | false_success_toast | contract_breach | config_unwired | event_no_consumer>",
+  "summary": "<一行: 何が起きたか>",
+  "verified_facts": [
+    "<POST /api/settings returned 200>",
+    "<service method executed>",
+    "<repository write was skipped due to missing DI binding>",
+    "<page reload restored old value>"
+  ],
+  "entrypoint": "<どの入口で観測されたか>",
+  "fix": "<どう直したか>",
+  "promotion_candidate": true
+}

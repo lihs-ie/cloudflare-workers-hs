@@ -1,0 +1,23 @@
+# agent-policy: Haskell 本番コードの test double 抑止 (既存 .hlint.yaml に MERGE する断片)。
+#
+# 注意: HLint の restrict はモジュール名の glob を扱えないため、ここでは
+#   (a) 危険な逃げ道 (unsafePerformIO / unsafeCoerce) を本番から締め出し、
+#   (b) 既知の test-double モジュールを enumerate して production からの import を禁止する。
+# 網羅的な「mock/stub/fake/dummy 識別子・*.Mock モジュール」の検出は
+# scripts/verify-no-prod-doubles.sh (grep ベース、fitness hook + CI 両方で実行) が担当する。
+# 新しい fake モジュールを test 配下に作ったら、その名前をこの functions/modules restrict と
+# verify スクリプトの allowlist 双方に反映しないこと (= 本番から触れないままにする)。
+
+# (a) test double を仕込む常套手段になりやすい unsafe を本番で禁止
+- functions:
+  - name: System.IO.Unsafe.unsafePerformIO
+    within: []          # どこでも禁止 (どうしても必要なら within に明示モジュールを足す)
+  - name: Unsafe.Coerce.unsafeCoerce
+    within: []
+
+# (b) 既知の test-double モジュール (kit が検出して追記する)。
+#     例: テスト用 Fake を本番モジュールが import していないか。
+#     <<KIT: 検出した *.Mock / *.Fake / *.Stub / *.Dummy モジュールをここに enumerate >>
+# - modules:
+#   - name: [NativeTrace.Worker.Application.Fake]
+#     within: [Spec, NativeTrace.Worker.ApplicationSpec]   # test からのみ許可

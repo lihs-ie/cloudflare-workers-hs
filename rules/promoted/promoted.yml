@@ -1,0 +1,21 @@
+# rules/promoted/<id>.yml — harness-maintainer が昇格したルールの記録。
+# 正本 (agent-policy.md) / hook / lint / smoke / rubric のどこへ昇格したかを残す。
+id: <no_prod_mocks>
+failure_class: <spec_violation | dataflow_unwired | ...>
+trigger:
+  repeated_count: <2>
+  sources: ["code_review", "ci"]
+rule:
+  summary: "Production code must not use mock/stub/fake/dummy/spy helpers"
+  enforcement:
+    - type: grep_gate           # grep_gate | ast_grep | hlint | smoke | rubric_item | short_rule
+      paths_exclude: ["test/**", "tests/**", "__tests__/**", "spec/**", "specs/**"]
+      pattern: '\b(mock|stub|fake|dummy|spy)\b'
+    - type: rubric_item
+      detail: "rubric/core/spec.md の mock 禁止行"
+evidence_required:
+  - changed_files
+  - grep_output
+verified_fires: true            # 違反で非ゼロ / clean で 0 を確認済みか
+rollback_condition: "false_positive_rate > 0.15"
+owner: "@lihs-ie"

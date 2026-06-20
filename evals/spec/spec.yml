@@ -1,0 +1,15 @@
+# eval (spec): 仕様 Must / 禁止事項を固定する。
+# failure-miner が再発防止に作り、spec-grader / CI が回す。
+id: <forbid-prod-mocks>
+kind: spec
+intent: "<本番コードに test double を入れない>"
+rule: "production code must not use mock/stub/fake/dummy/spy helpers"
+check:
+  type: grep_gate
+  paths_exclude: ["test/**", "tests/**", "__tests__/**", "spec/**", "specs/**"]
+  pattern: '\b(mock|stub|fake|dummy|spy)\b'
+expect: "no match in production paths"
+evidence_required:
+  - changed_files
+  - grep_output
+rollback_condition: "false_positive_rate > 0.15"

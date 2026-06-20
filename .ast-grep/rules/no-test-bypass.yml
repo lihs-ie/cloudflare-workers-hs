@@ -1,0 +1,23 @@
+# agent-policy: 本番 TypeScript で NODE_ENV/APP_ENV === 'test' による経路迂回を禁止する。
+# 環境差は config 層に閉じ込め、本番ロジックを test 値で短絡しない。
+id: no-test-bypass
+language: typescript
+severity: error
+message: "本番経路を 'test' 環境で迂回してはいけない。環境差は config 層に閉じ込めること。"
+files:
+  - "**/src/**/*.ts"
+  - "**/src/**/*.tsx"
+ignores:
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/config/**"
+rule:
+  any:
+    - pattern: process.env.NODE_ENV === 'test'
+    - pattern: process.env.NODE_ENV === "test"
+    - pattern: process.env.APP_ENV === 'test'
+    - pattern: process.env.APP_ENV === "test"
