@@ -7,12 +7,14 @@
 #         (= 配線不要の理由を証跡として残した、とみなす)。
 # smoke は v1 では宣言のみ (実行しない)。
 #
-# working-tree blind-spot best-of merge (agent-policy-kit-sync spec Task A):
-#   (a) BASE_REF 未設定かつ committed diff (base...HEAD) が空のときだけ working-tree
-#       (staged ∪ unstaged ∪ untracked) にフォールバックする (proven-done 実行中の
-#       未コミット変更を見逃さない — incident 2026-06-13 補正2)。
+# working-tree blind-spot union (agent-policy-kit-sync spec Task A follow-up — 長寿命ブランチ盲点
+# 修正、2026-07-02 P3 static-verifier 実測: committed diff (base...HEAD) が非空の長寿命ブランチでは
+# working-tree-only の変更が検査されていなかった):
+#   (a) BASE_REF 未設定 (ローカル/proven-done 実行) は committed diff の有無に関わらず常に
+#       committed(base...HEAD) ∪ staged ∪ unstaged ∪ untracked の和集合を採用する
+#       (未コミット変更を見逃さない — incident 2026-06-13 補正2 の意図を長寿命ブランチにも拡張)。
 #   (b) BASE_REF を明示指定した呼び出し (CI 等) は committed diff のみを意図するので、
-#       diff が空でも working-tree へは拡張しない (recall-paper 版の意味論)。
+#       working-tree へは一切拡張しない (recall-paper 版の意味論を完全維持)。
 set -euo pipefail
 
 repository_root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -28,22 +30,26 @@ base_ref_was_set=0
 base="${BASE_REF:-$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@refs/remotes/@@')}"
 [ -z "${base:-}" ] && base="origin/main"
 if git rev-parse --verify "$base" >/dev/null 2>&1; then
-  changed="$(git diff --name-only --diff-filter=ACMRT "$base"...HEAD)"
+  committed="$(git diff --name-only --diff-filter=ACMRT "$base"...HEAD)"
 else
-  changed="$(git diff --name-only --diff-filter=ACMRT HEAD~1 2>/dev/null || true)"
+  committed="$(git diff --name-only --diff-filter=ACMRT HEAD~1 2>/dev/null || true)"
 fi
-# committed diff が空のときだけ working tree (staged ∪ unstaged ∪ untracked) を採用する。
-# BASE_REF を明示指定した呼び出し (CI 等) は committed のみを意図するので拡張しない。
-if [ -z "$changed" ] && [ "$base_ref_was_set" -eq 0 ]; then
+if [ "$base_ref_was_set" -eq 1 ]; then
+  # BASE_REF を明示指定した呼び出し (CI 等) は committed diff のみを意図するので、
+  # working tree へは一切拡張しない (現行意味論を完全維持)。
+  changed="$committed"
+else
+  # BASE_REF 未設定は committed diff の有無に関わらず常に working tree
+  # (staged ∪ unstaged ∪ untracked) を union する (長寿命ブランチ盲点の修正)。
   working_tree="$(
     { git diff --name-only --diff-filter=ACMRT HEAD 2>/dev/null || true
       git diff --name-only --diff-filter=ACMRT --cached 2>/dev/null || true
       git ls-files --others --exclude-standard 2>/dev/null || true
-    } | sort -u
+    }
   )"
+  changed="$(printf '%s\n%s\n' "$committed" "$working_tree" | sed '/^$/d' | sort -u)"
   if [ -n "$working_tree" ]; then
-    changed="$working_tree"
-    echo "verify-wiring: committed diff empty; inspecting working tree (staged ∪ unstaged ∪ untracked)"
+    echo "verify-wiring: BASE_REF unset; inspecting committed ∪ working tree (staged ∪ unstaged ∪ untracked)"
   fi
 fi
 [ -z "$changed" ] && { echo "verify-wiring: no changes (OK)"; exit 0; }
