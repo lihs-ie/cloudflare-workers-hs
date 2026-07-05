@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: wiring_manifest.yml に基づき「実装に対し配線が追随しているか」を検出する。
 # 各 rule: 変更ファイルが `when` glob にマッチしたら、`require_one_of` のいずれかにも
 # 変更ファイルがマッチしていなければ FAIL (未配線の疑い)。

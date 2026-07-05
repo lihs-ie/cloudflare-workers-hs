@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: iterations.json の failure_class を検証する。
 # スキーマ (implementer.md §iterations.json が正本):
 #   - 各 entry は phase (red|green|refactor|pivot) 必須
@@ -15,6 +15,12 @@
 #     collapsed loop ではない。窓内 (末尾 3 red) のいずれかの entry で target_test が欠落している
 #     場合のみ、判定材料が無いため保守的に failure_class のみでの従来判定にフォールバックする。
 #   - file 未存在 → exit 0 (初回前)
+#   - Must-7 (UTC タイムスタンプ規律): started_at を持つ各 entry について:
+#     - 未来時刻: started_at > 現在UTC + 5分 → exit 1 ("future" を含むメッセージ)
+#     - 逆行: started_at を持つ entry が、配列順で直前の started_at を持つ entry の値より前
+#       → exit 1 ("regress"/"逆行" を含むメッセージ)
+#     GNU date (date -u -d) / BSD date (date -u -j -f) 両対応
+#     (tests/run-shell-tests.sh の iso8601_seconds_ago と同じ移植パターン)。
 #   - 正常 → exit 0
 # 使い方: verify-failure-class.sh [path/to/iterations.json]
 set -euo pipefail
@@ -30,15 +36,16 @@ if [ ! -f "$target" ]; then
 fi
 
 # JSON parsing: jq preferred, python3 fallback
-# 出力形式: "<phase>\t<failure_class|__ABSENT__>\t<target_test|__NOTARGET__>" per entry。
-# phase 欠落は __NOPHASE__。target_test 欠落・空文字は __NOTARGET__。
+# 出力形式: "<phase>\t<failure_class|__ABSENT__>\t<target_test|__NOTARGET__>\t<started_at|__NOSTART__>" per entry。
+# phase 欠落は __NOPHASE__。target_test 欠落・空文字は __NOTARGET__。started_at 欠落は __NOSTART__。
 if command -v jq >/dev/null 2>&1; then
   rows="$(jq -r '
     .iterations[]
     | [
         (.phase // "__NOPHASE__"),
         (.failure_class // "__ABSENT__"),
-        ((.target_test // "") as $t | if $t == "" then "__NOTARGET__" else $t end)
+        ((.target_test // "") as $t | if $t == "" then "__NOTARGET__" else $t end),
+        ((.started_at // "") as $s | if $s == "" then "__NOSTART__" else $s end)
       ]
     | @tsv
   ' "$target" 2>/dev/null)"
@@ -50,7 +57,8 @@ for i in data.get('iterations', []):
     phase = i.get('phase') or '__NOPHASE__'
     fc = i.get('failure_class') or '__ABSENT__'
     tt = i.get('target_test') or '__NOTARGET__'
-    print(f'{phase}\t{fc}\t{tt}')
+    st = i.get('started_at') or '__NOSTART__'
+    print(f'{phase}\t{fc}\t{tt}\t{st}')
 " 2>/dev/null)"
 else
   echo "verify-failure-class: WARNING: neither jq nor python3 found; skipping check" >&2
@@ -72,7 +80,7 @@ in_list() {
 
 red_classes=""
 red_targets=""
-while IFS=$'\t' read -r phase cls tt; do
+while IFS=$'\t' read -r phase cls tt st; do
   if [ "$phase" = "__NOPHASE__" ]; then
     echo "verify-failure-class: ERROR: phase field absent in one or more iterations (valid: $VALID_PHASES)" >&2
     exit 1
@@ -107,6 +115,40 @@ while IFS=$'\t' read -r phase cls tt; do
       fi
       ;;
   esac
+done <<< "$rows"
+
+# --- Must-7: UTC タイムスタンプ規律 (未来時刻 / 逆行) ---
+parse_iso8601_epoch() {
+  # GNU date / BSD date 両対応 (agent-time-budget.sh の parse_iso8601_epoch と同じ移植パターン)。
+  local iso="$1" epoch=""
+  epoch="$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null)" && { printf '%s' "$epoch"; return 0; }
+  epoch="$(date -u -d "$iso" +%s 2>/dev/null)" && { printf '%s' "$epoch"; return 0; }
+  return 1
+}
+
+now_epoch="$(date -u +%s)"
+future_threshold_epoch=$((now_epoch + 300))  # now + 5min
+
+prev_started_epoch=""
+prev_started_display=""
+while IFS=$'\t' read -r phase cls tt st; do
+  [ "$st" = "__NOSTART__" ] && continue
+  [ -z "$st" ] && continue
+  st_epoch="$(parse_iso8601_epoch "$st")" || st_epoch=""
+  [ -z "$st_epoch" ] && continue   # parse 不能な値は他検査 (schema) に委ね、ここでは無視
+
+  if [ "$st_epoch" -gt "$future_threshold_epoch" ]; then
+    echo "verify-failure-class: ERROR: started_at '$st' is in the future (exceeds now+5min; possible local-time-written-as-Z mistake)" >&2
+    exit 1
+  fi
+
+  if [ -n "$prev_started_epoch" ] && [ "$st_epoch" -lt "$prev_started_epoch" ]; then
+    echo "verify-failure-class: ERROR: started_at '$st' regresses (逆行) — earlier than previous entry's started_at '$prev_started_display' (iterations[] は配列順に単調増加している必要がある)" >&2
+    exit 1
+  fi
+
+  prev_started_epoch="$st_epoch"
+  prev_started_display="$st"
 done <<< "$rows"
 
 # Collapsed loop: phase=red の末尾 3 entries が全て同一 failure_class かつ同一 target_test。

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: 本番経路に残った高シグナルな placeholder stub を検出する。
 # 「関数は実装したが呼び出し側の placeholder を置換し忘れる」未配線を、ファイル共変更検査
 # (verify-wiring.sh) でも no-prod-doubles でも捕捉できないため、明示マーカーで補足する。

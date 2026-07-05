@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy-kit: kit-manifest.yml (templates/scripts/executable_*.sh の
 # sha256 + 単一 KIT_VERSION) を再生成する。経路C: テンプレート修正時にこれを実行して
 # manifest を最新化する。kit-sync-check.sh --self で生成結果 (manifest vs template) の
