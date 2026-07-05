@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy-kit: 消費 repo 側 scripts/verify-*.sh (vendored copy) が
 # kit-manifest.yml の最新版 (単一 KIT_VERSION + per-file sha256) と一致しているか検証する。
 # 経路A (sync dry-run diff) と経路B (proven-done Step 0 freshness) はこのスクリプトを共有する
@@ -17,7 +17,20 @@
 #     一致するか検証する (kit-manifest-update.sh の実行漏れ検出)。
 #       exit 0: 一致 / exit 1: 不一致・欠落 (manifest 再生成が必要)
 #
-# 既定 manifest: dot_claude/skills/agent-policy-kit/kit-manifest.yml
+# Must-4 (manifest 解決の fallback chain — docs/specs/harness-campaign-fix2-6.md): --manifest 省略時、
+# 次の優先順位で manifest を解決する:
+#   (a) 明示 --manifest <path> (最優先、上記)。
+#   (b) repo-relative dot_claude/skills/agent-policy-kit/kit-manifest.yml (存在すれば)。
+#   (c) $HOME/.claude/skills/agent-policy-kit/kit-manifest.yml (deployed layout — consumer repo に
+#       dot_claude/ が無い場合のフォールバック)。
+#   いずれも存在しなければ exit 1 (Must-5(b) — 警告して freshness 検査を skip し続行するが、
+#   サイレントにはしない。試した全経路を stderr に列挙する)。
+# (d) stripped-name テンプレート解決 (--self モードの check_path 解決に適用): manifest の
+#     `template:` フィールドはソース形式 (`executable_` prefix 付き) だが、chezmoi は `executable_`
+#     prefix を落として deploy するため、`$manifest_dir/$tmpl` が存在しなければ同じディレクトリで
+#     basename から `executable_` を取り除いた path も試す。両方無ければ missing 扱い (現状維持)。
+#
+# 既定 manifest: 上記 Must-4 fallback chain で解決 (全経路失敗時は repo-relative path を既定表示に使う)
 # 既定 target-dir: scripts (--check のみで使用)
 set -uo pipefail
 
@@ -43,11 +56,35 @@ if [ -z "$mode" ]; then
   exit 1
 fi
 
-manifest="${manifest:-dot_claude/skills/agent-policy-kit/kit-manifest.yml}"
+manifest_explicit=0
+[ -n "$manifest" ] && manifest_explicit=1
+repo_relative_manifest="dot_claude/skills/agent-policy-kit/kit-manifest.yml"
+deployed_manifest="${HOME:-}/.claude/skills/agent-policy-kit/kit-manifest.yml"
+
+if [ -z "$manifest" ]; then
+  # Must-4 fallback chain (b)(c): explicit --manifest は上で既に処理済み、ここに来るのは省略時のみ。
+  if [ -f "$repo_relative_manifest" ]; then
+    manifest="$repo_relative_manifest"
+  elif [ -n "${HOME:-}" ] && [ -f "$deployed_manifest" ]; then
+    manifest="$deployed_manifest"
+  else
+    manifest="$repo_relative_manifest"   # 既定表示用 (下の not-found メッセージで使う)
+  fi
+fi
+
 target_dir="${target_dir:-scripts}"
 
 if [ ! -f "$manifest" ]; then
-  echo "kit-sync-check: manifest not found: $manifest" >&2
+  if [ "$manifest_explicit" -eq 1 ]; then
+    echo "kit-sync-check: manifest not found: $manifest" >&2
+  else
+    # Must-5(b): manifest が Must-4 のフォールバック全経路を試しても見つからない -> exit 1 だが
+    # サイレントにはしない (試した全経路を明示する)。
+    echo "kit-sync-check: manifest not found via any fallback path (Must-4):" >&2
+    echo "  - repo-relative: $repo_relative_manifest" >&2
+    echo "  - deployed: $deployed_manifest" >&2
+    echo "kit-sync-check: freshness 検査を skip します (silent にはしません — この内容を完了報告/Step 10 に残してください)" >&2
+  fi
   exit 1
 fi
 
@@ -96,6 +133,17 @@ while IFS=$'\t' read -r name tmpl hash; do
   [ -z "$name" ] && continue
   if [ "$mode" = "self" ]; then
     check_path="$manifest_dir/$tmpl"
+    if [ ! -f "$check_path" ]; then
+      # Must-4(d): chezmoi は executable_ prefix を落として deploy するため、basename から
+      # prefix を取り除いた stripped-name path も試す (deployed layout フォールバック)。
+      tmpl_dirname="$(dirname "$tmpl")"
+      tmpl_basename="$(basename "$tmpl")"
+      stripped_basename="$(printf '%s' "$tmpl_basename" | sed 's/^executable_//')"
+      stripped_path="$manifest_dir/$tmpl_dirname/$stripped_basename"
+      if [ -f "$stripped_path" ]; then
+        check_path="$stripped_path"
+      fi
+    fi
     label="$name (template)"
   else
     check_path="$target_dir/$name"

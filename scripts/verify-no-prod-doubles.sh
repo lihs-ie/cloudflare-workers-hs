@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: 本番パスへの test double 混入を検出する。
 # - ファイル名 (mock/stub/fake/dummy/spy.<ext>)
 # - mocking library の import / 呼び出し (jest.mock, vi.mock, sinon, gomock, testify/mock,

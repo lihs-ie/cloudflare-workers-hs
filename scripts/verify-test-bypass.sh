@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: 本番経路に test-only bypass が無いか検出する。
 # 例: if (process.env.NODE_ENV === 'test') return fake; / NODE_ENV==='test' 分岐 /
 #     APP_ENV == "test" / isTest ショートサーキット / Haskell の isTestEnv 分岐。

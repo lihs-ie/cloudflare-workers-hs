@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: 最新 round の verifier 判定 JSON (.agent-evidence/round-<N>/*.json) が、
 # 現在の git ツリー状態と一致するか (stale でないか) を検査する。done-evaluator が
 # stale な旧 FAIL/PASS を裁量で棚上げする事故 (native-trace で頻発) を機械検査で潰す。

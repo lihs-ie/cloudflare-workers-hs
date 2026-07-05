@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KIT_VERSION: 1.1.0
+# KIT_VERSION: 1.3.0
 # agent-policy: 現在の git ツリー状態を決定論的な JSON stamp として出力する。
 # verify-evidence-freshness.sh がこのスクリプトを呼び出して「現在のツリー状態」を得る
 # (sha256 計算ロジックを二重実装しない — 呼び出し元は本スクリプトの stdout をそのまま比較に使う)。
