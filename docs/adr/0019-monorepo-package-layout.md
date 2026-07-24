@@ -486,3 +486,21 @@ LICENSE.ghc-wasm-compat` を撤去することを確定事項とする**（lihs 
 - `~/.pschool/spikes/cloudflare-workers-hs-build/API-LEDGER.md`（A6b close エントリ、Unit 0/A/A'/
   B/C/D/E 全 commit の要約）
 - 本 ADR 2026-07-24 追補「spike 移行裁定」（本追補が確定させる前提の起票）
+
+## A8 追補（2026-07-24、theme A8 U-P1: konn vendor の撤去）
+
+本 ADR が定めた「konn/ghc-wasm-compat 由来 plugin の暫定 vendor（BSD-3 attribution +
+LICENSE 同梱）」は、theme A8 で **clean-room 再実装により終了**した（lihs 裁定
+2026-07-24 の必達事項）。
+
+- 再実装は spec 媒介 clean-room: konn コードを読んだ agent が挙動仕様書のみを書き、
+  別 agent が仕様書 + GHC 9.12 公式 docs のみから実装（vendor コード非閲覧、
+  非導出記録 = spike `_phase_a/a8-plugin-reimpl-record.md`）
+- konn 固有の設計 2 点は独自方式に置換: stub 式は文字列再パースでなく **AST 直接構築**
+  （`GHC.Builtin.Names` の Exact RdrName 経由、DynFlags 非依存）、エラーメッセージは
+  固定文面 + 関数名のみ
+- `LICENSE.ghc-wasm-compat` と cabal / コメントの konn attribution を全撤去。
+  `vendor-shim/` は何も vendor しなくなったため `shim/` へ rename
+- 受入 = 既存 PluginProbe group + 負方向テスト 4 件追加（計 10 ケース、
+  spike commits 3772265 / 1a13023 / 5a00273）。全 gate green
+- 本 ADR 本文の konn / vendor 記述は当時の決定の歴史的記録としてそのまま残す
