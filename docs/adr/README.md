@@ -60,3 +60,7 @@ ADR (Architecture Decision Record) は、プロジェクトにとって重要な
 | [0016](./0016-non-fetch-entrypoints.md) | Worker の非 fetch エントリポイント（scheduled / queue / tail）を扱う | 承認 |
 | [0017](./0017-testing-strategy.md) | テスト戦略を vanilla GHC 単体・wasm 統合・servant 互換性検証で定義する | 承認 |
 | [0018](./0018-versioning-release-distribution.md) | ライブラリのバージョニング・リリース・配布方針を定める | 承認 |
+| [0019](./0019-monorepo-package-layout.md) | ライブラリのモノレポ構成と4パッケージ分割を定める | 承認 |
+| [0020](./0020-cloudflare-verification-cycle.md) | Cloudflare 上での動作を確証する3重ループ検証サイクルを定める | 承認 |
+| [0021](./0021-language-edition-ghc2024.md) | 全パッケージの default-language を GHC2024 に統一する | 承認 |
+| [0022](./0022-workers-cache.md) | Workers Cache は値レベル typed builder と servant 型レベル combinator の両方を提供する | 承認 |

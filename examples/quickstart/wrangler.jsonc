@@ -1,0 +1,10 @@
+{
+  "name": "cloudflare-workers-hs-quickstart",
+  "main": "dist/quickstart.mjs",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat", "websocket_hibernation_enabled"],
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"] }],
+  "build": {
+    "command": "bash scripts/build-wasm.sh",
+  },
+}

@@ -102,3 +102,50 @@ JSFFI を使う以上、`wasm32-wasi` の **reactor** モジュールとして�
 - Haskell Discourse — Serverless Haskell with GHC WASM + JSFFI on Cloudflare Workers: https://discourse.haskell.org/t/serverless-haskell-with-ghc-wasm-jsffi-cloudflare-workers/9784
 - Cloudflare — Announcing WASI on Workers: https://blog.cloudflare.com/announcing-wasi-on-workers/
 - @cloudflare/workers-wasi (npm): https://www.npmjs.com/package/@cloudflare/workers-wasi
+
+## 追補 (2026-07-22): WASI shim の選定変更
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-22
+- 決定者: lihs
+
+### 決定
+
+JS グルーの WASI 実装として **`@bjorn3/browser_wasi_shim`（`^0.4.2`、`dependencies` 分類）** を採用する。
+本文「決定 (Decision)」節が示した「選択肢 1（`@cloudflare/workers-wasi`）を出発点とし選択肢 2（自前最小
+shim）へ移行する」という方針を、本追補は次のとおり置き換える。
+
+> 採用: reactor モジュール + `@bjorn3/browser_wasi_shim`
+
+### 理由
+
+- `@cloudflare/workers-wasi` は 2022-02（v0.0.5）以降実質未保守であり、**command モデルの `start()`
+  のみ**を提供する。reactor ABI が要求する `initialize()`（本文の `_initialize` 呼び出しに相当する
+  WASI 側の初期化エントリ）には対応していない。
+- `@bjorn3/browser_wasi_shim` は pure-JS 実装で、reactor の `initialize()` を直接提供する。
+  実機（workerd 1.20260721.1 + `@cloudflare/vitest-pool-workers` 0.18.7 + `wrangler dev`）で
+  動作検証済み。
+
+### 注意（foot-gun）
+
+`{debug: false}` を明示しないと、WASI syscall の呼び出しが全て stdout に漏れる（実測で確認済みの
+既定挙動）。組み込み時は必ず `{debug: false}` を渡すこと。
+
+### 選択肢 2（自前最小 shim）の扱い
+
+本文が前提としていた「選択肢 2（自前最小 WASI shim）への移行」は、依存削減の観点から**引き続き
+open のフォローアップ事項**とする。今回の決定は選択肢 1 → 2 への移行ではなく、選択肢 1 の実装を
+`@cloudflare/workers-wasi` から `@bjorn3/browser_wasi_shim` に差し替えるものである。
+
+### 遵守事項への影響（本文 override）
+
+本文「遵守事項 (Compliance)」の以下の項目は、本追補により対象を変更する（本文自体は書き換えない）。
+
+- 「`@cloudflare/workers-wasi` への依存はバージョン固定し、自前 shim への移行課題を Issue 化する。」
+  → **追補により対象を `@bjorn3/browser_wasi_shim`（`^0.4.2`）に変更**。バージョン固定・自前 shim
+  への移行課題の Issue 化は本追補後も有効。
+
+### 参考資料（追補分）
+
+- @bjorn3/browser_wasi_shim (npm): https://www.npmjs.com/package/@bjorn3/browser_wasi_shim
+- bjorn3/browser_wasi_shim (GitHub): https://github.com/bjorn3/browser_wasi_shim

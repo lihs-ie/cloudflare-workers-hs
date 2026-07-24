@@ -167,3 +167,55 @@ stock GHC / `cabal` / `ghc-wasm-meta`）はロック・固定し、(a) vanilla G
 - Cloudflare Workers — Vitest integration（`@cloudflare/vitest-pool-workers` / Miniflare でランタイム内実行）: https://developers.cloudflare.com/workers/testing/vitest-integration/
 - Cloudflare Workers — Miniflare: https://developers.cloudflare.com/workers/testing/miniflare/
 - Haskell Discourse — Serverless Haskell with GHC WASM + JSFFI on Cloudflare Workers: https://discourse.haskell.org/t/serverless-haskell-with-ghc-wasm-jsffi-cloudflare-workers/9784
+
+## 追補 (2026-07-22): vanilla GHC ビルドの互換手段変更 + conformance oracle の実装
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-22
+- 決定者: lihs
+
+### 決定 1: vanilla GHC 互換手段の変更
+
+本文「1. 純粋単体テスト（vanilla GHC）」節が前提としていた `ghc-wasm-compat` 相当の互換シムは
+用いない。[ADR-0019](./0019-monorepo-package-layout.md) 追補で確定した方式（cabal `if os(wasi)`
+条件 + ソース内 CPP `#if defined(wasm32_HOST_ARCH)`）に置き換える。詳細は
+[ADR-0019](./0019-monorepo-package-layout.md) 追補「二重ビルド方式と FFI 隔離範囲の確定」を参照する
+（本 ADR の記述はこれに従属する）。
+
+### 決定 2: tier3 conformance の実装形態確定
+
+本文「3. `servant-server` 互換性テスト（golden / プロパティベース）」の実装形態を次のとおり確定する。
+
+- 実 `servant-server` 0.20.3.0 + `Network.Wai.Test` を **dev-only package
+  `conformance-oracle`**（出荷 4 パッケージ外・wasm ビルド対象外）で **host 実行**し、
+  golden（50 ケース）を生成・commit する。
+- 出荷側の test-suite は `servant-server` **非依存**のまま、commit 済みの golden とバイト比較する。
+- 生成は**決定論的**（時刻・乱数を使用しない）。再生成は `just` recipe で行う。
+
+この形態により、[ADR-0006](./0006-servant-execution-engine.md) の「`servant-server` に（テストを
+含め）依存しない」という出荷側の制約と、conformance の oracle として実 `servant-server` の挙動を
+直接参照したいという要求を、パッケージ境界で両立させる。conformance 境界（比較対象を status /
+Content-Type / 成功 body に限り、エラー body を比較から除外すること）は
+[ADR-0006](./0006-servant-execution-engine.md) 追補で確定した内容に従う。
+
+### 遵守事項への影響（本文 override）
+
+本文「遵守事項 (Compliance)」の以下の項目は、本追補により内容を変更する（本文自体は書き換えない）。
+
+- 「vanilla GHC ビルドは `ghc-wasm-compat` 相当の互換シムを用い、WASM 向けコードを stock GHC で
+  型検査・実行できる状態を維持する。」
+  → **追補により [ADR-0019](./0019-monorepo-package-layout.md) 追補の CPP 方式に変更**。
+  `ghc-wasm-compat` への依存は追加しない。
+- 「[ADR-0006](./0006-servant-execution-engine.md) のエラーモデル（400/404/405/406/415）を golden
+  ケースとして固定し、状態コードとエラー本文を `servant-server` の文書化挙動と突き合わせる互換性
+  テストを持つ。」
+  → **追補により比較対象を明確化**: status（常時）+ Content-Type（charset 込み）+ 成功（2xx）body。
+  エラー body は比較除外（[ADR-0006](./0006-servant-execution-engine.md) 追補）。golden 50 ケースは
+  dev-only package `conformance-oracle` の host 実行で生成・commit する。
+
+### 参考資料（追補分）
+
+- [ADR-0019](./0019-monorepo-package-layout.md) 追補（二重ビルド方式と FFI 隔離範囲の確定）
+- [ADR-0006](./0006-servant-execution-engine.md) 追補（実装確定事項 — 移植方式・conformance 境界・documented extensions）
+- servant-server (Hackage, 0.20.3.0)（conformance oracle の参照実装）: https://hackage.haskell.org/package/servant-server-0.20.3.0
+- wai-extra（`Network.Wai.Test`）: https://hackage.haskell.org/package/wai-extra

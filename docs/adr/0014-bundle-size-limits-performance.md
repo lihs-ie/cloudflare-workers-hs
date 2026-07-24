@@ -103,3 +103,101 @@ Cloudflare Workers には実運用に効く厳しい制約がある。
 - Cloudflare Workers — Limits（サイズ/CPU/メモリ）: https://developers.cloudflare.com/workers/platform/limits/
 - Haskell Discourse — Blog system on Cloudflare Workers（1 MiB 超過で 5 Worker 分割・各サイズ）: https://discourse.haskell.org/t/blog-system-on-cloudflare-workers-powered-by-servant-and-miso-using-ghc-wasm-backend/10666
 - GHC User's Guide — WebAssembly backend（単一スレッド RTS）: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
+
+## 追補 (2026-07-24): Phase A theme A7 Unit e/f — バンドルサイズ/コールドスタートの実測 harness と gate 化、実測値、startup CPU 上限の訂正
+
+- ステータス: 承認（追補・実装済み、全ゲート EXIT 0）
+- 日付: 2026-07-24
+- 決定者: lihs（theme A7 実行編成に基づく実装時決定の記録。実装 = A7 Unit e/f）
+
+本追補は「遵守事項」の未充足項目（バンドルサイズ・コールドスタート・レイテンシの CI/デプロイ計測と
+しきい値ゲート）のうち、**バンドルサイズと（ゲート非対象の参考値としての）コールドスタート**を
+「測る仕組み」まで具体化した A7 Unit e/f の結果を記録する（実際の GitHub Actions 配線自体は A8 の
+item 13 スコープであり、本追補の対象外）。
+
+### 決定 1: 実測 harness は実際にアップロードされる artifact を対象にする
+
+`wrangler deploy --dry-run --outfile=<path>` は Cloudflare API に一切接触せず（`--dry-run: exiting
+now.` を出力した時点で即終了、実機確認済み）、実際にアップロードされる artifact（esbuild による
+bundling 後）をそのまま生成する。手元の `.wasm`/`.mjs` ファイルサイズの単純合算では wrangler 側の
+bundling を反映しないため、計測はこの artifact に対して行う（`skeleton/justfile` の `measure-bundle`
+recipe、実装は `examples/quickstart/scripts/measure-bundle-size.mjs`）。
+
+### 決定 2: gzip 近似は node `zlib.gzipSync`、budget は Free プランの 3 MiB（gzip 後）/ 64 MiB（圧縮前）
+
+raw サイズは実ファイルのバイト数そのものであり近似ではないが、gzip サイズは Cloudflare 側の実圧縮
+（アルゴリズム/設定非公開）とは厳密には一致しない可能性がある近似値である。本 codebase のバンドル
+構成（wasm バイナリがペイロードの大半を占める）では wrangler 自身が `wrangler deploy --dry-run` の
+stdout に出す `Total Upload: ... / gzip: ...` の実測値と **0.02%（raw）/ 0.09%（gzip）以内**で一致
+することを毎回の実測で確認しており、この近似は本 codebase の構成では十分実用的である（構成比が
+大きく変わった場合に再確認が必要という限界は明記する）。budget はプラットフォームの「最も緩い、
+擁護可能な」上限（無料枠 3 MiB gzip 後 / 両プラン共通 64 MiB 圧縮前）をデフォルトとし、超過検知
+スクリプトが non-zero exit する形で gate 化した。この budget 自体をプロジェクト固有のより厳しい
+値へ締め直すことは、本 Unit の遵守事項未充足のフォローアップとして残る。
+
+### 決定 3: `wrangler check startup`（alpha）の出力を解析するラッパースクリプトを新設
+
+`wrangler check startup --worker=<bundle> --outfile=<path.cpuprofile>` は stdout に数値サマリを一切
+出さない（実測確認済み、wrangler 4.113.0 — `.cpuprofile` ファイルと「このマシンのローカル CPU で
+計測した」旨の注記のみ）。`measure-cold-start.mjs`（新設）が Chrome DevTools 形式の `.cpuprofile`
+JSON（`nodes`/`startTime`/`endTime`/`samples`/`timeDeltas`、全てマイクロ秒単位）を解析し、wall
+clock（`endTime - startTime`）と sampled 合計（`Σ timeDeltas`）の 2 指標を出す。`wrangler check
+startup` は Cloudflare 自身の `workers-sdk`（`packages/wrangler/src/check/commands.ts`）で
+`status: "alpha"` と明記されたコマンドであり、将来の API/出力形式変更に備える。
+
+### ★訂正: 「startup CPU 予算 400ms」はプラットフォームのハード上限ではない — 実際のハード上限は 1 秒
+
+A7 の実装過程で参照されていた「予算 400ms」という数値は、この codebase 自身が過去の非公式 probe
+（先行する ad hoc 計測）に対して自主的に設けた、より厳しい内輪の目標値であり、**Cloudflare 自身が
+文書化しているプラットフォームのハード上限ではない**。Context7（`/websites/developers_cloudflare_workers`、
+"Worker startup time"、2026-07-24 時点で現行確認済み）によれば、実際のハード上限は
+**「Worker は global scope を 1 秒（1000ms）以内に parse・実行しなければならない」** であり、
+超過すると `10021`（"Script startup exceeded CPU time limit"）で **アップロード自体が拒否される**。
+本 ADR の「決定要因」「決定」節が言及する「短い CPU 予算」の文脈で「400ms」という数値を参照する場合は、
+以後この 1 秒という正しいプラットフォーム値と併記し、400ms は「この codebase が自主的に採用している、
+より厳しい内輪の目標」として区別して扱う（プラットフォームのハード制約として引用しない）。
+
+### 実測値（baseline → final、A7 Unit e/f）
+
+詳細な実測レポートは `skeleton/docs/performance-baseline.md`（本追補と対をなす、実装リポジトリ側の
+一次記録）に集約している。要点のみ転記する:
+
+| Metric | Baseline（Unit b/c/d 着手前、`d073925`） | Final（Unit b/c/d 完了後、`6180e33`） | Budget | 結果 |
+|---|---|---|---|---|
+| Raw（圧縮前） | 7,407,336 B（7.064 MiB、64 MiB の 11.04%） | 7,733,661 B（7.375 MiB、64 MiB の 11.52%） | 64 MiB | PASS（+4.41%） |
+| Gzip（近似） | 1,319,227 B（1.258 MiB、3 MiB の 41.94%） | 1,366,428 B（1.303 MiB、3 MiB の 43.44%） | 3 MiB（無料枠） | PASS（+3.58%、残余 1.696 MiB = budget の 56.56%） |
+| Cold start（local、6 回計測の wall clock 範囲） | 14.6–24.9 ms | 15.358–16.251 ms | ゲート対象外（参考値） | 回帰なし（final の範囲は baseline の範囲に完全包含） |
+| Large body 1 MB / 10 MB / 100 MB（T2 正しさ） | 全 PASS（11 ms / 29 ms / 316 ms） | 変更なし（Unit b/c/d は `/echo-stream` の zero-copy pass-through 経路に触れていない、最終 `test-integration` 実行で再確認済み） | — | PASS |
+
+新規 FFI ブリッジ（server push 用 `readableStreamFromProducer`/`producerDrivenReadableStreamViaFFI`、
+client 側の応答受信・アップロード両方向での同ブリッジ再利用）と Cache モジュール一式の追加によるサイズ
+増分は raw で 4.41%、gzip で 3.58% と軽微であり、budget に対する余裕（raw 11.52%、gzip 43.44%）は
+引き続き大きい。コールドスタートは局所的なノイズの範囲内で回帰なし。
+
+### ★注記: large body 100MB の T2 通過は edge 上の安全性の証明ではない
+
+`large-body-echo-stream.spec.ts` の 100MB ケースが vitest サンドボックス（Node.js、実 edge isolate の
+128MB 制約より緩いメモリ制約下）で PASS することは、**バイト数・SHA-256 ハッシュが正しく往復する
+という「正しさ」の証明であって、実 edge isolate 上での安全性（CPU/メモリ制限に抵触しないこと）の
+証明ではない**。この非対称性（T2 pass ≠ edge で安全）は checklist 項目 9（CPU/OOM 実測、A6 Unit 12）
+と同じ扱いであり、実 edge 上での 100MB ケースの挙動は Phase A theme A7 close の RE 一括バッチで別途
+観測する（本追補のスコープ外）。
+
+### 遵守事項への影響（本文 override）
+
+- 「バンドルサイズ（圧縮後と圧縮前 64 MB の双方）・コールドスタート・レイテンシを CI/デプロイで計測し、
+  しきい値を設けて回帰を防ぐ」の**うち、バンドルサイズは実際に gate 化された**（`just measure-bundle`
+  + `measure-bundle-size.mjs` の budget 超過時 non-zero exit、意図的な低 budget 値での自己検査 RED→GREEN
+  実演済み）。コールドスタートは alpha コマンド依存のため参考値どまりで gate 化していない（しきい値
+  ゲートは今回のスコープ外）。CI（GitHub Actions）への実配線自体は A8 item 13 のスコープであり、
+  本追補では「測る仕組み」までを充足したことのみを記録する。
+
+### 参考資料（追補分）
+
+- Cloudflare Docs — Worker limits（バンドルサイズ）: https://developers.cloudflare.com/workers/platform/limits/
+- Cloudflare Docs — Worker startup time（1 秒のハード上限）: Context7 `/websites/developers_cloudflare_workers`
+  "Worker startup time"（2026-07-24 確認）
+- Cloudflare `workers-sdk` — `wrangler check startup`（alpha コマンド）: `packages/wrangler/src/check/commands.ts`
+- 実装・実機検証ログ: `~/.pschool/spikes/cloudflare-workers-hs-build/skeleton/docs/performance-baseline.md`
+  （baseline・final 両方の一次記録）、`_phase_a/a7-plan.md`「### Unit e」節・「実行状態」節、
+  `API-LEDGER.md`「A7 Unit d」「A7 Unit c」節

@@ -113,3 +113,61 @@ Workers 固有の要素（`env` バインディングの注入: [ADR-0008](./000
 - Haskell Discourse — Serverless Haskell（servant-server の network 依存・自作型駆動ルータ）: https://discourse.haskell.org/t/serverless-haskell-with-ghc-wasm-jsffi-cloudflare-workers/9784
 - Haskell Discourse — Blog system on Cloudflare Workers（`servant-cloudflare-workers` フォークの背景）: https://discourse.haskell.org/t/blog-system-on-cloudflare-workers-powered-by-servant-and-miso-using-ghc-wasm-backend/10666
 - konn/ghc-wasm-earthly（`Steward` は設計参照のみ）: https://github.com/konn/ghc-wasm-earthly
+
+## 追補 (2026-07-22): 実装確定事項 — 移植方式・conformance 境界・documented extensions
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-22
+- 決定者: lihs
+
+### 実装方式
+
+`servant-server` 0.20.3.0 の `Router'`/`RouteResult`/`DelayedIO`/`Delayed` を**ソース移植**する
+（WAI 非依存化 + `ResourceT` 除去 + モジュールヘッダへの BSD-3 attribution 保持）。`build-depends`
+には `servant-server` を追加しない（本 ADR の非依存原則は維持する）。
+
+- 型クラスは `HasWorkerServer api ctx`（`servant` の `HasServer api context` と同型）とする。
+- request-scoped な値（`Ctx`/`bindingEnv`）は `RoutingApplication` の関数引数で搬送する。
+
+### conformance 境界
+
+実 `servant-server` oracle（[ADR-0017](./0017-testing-strategy.md) 追補の `conformance-oracle`）
+との比較対象は次に限定する。
+
+- status（常時比較）
+- Content-Type（charset 込みで比較）
+- 成功（2xx）レスポンスの body
+
+**エラー body は比較除外**とする。
+
+### documented extensions（`servant-server` と意図的に異なる点）
+
+- (a) **405 応答に `Allow` ヘッダを生成**する（RFC 9110 §15.5.6 の MUST 要件）。`runChoice` で
+  枝を跨いだ union を取って生成する。
+- (b) **エラー本文は JSON エンベロープを既定**とし、`Accept` ネゴシエーションに応じて
+  `text/plain` へフォールバックする（本文「決定 (Decision)」(b) 項の実装確定）。
+- (c) `ReqBody` の byte-limit 超過は **413** を返す（[ADR-0007](./0007-streaming-readablestream.md) 連動）。
+
+### 実測で確定した servant 意味論（誤解しやすい点として記録）
+
+- `Capture` の解析失敗は**回復可能な 400**（404 ではない）。
+- `Header`（`Optional`）欠落は `Nothing`（エラーではない）。
+- path は **split → decode の順**で処理する（`%2F` はデリミタにならない）。
+- `PlainText` の `Accept` は `text/plain;charset=utf-8` のみを受理する。
+
+### 遵守事項への影響（本文 override）
+
+本文「遵守事項 (Compliance)」に、本追補により次を追加する（本文自体は書き換えない）。
+
+- [ ] 移植モジュール（`Router'`/`RouteResult`/`DelayedIO`/`Delayed` 由来）のヘッダに BSD-3
+      attribution を保持する。
+- [ ] conformance 比較は status + Content-Type + 成功 body に限り、エラー body は比較しない。
+- [ ] 405 に `Allow` ヘッダ、413（`ReqBody` byte-limit 超過）を documented extension として
+      実装・維持する。
+
+### 参考資料（追補分）
+
+- [ADR-0017](./0017-testing-strategy.md) 追補（tier3 conformance oracle の実装形態確定）
+- [ADR-0019](./0019-monorepo-package-layout.md) 追補（移植コードの BSD-3 attribution）
+- RFC 9110 §15.5.6 — 405 Method Not Allowed（`Allow` ヘッダ要件）: https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6
+- servant-server (Hackage, 0.20.3.0): https://hackage.haskell.org/package/servant-server-0.20.3.0

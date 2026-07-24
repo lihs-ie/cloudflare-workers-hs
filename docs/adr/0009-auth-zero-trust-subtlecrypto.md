@@ -106,3 +106,130 @@
 - Haskell Discourse — Blog system on Cloudflare Workers（crypton 不可・SubtleCrypto・Zero Trust 併用）: https://discourse.haskell.org/t/blog-system-on-cloudflare-workers-powered-by-servant-and-miso-using-ghc-wasm-backend/10666
 - GHC User's Guide — WebAssembly backend（JSFFI で Web API を呼ぶ）: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 - Cloudflare — Announcing WASI on Workers（Workers の標準 Web API 提供）: https://blog.cloudflare.com/announcing-wasi-on-workers/
+
+## 追補 (2026-07-23): Phase A theme A5 で確定した Access JWT 検証パイプライン・SubtleCrypto 実装
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-23
+- 決定者: lihs
+
+Phase A theme A5（`servant-cloudflare-workers-access` の最後の stub 面 = `verifyAccessJWT` 本体を実装、
+A2 close 時点で明示的に残していた open item、本 ADR の完了条件）で確定した設計を記録する。研究 3 体の
+報告が強く収束したため synthesizer を省略し orchestrator が直接裁定した（逸脱として記録済み）。本文
+自体は書き換えない。
+
+### 決定 1: 検証パイプラインの確定形
+
+`verifyAccessJWT`（= `verifyAccessJWTWithOptions defaultAccessVerifierOptions` の薄いラッパ）は次の順に
+実行する: (1) JWT を `.` で 3 分割（`jwtParts`、分割数が異なれば即 malformed）、(2) ヘッダの `alg` を
+`RS256` ホワイトリストで検査 — **SubtleCrypto に到達する前に拒否**する（alg-confusion・`alg: none` 攻撃
+への対策）、(3) JWKS を取得し `kid` に一致する鍵を探索、(4) `subtleImportKey` で `CryptoKey` を生成、
+(5) 署名セグメントを base64url decode し、RFC 7515 §5.1 の signing input（`header.payload`）を組んで
+`subtleVerify`、(6) クレーム検証（`exp`/`nbf` は skew 設定可・default 0、`aud` は配列/string 双方を
+正規化してメンバーシップ判定、`iss` は導出値または override と厳密一致）。ヘッダ解析・JWKS 探索の
+`Either` 失敗と SubtleCrypto 例外・想定外例外はすべて単一の `try @SomeException` を通り、**全失敗は
+一律不透明 401** に潰す（研究側が提案した 401/403 分離案は不採用）。診断は例外の **constructor 名のみ**
+を `Cloudflare.Workers.Observability.tailLog` へ 1 行出力する（攻撃者が制御できる生の JWT 文字列や
+JSON パースエラーメッセージをログへ含めない）。構造化ログ化は A6 へ送付。
+
+### 決定 2: JWKS キャッシュは isolate-lifetime `NOINLINE IORef`（capacity=1）に確定 — 本文からの変更
+
+本文「決定」節は JWKS 取得結果を「KV/Cache でキャッシュ」すると述べていたが、**実装は isolate の生存期間
+に閉じた `NOINLINE IORef`（保持は直近 1 URL のみ、`kid` ミス時は即時再取得、ヒットしなければ replace）**
+に確定する。根拠: (a) 本ライブラリは単一 team を前提としており cross-isolate 共有の必要性が薄い、
+(b) KV/Cache API を経由しない分だけ依存が最小になる、(c) Cloudflare Access の鍵ローテーション（6 週周期
++7 日 grace）には `kid` ミス即時再取得で追従でき、TTL（default 1 時間）による定期更新と合わせて十分、
+(d) RE 実測（後述）で KV 書き込みの可視性に未解決の疑義が見つかっており、認証のクリティカルパスを KV の
+実環境挙動に依存させるリスクを避けられる。並行 fetch 間の排他は行わない（冪等 GET の二重化は無害という
+判断）。KV/Cache は cross-isolate 最適化の将来オプションとして選択肢に残すが、現状の実装では使わない。
+
+### 決定 3: `AccessVerifierOptions` — clock skew・JWKS TTL・issuer override
+
+```haskell
+data AccessVerifierOptions = AccessVerifierOptions
+  { accessVerifierOptionsClockSkewSeconds    :: Integer
+  , accessVerifierOptionsJWKSCacheTtlSeconds :: Integer
+  , accessVerifierOptionsExpectedIssuer      :: Maybe Text
+  }
+
+defaultAccessVerifierOptions :: AccessVerifierOptions
+defaultAccessVerifierOptions = AccessVerifierOptions
+  { accessVerifierOptionsClockSkewSeconds    = 0     -- Cloudflare 公式サンプル parity
+  , accessVerifierOptionsJWKSCacheTtlSeconds = 3600  -- 1h
+  , accessVerifierOptionsExpectedIssuer      = Nothing
+  }
+```
+
+`accessConfigTeamDomain`（`AccessConfig` の既存フィールド）は **短縮チーム名のみ**（例:
+`"acme-team"`、RE では `"lihs"`）であり、`*.cloudflareaccess.com` を含む完全ドメインではないという
+意味論に確定した（A5 batch 3 のドラフトは逆の前提で実装しており、course ch-07 の worked example の
+慣例と照合して batch 4 で是正 — 実 JWT を誤った導出で検証する前に発覚）。`.cloudflareaccess.com` の
+付与はライブラリ内部（`"https://" <> accessConfigTeamDomain <> ".cloudflareaccess.com"`）で行う。
+
+`accessVerifierOptionsExpectedIssuer :: Maybe Text` は a5-plan の当初裁定リストにはなかった **lihs の
+明示裁定**による追加フィールドである: `iss` の `https://<team>.cloudflareaccess.com` という形式は
+Haskell 側の不変条件ではなく **Cloudflare 側のプラットフォーム契約**であり、その導出をハードコードした
+まま恒久的な override 手段を持たないのは production ライブラリとして不十分と判断した（「YAGNI だから
+不要」という主張を明示的に却下 — Cloudflare 公式の検証サンプル自体も issuer 全体を設定値として持たせて
+いる）。`Nothing` は既存の導出挙動を維持し、`Just` は導出を一切行わず値をそのまま使う。
+
+### 決定 4: JWKS 取得は ADR-0011 の自前 client（`clientIn`）を使用
+
+`Internal.JWKS.JWKSApi = Get '[JSON] JWKSDocument` という **ゼロセグメントの `HasClient` API 型**を、
+`AccessConfig` の `accessConfigJWKSUrl`（`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` 相当）
+をそのまま `BaseUrl` として `parseBaseUrl` に渡し、`clientIn`/`FetchClient`（[ADR-0011](./0011-outbound-http-fetch-backend.md)
+追補の決定 1「`HasClient`/`clientIn` の直接再利用」）で dispatch する。ゼロセグメントの API 型でも
+`parseBaseUrl` が `baseUrlPath` を保持し、元 URL どおりにリクエストが送られることを実装前に実証済み
+（仮定で進めていない）。本文が「JWKS 取得は ADR-0011 の fetch」とだけ述べていた方針を、パッケージを
+またいだ実装として初めて具体化した。
+
+### 実測で確定した挙動
+
+- **`crypto.subtle.verify` は署名不一致で `reject` せず `false` を返す**（実機確認）。この挙動により、
+  ch-07-03 向けの worked example ドラフトが署名セグメントを base64url decode せず `subtleVerify` に渡す
+  バグ（さらに `subtleVerify` の引数順が入れ替わっている等の複数バグを含む）が、型検査もテストも素通り
+  し得る **サイレントな全数検証失敗**になり得ることが判明した。当該バグは Phase B の lecture patch 対象
+  として divergence-notes に記録済みで、実装（`Access.hs`）自体は正しい順序で decode してから渡す。
+- `base64-bytestring` の `bytestring < 0.12` 制約は Hackage revision で緩和済みであり、wasm 側の依存
+  解決はフォールバックなしで通った（`Data.ByteString.Base64.URL.decodeUnpadded` のリンク成功まで確認）。
+- **RE 実測（実 Cloudflare Access 越しの本番デプロイ）**: 旧候補 AUD のまま実 Access ログインを通すと
+  `AccessErrorAudienceMismatch` による 401 を観測 — これは実署名検証を通過した上での `aud` 拒否であり、
+  実 Cloudflare 発行 JWT が SubtleCrypto 検証まで正しく到達し署名検証が成功したことの実証でもある。正しい
+  AUD へ redeploy した後は 200（`{"adminStatsTotalShortenedUrlCount":0}`）を観測。未認証アクセスは
+  `ZeroTrust` combinator を持たない `/shorten` を含めアプリケーション（hostname）単位で edge 302 リダイ
+  レクトされる ── Access の保護境界は型レベルの `ZeroTrust` combinator の粒度とは独立している。
+- Miniflare 専用のプレースホルダ id（`wrangler.toml` の `id = "url_shortener_kv_local"` 等）は実
+  `wrangler deploy` で **code 10042** により拒否される（Miniflare のローカル名前解決では素通りする）。
+
+### 本文の「`servant` コアの `AuthProtect` を用い」の実態
+
+本文「決定」節は Servant 統合について「`servant` コアの `AuthProtect`（純 Haskell、再利用可）を用い」
+と述べていたが、**実装は `AuthProtect` を移植・再利用していない**。A2 Unit 7 で確立した `ZeroTrust`
+（空のマーカー型）/`AccessVerifier`（`Context` 経由で注入する `Text -> IO (Either AccessError AccessClaims)`）
+の単相 combinator を A5 でも変更せず使い続けている。認証チェックの差し込みは real `servant-server` の
+`BasicAuth` インスタンスが使うスケジューリングスロット（`addAuthCheck`）と同じ箇所を利用するが、これは
+最も近い upstream のアナロジーというだけであり、Cloudflare Access 自体に対応する servant コアの
+combinator は存在しない。A5 で stub から real になったのは `AccessVerifier` に差し込む関数（`verifyAccessJWT`）
+の中身のみで、combinator 自体は無変更である。本文の表現は実装の実態と食い違うため、ここに注記する
+（本文自体は書き換えない）。
+
+### 残課題 (Remaining)
+
+- **Service Token (M2M) は非対応**。A5 のスコープは対話ユーザ（Access セッション）トークンのみで、
+  `CF-Access-Client-Id`/`CF-Access-Client-Secret` の検証経路は未実装。対応方針は A6/A8 で検討する。
+- **unknown-`kid` 時の再取得に negative cache がない**。現状は miss のたびに `fetchAction` を呼ぶ
+  （冪等 GET の重複は許容という判断）。悪意ある大量の unknown-`kid` リクエストへの対策は A6/A8 で検討。
+- **構造化ログ化**は A6 へ送付。現状は例外 constructor 名のみの `tailLog` 1 行。
+- **KV durability の open finding**: RE 実測で `POST /shorten` が 200 を返した後、対応する KV key が
+  実 namespace の `list`/`get` いずれからも見つからなかった（60 秒超待機後も再現）。`kvPut` の Promise
+  は解決しており書き込み呼び出し自体は行われているが、その書き込みが実際に永続化されたかは RE Unit の
+  ツールからは直接観測できていない。**A8 の real edge E2E で最優先の調査事項に昇格**する。
+
+### 参考資料（追補分）
+
+- [ADR-0011](./0011-outbound-http-fetch-backend.md) 追補（`HasClient`/`clientIn` 再利用方式 — 本追補の
+  決定 4 が使う具体的機構）
+- [ADR-0003](./0003-jsffi-cloudflare-bindings-layer.md) 追補（JSFFI 境界の実装規約 — SubtleCrypto FFI
+  封筒もこの規約に従う）
+- 実装詳細・実機検証ログ: `~/.pschool/spikes/cloudflare-workers-hs-build/_phase_a/a5-plan.md`、
+  `a5-re-memo.md`、`_phase_b/divergence-notes.md`「A5」節、`API-LEDGER.md` item 14（"A5 close"）

@@ -1,0 +1,53 @@
+cabal-version: 3.0
+name:          servant-cloudflare-workers-client
+version:       0.1.0.0
+synopsis:
+  Self-implemented fetch-backed servant-client-core interpreter for Cloudflare Workers
+
+description:
+  Client package (ADR-0011/ADR-0019): reuses `servant-client-core`
+  (no http-client / no network package) and self-implements a
+  RunClient backend against the Workers `fetch` API, the same
+  reuse-not-refork stance ADR-0006 already applied to the server
+  package. This chapter (ch-09-01) introduces the package with
+  FetchClient -- real Functor/Applicative/Monad/MonadIO, stub
+  RunClient method bodies; Servant.Cloudflare.Workers.Client (the
+  HasWorkerClient class and its combinator instances, ch-09-02 and
+  ch-09-03) is added by later chapters.
+
+license:       BSD-3-Clause
+build-type:    Simple
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:             warnings
+  hs-source-dirs:     src
+  default-language:   GHC2024
+  default-extensions:
+    OverloadedStrings
+    TypeFamilies
+
+  exposed-modules:    Servant.Cloudflare.Workers.Client.Fetch
+  build-depends:
+    , base                 >=4.16 && <4.22
+    , bytestring
+    , cloudflare-workers
+    , http-api-data
+    , servant
+    , servant-client-core
+    , text
+
+test-suite unit
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Spec.hs
+  default-language: GHC2024
+  build-depends:
+    , base
+    , servant-client-core
+    , servant-cloudflare-workers-client
+    , tasty
+    , tasty-hunit

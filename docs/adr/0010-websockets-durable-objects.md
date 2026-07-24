@@ -89,3 +89,110 @@ DO は接続をハイバネーション込みで保持できる。したがっ�
 - Cloudflare Durable Objects — WebSocket server: https://developers.cloudflare.com/durable-objects/examples/websocket-server/
 - @cloudflare/workers-wasi（ソケット syscall は ENOSYS）: https://www.npmjs.com/package/@cloudflare/workers-wasi
 - Cloudflare Workers — Streams: https://developers.cloudflare.com/workers/runtime-apis/streams/
+
+## 追補 (2026-07-23): Phase A theme A4 で確定した DO WebSocket hibernation 実装
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-23
+- 決定者: lihs
+
+Phase A theme A4（Queue/DO/WebSocket/非 fetch エントリポイント、実機検証済み）で確定した設計を記録する。
+本文「結果 (Consequences)」節の「中立・フォローアップ」が「ハイバネーション API 対応の優先度を決める」と
+していた論点に対する実装レベルの確定を含む。本文自体は書き換えない。
+
+### 決定 1: hibernation API を主実装とし、standard accept() は不実装とする（転換、lihs 承認 2026-07-23）
+
+本文は当初、MVP を「単一 DO による双方向エコー/ブロードキャスト程度」から始め「ハイバネーション最適化は
+後続で対応する」という順序を想定していた。実装では、この順序を覆し、**ハイバネーション API
+（`ctx.acceptWebSocket` + `webSocketMessage`/`webSocketClose` という DO クラスの static メソッドへ
+Haskell foreign export を委譲する形）を最初から主実装とし、standard accept（`server.accept()` +
+プレーンなイベントリスナー方式、DO クラスメソッドを介さない形）は実装しない**方針へ確定した
+（A4 plan 裁定 1、★2 改訂。lihs 承認 2026-07-23）。
+
+根拠:
+
+- **課金**: standard accept は接続の保持時間そのものに対して課金される（duration billing）のに対し、
+  hibernation はメッセージ処理時間のみに課金され、アイドル接続のコストを回避できる。
+- Cloudflare 自身がハイバネーション API を推奨している。
+- ハイバネーションの `webSocketMessage`/`webSocketClose` という「JS 側 class メソッドが駆動する」モデルは、
+  Haskell `foreign export javascript`（「JS から呼ばれる」形）と自然に整合する。DO クラスの `fetch`
+  メソッドと `webSocketMessage`/`webSocketClose` メソッドはいずれも**同一 `wasmExports` インスタンス
+  （同一 isolate・同一 wasm module instance）を共有する**ことを実機で実証済み（A4 batch 1、
+  「世界初チェックポイント」— DO クラスメソッドから Haskell-wasm reactor の export を呼べるかという
+  A4 全体の前提条件、一発 GREEN で設計 pivot 不要だった）。
+
+### 決定 2: WebSocketMessagePayload 型 + bytes 送受信
+
+```haskell
+data WebSocketMessagePayload = WebSocketTextMessage Text | WebSocketBinaryMessage ByteString
+  deriving stock (Show, Eq)
+
+webSocketSend :: WebSocketConnection -> WebSocketMessagePayload -> IO ()
+```
+
+`webSocketSend` は実 `WebSocket#send(message)` に対応する（real-API ドキュメント上は同期・`Promise` を
+返さないが、ソケットが `OPEN` 状態でない場合に throw するため、`WebSocketSendFailed` として分類し
+JS 側 `try`/`catch` で封筒化する）。当初この型は `WebSocketIncomingMessage` という名だったが、
+`webSocketSend` が同じ型を送信（OUT 方向）にも使うため「incoming」は方向性として誤解を招くとして
+`WebSocketMessagePayload` へ改名した（構築子・フィールドの変更は無い、単純な rename。A4 close
+reviewer fix #5）。
+
+**実測 footgun**: ローカル test harness（`@cloudflare/vitest-pool-workers`）が生成する `WebSocket`
+client は `binaryType` のデフォルトが `"blob"`（Fetch 標準自体のデフォルト）であるため、未設定のまま
+バイナリフレームを受信すると `event.data` は `ArrayBuffer` ではなく `Blob` として届く。`client.binaryType
+= "arraybuffer"` をメッセージ到達前に明示設定することで、通常のブラウザ/workerd の WebSocket client と
+同じ `ArrayBuffer` 形状を直接取得できる（harness 固有の制限ではなく、素の WebSocket API の挙動）。
+
+### 決定 3: servant WebSocket combinator は未実装（Remaining scope として明記）
+
+本 ADR 本文の中核である「本ライブラリ独自の WebSocket 組み合わせ子（例: `WebSocketCloudflare`）を
+Servant の宣言的記述へ組み込む」という決定は、**A4 のスコープでは実装していない**。A4 が実装したのは
+DO クラスメソッドへの JS glue 委譲によるハイバネーション基盤のみであり、`HasWorkerServer`/`Server api
+env`（[ADR-0006](./0006-servant-execution-engine.md)）の外側で完結する。実 Upgrade リクエストの
+`new WebSocketPair()`/`this.ctx.acceptWebSocket(server)`/`new Response(null, { status: 101, webSocket:
+client })` という一連の流れも、entirely JS 側（DO クラスの `fetch` メソッド）の責務のままであり、
+Haskell 側に対応するエントリポイントは無い（`101` 応答の `webSocket` プロパティは workerd 固有の
+非シリアライズ可能な client-socket 参照であり、通常の Fetch 標準の `Response` コンストラクタでは
+構築しえないため）。`servant-cloudflare-workers` には `:> WebSocket`（またはそれに類する）combinator は
+現状存在せず、これを使いたいチャプターがあっても現時点では手を伸ばす先が無い。
+
+### 実測で確定した挙動（記録）
+
+- ローカル harness（`@cloudflare/vitest-pool-workers`）では client 側の close event が発火しない —
+  `client.close(code, reason)` の呼び出しはクローズフレームの送信のみを行い、実際のクローズ
+  ハンドシェイク完了（server 側で `webSocketClose` が実行され副作用が書き込まれる）はその呼び出しの
+  return までに完了せず、1 マクロタスクぶんの yield を挟んでも確実には完了しない。2 つの同期戦略を
+  試行した: (1) client 自身の `"close"` イベントを await する — 5 秒のタイムアウトを設けても一度も
+  発火が観測されなかった（`DurableObjectStub#fetch(...)` 経由で取得した `WebSocket` に対して、実
+  トップレベル `SELF.fetch` を経由しない場合）。(2) `URL_SHORTENER_KV` への痕跡書き込みを bounded
+  poll する（`Cloudflare.Workers.Entrypoint.Queue` の producer→consumer 実配信検証で確立した
+  bounded-poll の precedent と同じ形）— こちらは 3 回連続のフルスイート実行で flake 無く安定して
+  観測できた。根本原因は追跡していないが、「workerd は本サンドボックス内で実 I/O が無い限り実時間を
+  凍結する」という既知の artifact クラス（`wait-until.spec.ts` のヘッダコメントが既に文書化）の
+  3 例目（background timer・Queue 自動配信に続く、WebSocket クローズハンドシェイクの確認応答）と
+  推測される。
+- DO クラスの `fetch` メソッドは worker が通常の `fetch` リクエストで既に使っている同一 module
+  instance（`wasmExports` 閉包）を WebSocket コールバック（`webSocketMessage`/`webSocketClose`）に
+  対しても共有する。
+
+### 遵守事項への影響（本文 override）
+
+- 「本ライブラリ独自の WebSocket 組み合わせ子（例: `WebSocketCloudflare`）を用意し … `Upgrade: websocket`
+  リクエストに対して `WebSocketPair` を生成し 101 応答を返す処理を実装する」→ 追補により、この
+  combinator 自体は A4 の時点で未実装（決定 3）。実装済みなのは DO クラスメソッド
+  （`webSocketMessage`/`webSocketClose`）への委譲基盤のみ。「Servant の API 記述に WebSocket
+  エンドポイントを組み込める」という「結果 (Consequences)」節の Positive な主張は、servant combinator
+  実装まで持ち越しとなる。
+- 「実装は段階的とし、MVP は単一 DO による双方向エコー/ブロードキャスト程度から始め、ハイバネーション
+  最適化は後続で対応する」→ 追補により順序が逆転。ハイバネーションを最初から主実装として採用し、
+  standard accept は実装しない方針へ確定した（決定 1）。
+
+### 参考資料（追補分）
+
+- Cloudflare Durable Objects — WebSocket Hibernation API: https://developers.cloudflare.com/durable-objects/best-practices/websockets/
+- [ADR-0003](./0003-jsffi-cloudflare-bindings-layer.md) 追補（JSFFI 境界の実装規約 — safe/unsafe 割当・
+  JS 側 try/catch 封筒）
+- [ADR-0008](./0008-cloudflare-platform-bindings.md) 追補（A4 分。`dos` slot 実体化・DO storage・
+  `doFetch`/`serviceFetch` の URL 再構成）
+- 実装詳細・実機検証ログ: `~/.pschool/spikes/cloudflare-workers-hs-build/_phase_a/a4-plan.md`、
+  `_phase_b/divergence-notes.md`「A4 batch 5」節、`API-LEDGER.md` 該当節

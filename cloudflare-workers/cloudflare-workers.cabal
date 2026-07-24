@@ -1,0 +1,56 @@
+cabal-version: 3.0
+name:          cloudflare-workers
+version:       0.1.0.0
+synopsis:
+  Cloudflare Workers runtime bindings for GHC's wasm32-wasi backend
+
+description:
+  Base package: Request/Response, platform bindings, reactor lifecycle and streaming primitives for Cloudflare Workers.
+
+license:       BSD-1-Clause
+build-type:    Simple
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:             warnings
+  hs-source-dirs:     src
+  default-language:   GHC2024
+  default-extensions:
+    OverloadedStrings
+    TypeFamilies
+
+  exposed-modules:
+    Cloudflare.Workers.Binding.D1
+    Cloudflare.Workers.Binding.DurableObject
+    Cloudflare.Workers.Binding.KV
+    Cloudflare.Workers.Binding.Queue
+    Cloudflare.Workers.Binding.R2
+    Cloudflare.Workers.Binding.ServiceBinding
+    Cloudflare.Workers.Entrypoint.Fetch
+    Cloudflare.Workers.Env
+    Cloudflare.Workers.HTTP
+    Cloudflare.Workers.Reactor
+    Cloudflare.Workers.Streaming
+
+  build-depends:
+    , base        >=4.16 && <4.22
+    , bytestring
+    , text
+
+test-suite unit
+  import:             warnings
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Spec.hs
+  default-language:   GHC2024
+  default-extensions: OverloadedStrings
+  build-depends:
+    , base
+    , bytestring
+    , cloudflare-workers
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , text

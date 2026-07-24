@@ -1,0 +1,54 @@
+cabal-version: 3.0
+name:          servant-cloudflare-workers-access
+version:       0.1.0.0
+synopsis:
+  Cloudflare Zero Trust (Access) authentication for servant-cloudflare-workers
+
+description:
+  Auth package: verifies Cloudflare Access JWTs via
+  SubtleCrypto -- not crypton / cryptonite, which bundle cbits that do not
+  compile to wasm32-wasi (claim servant-auth-crypto-incompatible) -- and
+  provides a ZeroTrust HasWorkerServer combinator that injects verified
+  claims into the handler context. 
+
+license:       BSD-3-Clause
+build-type:    Simple
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:             warnings
+  hs-source-dirs:     src
+  default-language:   GHC2024
+  default-extensions:
+    OverloadedStrings
+    TypeFamilies
+
+  exposed-modules:
+    Servant.Cloudflare.Workers.Access
+    Servant.Cloudflare.Workers.Access.Combinator
+    Servant.Cloudflare.Workers.Access.SubtleCrypto
+
+  build-depends:
+    , base                        >=4.16 && <4.22
+    , bytestring
+    , cloudflare-workers
+    , servant
+    , servant-cloudflare-workers
+    , text
+
+test-suite unit
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Spec.hs
+  default-language: GHC2024
+  build-depends:
+    , base
+    , servant
+    , servant-cloudflare-workers
+    , servant-cloudflare-workers-access
+    , tasty
+    , tasty-hunit
+    , text

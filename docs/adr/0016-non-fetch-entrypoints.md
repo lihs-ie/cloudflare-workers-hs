@@ -169,3 +169,189 @@ Servant の実行エンジン（[ADR-0006](./0006-servant-execution-engine.md)�
 - GHC User's Guide — WebAssembly backend（reactor / `_initialize` / JSFFI export / 単一スレッド RTS）: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 - Haskell Discourse — Serverless Haskell with GHC WASM + JSFFI on Cloudflare Workers: https://discourse.haskell.org/t/serverless-haskell-with-ghc-wasm-jsffi-cloudflare-workers/9784
 - konn/ghc-wasm-earthly（設計参照のみ）: https://github.com/konn/ghc-wasm-earthly
+
+## 追補 (2026-07-23): Phase A theme A4 で確定した非 fetch エントリポイントの実装
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-23
+- 決定者: lihs
+
+Phase A theme A4（Queue producer/consumer・Scheduled・Tail・Service Bindings・DO WebSocket/storage、
+実機検証済み）で確定した設計を記録する。本文「決定 (Decision)」節が示した方針（型付きハンドラ、
+`fetch` と並べた `foreign export javascript`、`env`/可観測性の共有）を、以下のとおり実装レベルで
+具体化する。本文自体は書き換えない。
+
+### 決定 1: 確定シグネチャ — `mkScheduledHandler`/`mkQueueHandler`/`mkTailHandler` は JSVal×3 +
+`(BuildBindingEnv, BuildDosEnv)` 制約
+
+各非 fetch ハンドラの marshal 関数は、`mkFetchHandler`（[ADR-0004](./0004-fetch-entrypoint-request-lifecycle.md)）
+と「Fetch 同型」の形をとる。
+
+```haskell
+mkScheduledHandler
+  :: forall kvs dos bindings. (BuildBindingEnv bindings, BuildDosEnv dos)
+  => ScheduledHandler (BindingEnv kvs dos bindings) -> JSVal -> JSVal -> JSVal -> IO ()
+
+mkQueueHandler
+  :: forall kvs dos bindings. (BuildBindingEnv bindings, BuildDosEnv dos)
+  => QueueConsumer (BindingEnv kvs dos bindings) -> JSVal -> JSVal -> JSVal -> IO ()
+
+mkTailHandler
+  :: forall kvs dos bindings. (BuildBindingEnv bindings, BuildDosEnv dos)
+  => TailHandler (BindingEnv kvs dos bindings) -> JSVal -> JSVal -> JSVal -> IO ()
+```
+
+三者とも controller/batch/events・env・ctx の 3 `JSVal` を marshal してハンドラを実行する。
+`mkFetchHandler` と異なり戻り値は `IO ()`（応答値が無い）で、`mkScheduledHandler`/`mkQueueHandler` は
+**意図的に `Control.Exception.try` で例外を捕捉しない** — Haskell 例外をそのまま伝播させ、GHC の wasm
+JSFFI export 機構が返す JS `Promise` を reject させることで、Workers 実プラットフォームの「ハンドラが
+投げた/reject した場合、明示的な ack/retry が無ければバッチ全体・呼び出し全体を retry する」意味論を
+そのまま利用する。`mkTailHandler` も同様に `try` を持たないが、これは `tail()` には応答値も
+「プラットフォームが retry する」意味論も無いため、単に例外を握りつぶす理由が無いという判断。
+
+`export default { fetch, queue, scheduled, tail }` の 4 handler が完成した（`email` は本追補・A4 の
+対象外、引き続き follow-up）。
+
+### 決定 2: `ScheduledEvent` → `ScheduledController` への再設計
+
+本文が示した概念シグネチャ `scheduled :: ScheduledController -> Env -> Context -> IO ()` を実装レベルで
+確定する。
+
+```haskell
+data ScheduledController = ScheduledController
+  { scheduledControllerCron :: Text
+  , scheduledControllerScheduledTime :: Integer
+  , scheduledControllerNoRetry :: IO ()
+  }
+```
+
+（`Show`/`Eq` 導出なし — `IO` アクションを持つレコードはいずれの型クラスも導出できない）。旧
+`data ScheduledEvent = ScheduledEvent { scheduledEventCron :: Text, scheduledEventScheduledTime ::
+Double }` は削除、`JSScheduledExport`（一度も実際に構築されなかったプレースホルダ）も削除。
+
+**実測**: `scheduledControllerScheduledTime` は素の JS `number` として届く（実
+`ScheduledController#scheduledTime`）。これは Queue の `Message#timestamp`（ネイティブ `Date`、
+`.getTime()` 経由で読む）と非対称 — `@cloudflare/vitest-pool-workers` 0.18.7 の
+`ScheduledController`/`createScheduledController` 自身のソースを直接確認して確定した（ドキュメントからの
+推測ではない）。値は `Integer`（絶対時刻は `Integer` とする裁定、後述の決定 6 参照）— `Double` で
+FFI 境界を読んでから `round` する。
+
+### 決定 3: `QueueMessage` record + `ackAll`/`retryAll` + `QueueContentType` 判別共用体
+
+```haskell
+data QueueMessage = QueueMessage
+  { queueMessageId :: Text
+  , queueMessageTimestamp :: Integer         -- 絶対エポックミリ秒 (real Message#timestamp, Date#getTime())
+  , queueMessageAttempts :: Int
+  , queueMessageBody :: ByteString
+  , queueMessageAck :: IO ()
+  , queueMessageRetry :: QueueRetryOptions -> IO ()
+  }
+```
+
+（`Show`/`Eq` 導出なし、同じ理由）。旧 `msg` 型パラメータ（`QueueBatch msg`/`QueueConsumer msg env`）は
+削除 — body は実 `contentType` が何であれ常に `ByteString` として届く（`Internal.FFI.Queue` 側の
+per-shape decode がその差異を吸収する）。バッチ全体には `queueBatchAckAll`/`queueBatchRetryAll` を提供。
+
+`QueueContentType` は実 API の 4 択に対応する sum 型:
+
+```haskell
+data QueueContentType = QueueContentTypeJson | QueueContentTypeText | QueueContentTypeBytes | QueueContentTypeV8
+```
+
+**実測**: 実 Queues の default `contentType` は、`compatibility_date` が 2024-03-18 以降の Worker では
+`"json"`（`"v8"` ではない）であり、送信した JS 値のランタイム型から推論されることは無い（Cloudflare
+公式ドキュメントを Context7 経由で直接確認して確定、推測ではない）。`queueSend`/`queueSendBatch` は
+常に生の `ByteString` を取るため、`contentType` を省略して実プラットフォームのデフォルトに任せると、
+意図したバイト列ではなくバイト値の配列が JSON シリアライズされてしまう。そのため
+`QueueSendOptions.queueSendOptionsContentType = Nothing` は実プラットフォームの現行デフォルト
+（`"json"`）では**なく**、常にワイヤータグ `"bytes"` に解決するよう実装した（明示的な省略はしない、
+A4 plan の「queueSend bytes 主」裁定）。
+
+at-least-once 配送を前提に、`queueDedupCheck :: KV -> Text -> IO Bool` を `message.id` ベースの
+dedup ヘルパとして提供する（ベストエフォート、"check してから write" の非アトミック操作であり厳密な
+exactly-once ではない）。既存の任意の `KV` binding 上に構築でき、Queue 専用の binding は不要。
+
+### 決定 4: Tail は配列型 `[TailEvent]`（単数から change）
+
+```haskell
+data TailEvent = TailEvent
+  { tailEventScriptName :: Maybe Text
+  , tailEventOutcome :: Text
+  , tailEventEventTimestamp :: Maybe Integer
+  }
+  deriving stock (Show, Eq)
+
+type TailHandler env = [TailEvent] -> env -> Ctx -> IO ()
+```
+
+旧型は `data TailEvent = TailEvent { tailEventScriptName :: Text, tailEventOutcome :: Text }`
+（両方必須）+ 単数形 `TailEvent -> env -> Ctx -> IO ()` だった。実ネイティブの `tail(events, env,
+ctx)` の第一引数は本質的に配列（1 回の呼び出しで複数の trace item を運びうる）であり、単数形状では
+正しくモデル化できない。`tailEventScriptName`/`tailEventEventTimestamp` は防御的に `Maybe`（手組みの
+フィクスチャや退化した実 trace item が省略しうる）。フィールドは最小 3 個（`scriptName`/`outcome`/
+`eventTimestamp`）に留める意図的判断 — 実 `TraceItem` は `logs`/`exceptions`/
+`diagnosticsChannelEvents`/`event`/`executionModel` 等さらに多くのフィールドを持つが、これらを読む
+ことは本 Unit のスコープ外、拡張は明示的な follow-up として記録するに留めた。
+
+### 決定 5: DO entrypoint = JS glue class への委譲、Haskell 側は stateless
+
+Durable Object のクラス自体（`extends DurableObject`）は JS 側の薄い glue（本文が想定した「JS の薄い
+エントリ」の実体）が担い、その `fetch`/`webSocketMessage`/`webSocketClose` メソッドが wasmExports の
+対応する `foreign export` へ委譲する。Haskell 側は stateless — `ctx`/`env` はメソッド呼び出しの
+たびに引数として渡され、Haskell 側では保持しない。
+
+**実測 footgun**: Durable Object の RPC stub（`doCall`）・Service Binding の RPC stub
+（`serviceCall`）はいずれも JS 側で Proxy-backed なオブジェクトとして実装されており、
+`Function.prototype.apply` は使えない — `stub[methodName](...args)` のような spread-call 構文が
+必須（`.apply` 経由の呼び出しは動作しない）。これは `doCall`/`serviceCall` の双方で確認した実測結果。
+
+### 決定 6: 絶対時刻 Integer / 相対値 Int の型規約（[ADR-0008](./0008-cloudflare-platform-bindings.md)
+追補への cross-ref）
+
+本 ADR が新設した非 fetch エントリポイントのフィールドも、[ADR-0008](./0008-cloudflare-platform-bindings.md)
+追補（A3 分「決定 8」）が確立した規約に従う: **絶対時刻は `Integer`、相対値・件数は `Int` のまま**。
+
+- 絶対時刻（`Integer`）: `scheduledControllerScheduledTime`（エポックミリ秒）、`queueMessageTimestamp`
+  （エポックミリ秒）、`tailEventEventTimestamp`（エポックミリ秒）
+- 相対値・件数（`Int` のまま）: `QueueRetryOptions`/`QueueSendOptions.queueSendOptionsDelaySeconds`
+  （現在時刻からの相対秒数）
+
+根拠は [ADR-0008](./0008-cloudflare-platform-bindings.md) 追補と同一（`wasm32-wasi` の GHC は `Int` が
+32-bit、エポックミリ秒値は既に 2^31 を超える）。FFI 境界自体は `Double` を経由し、読み取り時に
+`round` で `Integer` へ変換する。
+
+### 実測で確定した挙動（記録）
+
+- `-optl-Wl,--export=queue`/`--export=scheduled`/`--export=tail` のようなリンカフラグは不要
+  （`foreign export javascript` 関数は明示的な `--export=<name>` を要求しないという既存の知見が
+  queue/scheduled/tail でも再確認された）。
+- 自己参照の `[[services]]`（同一 Worker 自身を `service` とする Service Binding）は
+  `@cloudflare/vitest-pool-workers` 0.18.7 上で補助 Worker 無しに解決可能（miniflare は
+  `wrangler.toml` の `name` で 1 つの worker インスタンスを登録し、同名を指す `[[services]]` は
+  その実行中インスタンスへ解決する）。
+- ローカル harness（vitest サンドボックス）では実 Queues の producer→consumer 自動配信が観測不能
+  （時間凍結アーティファクト）。`wrangler dev` でも `/cdn-cgi/handler/*` は `scheduled`/`email` のみ
+  対応しており Queue の手動トリガ経路が無いため代替不可 — 2 つの独立した否定的確認（`wrangler`
+  自身の CLI ソースの静的解析 + 実 `curl` 往復）で結論した。
+- `retry(delaySeconds)` の実効値は `@cloudflare/vitest-pool-workers` 0.18.7 の `getQueueResult` が
+  追跡しない（retry が要求されたことは検証できるが、渡した `delaySeconds` の値そのものは検証不能）。
+
+### 遵守事項への影響（本文 override）
+
+- 「各入口に対応する Haskell ハンドラを定義し、`foreign export javascript` で `fetch` と並べて
+  公開する」→ 追補により `mkScheduledHandler`/`mkQueueHandler`/`mkTailHandler` の実シグネチャを確定
+  （決定 1）。`email` は引き続き未実装。
+- 「Queues の消費側という現状の欠落を埋める」→ 追補により `QueueMessage`/`mkQueueHandler` が実配線
+  済み。ただし consumer concurrency・実 Queues 配信の実機挙動検証はローカル harness の権限外
+  （[ADR-0020](./0020-cloudflare-verification-cycle.md) の RE = Non-goal）。
+
+### 参考資料（追補分）
+
+- [ADR-0008](./0008-cloudflare-platform-bindings.md) 追補（A3 分・A4 分。timestamp/相対値の型規約、
+  `dos` slot 実体化）
+- Cloudflare Queues — Consumer concepts（`contentType` のデフォルト）: 本文の Queues Consumer
+  参照（https://developers.cloudflare.com/queues/configuration/javascript-apis/）を Context7 経由で
+  再確認
+- 実装詳細・実機検証ログ: `~/.pschool/spikes/cloudflare-workers-hs-build/_phase_a/a4-plan.md`、
+  `_phase_b/divergence-notes.md`「A4 batch 3」「A4 batch 4」節、`API-LEDGER.md` 該当節

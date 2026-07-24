@@ -1,0 +1,13 @@
+packages:
+  cloudflare-workers/cloudflare-workers.cabal
+  servant-cloudflare-workers/servant-cloudflare-workers.cabal
+  servant-cloudflare-workers-access/servant-cloudflare-workers-access.cabal
+  servant-cloudflare-workers-client/servant-cloudflare-workers-client.cabal
+  examples/quickstart/quickstart.cabal
+
+with-compiler: wasm32-wasi-ghc
+with-hc-pkg: wasm32-wasi-ghc-pkg
+
+index-state: 2026-07-01T11:15:03Z
+optimization: 0
+jobs: $ncpus
