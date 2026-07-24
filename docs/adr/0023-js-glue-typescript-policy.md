@@ -54,7 +54,7 @@ quickstart の JS glue 層（`worker/entry.mjs` 791 行、`scripts/*.mjs` 3 本 
      それ以外の未知 export は FAIL（toolchain bump で RTS surface が変わったら loud に落とす）
 
    実測根拠（2026-07-24 probe）: 総 export 60 = app JSFFI 35 + `memory` + `_initialize` +
-   `rts_*` 19（GHC RTS の JSFFI promise 機構）。**`rts_` prefix はアプリ export での使用禁止
+   `rts_*` 23（うち `rts_promiseResolve*` が 19 種 — GHC RTS の JSFFI promise 機構）。**`rts_` prefix はアプリ export での使用禁止
    （予約）**とする
 6. **runtime 型供給は `wrangler types`**: 生成される `worker-configuration.d.ts`（gitignore、
    `just types-generate` で再生成、`typecheck`/`lint` が先行実行）を採用。
