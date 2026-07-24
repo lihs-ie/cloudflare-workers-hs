@@ -504,3 +504,74 @@ LICENSE 同梱）」は、theme A8 で **clean-room 再実装により終了**�
 - 受入 = 既存 PluginProbe group + 負方向テスト 4 件追加（計 10 ケース、
   spike commits 3772265 / 1a13023 / 5a00273）。全 gate green
 - 本 ADR 本文の konn / vendor 記述は当時の決定の歴史的記録としてそのまま残す
+
+## A8 追補（2026-07-25、theme A8: ライセンス整合 — 原則 MIT / 移植を含む 1 パッケージのみ BSD-3-Clause）
+
+theme A8 U-P6（配布品質）が 3 点の不整合を検出した。6 パッケージの `.cabal` が一律
+`license: BSD-3-Clause` を宣言している一方で repo 直下の `LICENSE` は MIT（Copyright (c) 2026
+lihs）であり、さらに本文「遵守事項」が必須成果物としている per-package `LICENSE` ファイルが 1 つも
+存在しなかった。lihs 裁定（2026-07-25）により **MIT に揃える。ただし `servant-cloudflare-workers`
+のみ BSD-3-Clause を維持する**。
+
+### 決定 1: ライセンスは原則 MIT
+
+`cloudflare-workers` / `servant-cloudflare-workers-client` /
+`servant-cloudflare-workers-access` / `examples/quickstart` / `conformance-oracle` は
+`license: MIT`、本文は repo 直下 `LICENSE`（MIT、Copyright (c) 2026 lihs）と同一テキストを各
+パッケージに配置する。repo 直下にも同じ `LICENSE` を置き、`.cabal` は `license-file: LICENSE` で
+sdist に同梱する。
+
+### 決定 2: `servant-cloudflare-workers` のみ BSD-3-Clause
+
+このパッケージは `servant-server-0.20.3.0`（BSD-3-Clause、Copyright (c) 2014-2016 Zalora South
+East Asia Pte Ltd, 2016-2018 Servant Contributors）からの移植を含む。BSD-3-Clause の条件
+（著作権表示の保持・no-endorsement 条項）は移植コードに随伴し、再ライセンスで外せない。よって
+`license: BSD-3-Clause` を維持し、`LICENSE` には両著作権者を並記した BSD-3-Clause 全文を置く。
+
+移植範囲は `src/` の 7 ファイル（`ContentType.hs` / `Server.hs` / `Server/Internal.hs` /
+`Server/Internal/{Delayed,DelayedIO,Router,RouteResult}.hs`）。同パッケージ `test/Spec.hs` は
+`servant-server` 自身のテストスイートに対応するケースを移したもので、同一パッケージ内につき同じ
+`LICENSE` が及ぶ。他パッケージに移植は無い（`servant-cloudflare-workers-client` は
+`servant-client-core` の `HasClient` を依存として再利用しているだけで複製していない、
+`conformance-oracle` は real `servant-server` を dev 専用依存として link しているだけ）。
+
+### 決定 3: 移植範囲は `NOTICE` で索引化する
+
+`servant-cloudflare-workers/NOTICE` に、移植元パッケージ・バージョン・著作権表示と、ファイル単位の
+provenance 表（どのファイルが上流のどのモジュール由来か）を置く。**権威は各モジュールヘッダの
+attribution（2026-07-22 追補「決定 3」）のままとし、`NOTICE` はその索引**と位置づける
+（宣言の重複を避けるため、宣言の詳細はモジュール側に残す）。`NOTICE` は `.cabal` の
+`extra-doc-files` に加えて sdist に同梱する。
+
+### 決定 4: 「なぜ 1 つだけ違うのか」を README に書く
+
+repo 直下 README と 5 パッケージ README の `## License` 節に、MIT が原則で
+`servant-cloudflare-workers` のみ BSD-3-Clause である理由（移植コードを含むため）を記す。読者が
+`.cabal` の diff を見る前に理由へ到達できることを要件とする。
+
+### 遵守事項への影響（本文 override）
+
+本文「遵守事項 (Compliance)」の以下の項目は、本追補により内容を具体化する（本文自体は書き換えない）。
+
+- 「各パッケージは `.cabal` / `src/` / `LICENSE` / `README` / `CHANGELOG.md` を自己完結で持ち…」
+  → **`LICENSE` の中身を本追補で確定する**。`servant-cloudflare-workers` は BSD-3-Clause（+
+  `NOTICE`）、それ以外の全パッケージは MIT。`.cabal` は `license-file: LICENSE` を必ず持ち、
+  `cabal sdist` 後の tarball に `LICENSE`（`servant-cloudflare-workers` は `NOTICE` も）が
+  含まれることを配布時の確認事項とする。
+- 新規に他パッケージへ BSD-3-Clause（あるいは MIT より条件の強い）コードを移植する場合、**MIT の
+  ままにはできない**。移植を避けるか、そのパッケージを移植元ライセンスへ移し本追補を更新する。
+
+### 検証
+
+- `just build` / `just test-unit` / `just lint`: 全て EXIT 0
+- `cabal check`: 6 パッケージ全て "No errors or warnings"（U-P6 の 6/6 clean を維持）
+- `cabal sdist all --project-file=cabal.project`: 6 tarball 全てに `LICENSE` 同梱、
+  `servant-cloudflare-workers` には `NOTICE` も同梱
+
+### 参考資料（本追補分）
+
+- `servant-cloudflare-workers/NOTICE`（移植ファイル索引）
+- 本 ADR 2026-07-22 追補「決定 3（関連）: 移植コードの attribution」（モジュールヘッダ
+  attribution 保持の起票）
+- [ADR-0006](./0006-servant-execution-engine.md) 追補（移植方式）
+- [ADR-0018](./0018-versioning-release-distribution.md)（配布ポリシー、U-P6 の sdist 検証）

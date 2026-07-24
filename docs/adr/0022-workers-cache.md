@@ -254,6 +254,20 @@ Y. **combinator は「値が不在のときだけ」ヘッダーを設定する�
   まま theme A7 を close する**ことを正直に記録する。原因切り分け（Access 相互作用 vs Free plan
   store 制限）は A8 送り。
 
+## RE 追補 2（2026-07-25、theme A8 RE バッチ 1、Version `51b57962`、cache 有効 + Access を Bypass/Everyone policy で一時無効化）
+
+- **実 cache HIT を初実証**: `GET /r/<code>`（`CacheControlled '[MaxAge 3600, Public]`）を 5 回連打し、
+  `cf-cache-status: MISS` → `HIT`（`age: 2/4/6/8`）× 4。RE 追補（2026-07-24）が未実証のまま
+  close した本 ADR の中核機能（hit 挙動）はこれで実 edge 実証済みに昇格した。
+- **原因切り分けの決着**: A7 RE の 5 連 MISS の原因は **Access 相互作用（Set-Cookie / cookie 付き
+  リクエスト）で確定**。唯一の変更変数が「Access の Bypass 化」であり、同一 route・同一
+  `[cache] enabled = true` 構成で HIT が出た。同時に **Free plan store 制限説は反証された**
+  （Free plan のまま HIT を観測）。
+- **運用帰結**: Access がアプリケーション（hostname）全体を保護する構成では、`CacheControlled`
+  を付けた route も cache store に入らない。cache を効かせたい route は Access application の
+  path scope 外に置くか、Bypass policy の path 指定で除外する必要がある（Phase B の教材論点）。
+- 記録: `~/.pschool/spikes/cloudflare-workers-hs-build/_phase_a/a8-plan.md`「RE バッチ 1」節。
+
 ## 参考資料 (References)
 
 - Cloudflare Docs — Purge Cache: <https://developers.cloudflare.com/workers/cache/purge/index.md>
