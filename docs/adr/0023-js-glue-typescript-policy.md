@@ -1,6 +1,6 @@
 # ADR-0023: JS glue 層は TypeScript 化し、wasmExports 境界型は API-LEDGER manifest から生成する
 
-- ステータス: 承認（A7b 実装済み。batch 1/2 全ゲート EXIT 0 確認済、batch 3 [manifest 生成器 + バイナリ照合] は本 ADR 起草時点で実装中 — close 時に本行を更新）
+- ステータス: 承認（A7b 実装済み・全ゲート EXIT 0 [host trio: build/lint/typecheck + wasm pair: test-integration 204+1skip / wasm-exports-verify 35/60]。テーマ末レビューは A7b close 記録参照）
 - 日付: 2026-07-24
 - 決定者: lihs（production-extension grill E-Q12 + A7b grill 2026-07-24）
 - 関連: [ADR-0015](./0015-build-deploy-ci-pipeline.md)（ビルド・デプロイ・CI パイプライン — tsc gate は同パイプラインの gate suite に追加される）、[ADR-0003](./0003-jsffi-cloudflare-bindings-layer.md)（JSFFI 境界 — 本 ADR が型付けする wasmExports surface の出自）、[ADR-0017](./0017-testing-strategy.md)（テスト戦略 — T2 spec 群も型検査対象に含める）
