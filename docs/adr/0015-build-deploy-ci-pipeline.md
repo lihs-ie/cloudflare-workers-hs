@@ -4,6 +4,7 @@
 - 日付: 2026-06-20
 - 決定者: lihs
 - 関連: [ADR-0001](./0001-ghc-native-wasm-backend.md), [ADR-0002](./0002-wasi-reactor-workerd-integration.md), [ADR-0003](./0003-jsffi-cloudflare-bindings-layer.md), [ADR-0014](./0014-bundle-size-limits-performance.md)
+- 追補 (2026-07-24、A7b): glue 言語ポリシー（entry.ts / scripts .mts / tsc --noEmit gate / wasmExports 境界型の manifest 生成）は [ADR-0023](./0023-js-glue-typescript-policy.md) が定める。本 ADR のパイプラインには `just typecheck`（tsc --noEmit、型検査のみでビルド成果物に不関与）と wasm export 照合 gate が追加される
 
 ## 背景と課題 (Context)
 

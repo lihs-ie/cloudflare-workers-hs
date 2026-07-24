@@ -64,3 +64,4 @@ ADR (Architecture Decision Record) は、プロジェクトにとって重要な
 | [0020](./0020-cloudflare-verification-cycle.md) | Cloudflare 上での動作を確証する3重ループ検証サイクルを定める | 承認 |
 | [0021](./0021-language-edition-ghc2024.md) | 全パッケージの default-language を GHC2024 に統一する | 承認 |
 | [0022](./0022-workers-cache.md) | Workers Cache は値レベル typed builder と servant 型レベル combinator の両方を提供する | 承認 |
+| [0023](./0023-js-glue-typescript-policy.md) | JS glue 層は TypeScript 化し、wasmExports 境界型は API-LEDGER manifest から生成する | 承認 |
