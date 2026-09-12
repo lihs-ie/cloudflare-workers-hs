@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - name: Check test registration and tooling regressions
         run: |
           python3 scripts/testing/registration.py --output artifacts/testing/registration.json
@@ -36,6 +38,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.14.1'
@@ -78,6 +82,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.14.1'
