@@ -1,53 +1,96 @@
 # cloudflare-workers-hs
 
-HaskellからCloudflare Workersを扱うライブラリです。テスト基盤はSydtest 0.28とHedgehogを使い、実WASM/workerdの検証を分離しています。
+[日本語](README.ja.md)
 
-## テストの実行
+`cloudflare-workers-hs` is a source-first Haskell library family for building Cloudflare Workers with GHC's `wasm32-wasi` backend. It provides Cloudflare runtime bindings, a Servant server interpreter, a fetch-backed Servant client, and Cloudflare Access authentication.
 
-host側はGHC 9.14.1とCabal、実ランタイム側はGHC WASM・Node・pnpmが必要です。host専用の`testing-support`と`conformance-oracle`は出荷依存に含めません。
+The libraries are in a pre-release trial stage. They are not published to Hackage, and no stability or compatibility guarantee is made yet. The examples and CI exercise real WASM through workerd, Wrangler, and Docker in addition to native Haskell tests.
+
+## Repository map
+
+| Path | Role | Status |
+| --- | --- | --- |
+| [`cloudflare-workers/`](cloudflare-workers/) | Requests, responses, event entrypoints, streaming, observability, and bindings for KV, D1, R2, Queues, Durable Objects, Workflows, Cache, Assets, service bindings, and sockets | Pre-release library, `0.1.0.0` |
+| [`servant-cloudflare-workers/`](servant-cloudflare-workers/) | Servant server interpreter and `NamedRoutes` integration | Pre-release library, `0.1.0.0` |
+| [`servant-cloudflare-workers-client/`](servant-cloudflare-workers-client/) | Servant client backed by Workers `fetch` | Pre-release library, `0.1.0.0` |
+| [`servant-cloudflare-workers-access/`](servant-cloudflare-workers-access/) | Cloudflare Access JWT verification through Web Crypto | Pre-release library, `0.1.0.0` |
+| [`examples/`](examples/) | Deployable examples and integration tests | Private repository applications |
+| [`conformance-oracle/`](conformance-oracle/) | `servant-server` comparison oracle | Repository-only test package |
+| `testing-support/` | Shared layered test discovery | Repository-only test package |
+
+The TypeScript runtime is maintained separately in [`cloudflare-workers-hs-runtime`](https://github.com/lihs-ie/cloudflare-workers-hs-runtime). This workspace consumes an exact Git revision through the pnpm catalog; applications import it as `@cloudflare-workers-hs/runtime`.
+
+```text
+applications
+  ├─ servant-cloudflare-workers-access
+  ├─ servant-cloudflare-workers-client
+  └─ servant-cloudflare-workers
+       └─ cloudflare-workers
+            └─ @cloudflare-workers-hs/runtime
+```
+
+## Requirements
+
+- GHC `9.14.1` and Cabal `3.16.1.0` for native builds and tests
+- The GHC WASM `wasm32-wasi` toolchain for Worker builds
+- Node.js 24 and pnpm `12.4.1`
+- Wrangler, installed by the locked pnpm workspace
+- `just` for the documented task shortcuts
+- Docker for `just test-docker`
+
+`nix develop` supplies the WASM toolchain, Node.js, pnpm, and repository tools on `x86_64-linux` and `aarch64-darwin`. It intentionally does not supply native GHC; install GHC `9.14.1` separately, for example with GHCup.
+
+## Get started
 
 ```sh
-cabal update
+nix develop
 just setup-js
-just test-registration
-just test-tools
-just test-host
-just test-conformance
-just test-integration
-just test-model
-just test-dev
-just test-docker
-just test-library-examples
-just test-coverage
-just test-mutations
+just test-minimal
 ```
 
-`just test-integration`はテスト専用reactorと本番quickstartの両方を実行します。`just test-model`はテスト専用reactorをビルドし、試行ごとに新しいworkerd状態で操作列を検証します。テスト専用reactorの成功を本番APIの成功とは扱いません。
+The [minimal example](examples/minimal/README.md) explains the Haskell entrypoint, `NamedRoutes` API, TypeScript loader, Wrangler configuration, generated WASM, and files needed when moving an application into another project.
 
-`just test-coverage`は100%目標を満たさない場合に失敗します。調査目的で未達レポートを取得する場合は`just test-coverage-report`を使いますが、テスト失敗はこのコマンドでも成功に変わりません。HPCのhost測定とWASM・JS・補助ツールの測定は別々に報告します。
+## Examples
 
-実行コマンド・seed・試行数・ログは`artifacts/testing/`に保存します。反例は失敗ログから確認し、同一ツールチェーンとソースで再実行します。
+| Example | What it demonstrates | Command |
+| --- | --- | --- |
+| [Minimal](examples/minimal/README.md) | One `GET /health` API with no platform bindings | `just test-minimal` |
+| [Quickstart](examples/quickstart/README.md) | A multi-Worker URL shortener using Access, D1, R2, Queues, Scheduled events, and Durable Objects | `just test-dev` |
+| [Library examples](examples/library-examples/README.md) | KV, Cache, D1, R2, typed clients, Queues, sockets, configuration, and logging | `just test-library-examples` |
+| [Static Assets](examples/static-assets/README.md) | Static files and a Haskell API in one Worker | `just test-static-assets` |
+| [Realtime](examples/realtime/README.md) | WebSockets with Durable Object SQL | `just test-realtime` |
+| [Workflows](examples/workflows/README.md) | Durable steps, retries, waits, events, and lifecycle controls | `just test-workflows` |
+
+See the [example guide](examples/README.md) for directory conventions and [`examples/features.md`](examples/features.md) for each capability's implementation and verification locations.
+
+## Development commands
 
 ```sh
-just test-replay cloudflare-workers:test:unit 73
-python3 scripts/testing/run.py replay --target servant-cloudflare-workers:test:conformance --seed 73 --match routing
-python3 scripts/testing/run.py host --seed 20260907 --examples 1000
+just build-host             # Build the native Haskell workspace
+just build-wasm             # Build the WASM workspace
+just test-host              # Native unit and integration tests
+just test-conformance       # Servant behavior comparison
+just test-integration       # Real WASM and workerd integration
+just test-model             # Generated state-machine scenarios
+just test-dev               # Production Workers through wrangler dev
+just test-docker            # Production Workers through Linux Docker/workerd
+just test-registration      # Test entrypoint and Cabal registration checks
+just test-tools             # Test infrastructure regression checks
+just test-coverage-report   # Preserve measured and unmeasured coverage
 ```
 
-macOSでHPCのC stubに必要な`ffi.h`が見つからない場合、共通コマンドは既存のHomebrew libffi includeを利用します。GHC WASMは既存の`~/.ghc-wasm/env`、または`nix develop`の固定環境を使用します。
+`just test-coverage` enforces the complete multi-runtime coverage target and fails when required evidence is missing or incomplete. `just test-coverage-report` writes the same conservative report without converting missing coverage into success. Test failures still fail both commands. Evidence is stored under the Git-ignored `artifacts/testing/` directory.
 
-## ファイル配置
+## Trial consumption
 
-- 単体テストは`test/unit/`内で実装モジュールの階層に対応する`*Spec.hs`へ配置します。
-- 入口だけを自動検出し、責務で分割した`*Cases.hs`を入口から一度だけ登録します。
-- TypeScriptは同じ原則で`*.spec.ts`と`*.cases.ts`を使用します。
-- 補助コードはパッケージごとの`test/Support/**`、固定データは`Support/Fixtures/**`、期待値は`Support/Golden/**`に集約します。
-- 固定・プロパティ・回帰テストは同じ振る舞いなら同じファイルに置きます。
+During the trial stage, consume the Haskell packages from a checked-out source tree or a pinned Git revision in your Cabal project. Do not depend on a Hackage release yet. The TypeScript runtime is pinned in [`pnpm-workspace.yaml`](pnpm-workspace.yaml); consumers do not need to run `pnpm pack`.
 
-`just test-registration`は入口・子ファイル・Cabal登録を静的照合します。実際の実行結果は各ランナーのログで確認します。登録検査だけで実行済みとは扱いません。
+Start with the [minimal example's extraction notes](examples/minimal/README.md#独立したプロジェクトにする場合). Versioning and distribution decisions are in [ADR-0018](docs/adr/0018-versioning-release-distribution.md), and the runtime repository split is in [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md).
 
-詳細は[実装計画](docs/specs/testing-modernization-plan.md)、[検証状況](docs/specs/testing-modernization-status.md)、[quickstartテスト](examples/quickstart/test/README.md)、[カバレッジ収集器](scripts/testing/Support/coverage.md)を参照してください。
+## Architecture
 
-`just test-dev`は本番WASMをビルドして独立Worker群を`wrangler dev`で起動し、実HTTP経由で検証します。`just test-docker`は同じ検証をDocker内で実行します（Docker daemonが必要）。どちらも`artifacts/testing/`に実行ログと証拠を保存し、起動・検証失敗を成功として扱いません。CIでも両レーンを実行します。
+The [ADR index](docs/adr/README.md) covers the WASM backend, reactor integration, JSFFI boundaries, Servant execution, Cloudflare bindings, authentication, WebSockets, Workflows, testing, and distribution. The [glossary](GLOSSARY.md) defines repository-specific terms.
 
-`just test-library-examples`は用途別ライブラリ実行例のWASMをビルドし、実際の`wrangler dev`で検証します。`just test-docker`もQuickstartとライブラリ実行例の両方を事前ビルドし、両スイートをコンテナ内で実行します。
+## License
+
+The repository-level license is [MIT](LICENSE). Individual Cabal manifests also declare package-specific licenses; review the relevant manifest before distribution.
