@@ -1,16 +1,17 @@
 module Servant.Cloudflare.Workers.Handler (
     Handler (..),
+    askExecutionContext,
 ) where
 
 import Control.Monad.Except (ExceptT, MonadError)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (MonadReader, ReaderT)
+import Control.Monad.Reader (MonadReader (ask), MonadTrans (lift), ReaderT)
 
-import Cloudflare.Workers.Reactor (Context)
+import Cloudflare.Workers.Reactor (WorkersExecutionContext)
 import Servant.Cloudflare.Workers.Error (ServerError)
 
 newtype Handler env a = Handler
-    { unHandler :: ReaderT env (ReaderT Context (ExceptT ServerError IO)) a
+    { unHandler :: ReaderT env (ReaderT WorkersExecutionContext (ExceptT ServerError IO)) a
     }
     deriving newtype
         ( Functor
@@ -20,3 +21,6 @@ newtype Handler env a = Handler
         , MonadError ServerError
         , MonadReader env
         )
+
+askExecutionContext :: Handler env WorkersExecutionContext
+askExecutionContext = Handler (lift ask)

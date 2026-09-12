@@ -1,33 +1,43 @@
-module Servant.Cloudflare.Workers.ContentType (handleContentNegotiation) where
+module Servant.Cloudflare.Workers.ContentType (
+    -- * Re-exported from @servant@ core (Category A, not redefined)
+    AcceptHeader (..),
+    AllCTRender (..),
+    AllCTUnrender (..),
+    AllMime (..),
+    canHandleAcceptH,
+
+    -- * This module's own negotiation entry points
+    acceptCheck,
+    getAcceptHeader,
+    getContentTypeHeader,
+) where
 
 import Cloudflare.Workers.HTTP (Request (requestHeaders))
-import Data.Text (Text)
-import Data.Text qualified as Text
-import Servant.Cloudflare.Workers.Error (ServerError, err406, err415)
+import Cloudflare.Workers.Headers (headerLookup)
+import Data.ByteString.Lazy qualified as LazyByteString
+import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy)
+import Data.Text.Encoding qualified as TextEncoding
+import Servant.API.ContentTypes (
+    AcceptHeader (..),
+    AllCTRender (..),
+    AllCTUnrender (..),
+    AllMime (..),
+    canHandleAcceptH,
+ )
+import Servant.Cloudflare.Workers.Error (err406)
+import Servant.Cloudflare.Workers.Server.Internal.DelayedIO (DelayedIO, delayedFail)
 
-handleContentNegotiation :: Request -> [Text] -> Either ServerError Text
-handleContentNegotiation request contentTypes =
-    case lookup "Content-Type" (requestHeaders request) of
-        Just requestContentType
-            | requestContentType `notElem` contentTypes ->
-                Left err415
-        _ -> negotiateAccept
-  where
-    acceptRanges = map Text.strip . Text.splitOn ","
+getAcceptHeader :: Request -> AcceptHeader
+getAcceptHeader request =
+    AcceptHeader (TextEncoding.encodeUtf8 (fromMaybe "*/*" (headerLookup "Accept" (requestHeaders request))))
 
-    pickFirstSupported :: Either ServerError Text
-    pickFirstSupported =
-        case contentTypes of
-            (contentType : _) -> Right contentType
-            [] -> Left err406
+getContentTypeHeader :: Request -> LazyByteString.ByteString
+getContentTypeHeader request =
+    LazyByteString.fromStrict
+        (TextEncoding.encodeUtf8 (fromMaybe "application/octet-stream" (headerLookup "Content-Type" (requestHeaders request))))
 
-    negotiateAccept :: Either ServerError Text
-    negotiateAccept =
-        case lookup "Accept" (requestHeaders request) of
-            Nothing -> pickFirstSupported
-            Just acceptHeader
-                | "*/*" `elem` acceptRanges acceptHeader -> pickFirstSupported
-                | otherwise ->
-                    case filter (`elem` acceptRanges acceptHeader) contentTypes of
-                        (matched : _) -> Right matched
-                        [] -> Left err406
+acceptCheck :: (AllMime list) => Proxy list -> AcceptHeader -> DelayedIO ()
+acceptCheck proxy acceptHeader
+    | canHandleAcceptH proxy acceptHeader = pure ()
+    | otherwise = delayedFail err406
