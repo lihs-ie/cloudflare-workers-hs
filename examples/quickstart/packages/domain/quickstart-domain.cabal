@@ -2,6 +2,10 @@ cabal-version: 3.0
 name: quickstart-domain
 version: 0.1.0.0
 synopsis: Pure URL shortener domain contracts and rules
+description:
+  Defines the platform-independent entities, validation rules, and data
+  contracts used by the quickstart URL shortener. The package contains no
+  Cloudflare runtime bindings and can be tested with a host GHC.
 license: BSD-3-Clause
 build-type: Simple
 

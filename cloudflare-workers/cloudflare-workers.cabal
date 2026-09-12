@@ -5,7 +5,12 @@ synopsis:
   Cloudflare Workers runtime bindings for GHC's wasm32-wasi backend
 
 description:
-  Base package: Request/Response, platform bindings, reactor lifecycle and streaming primitives for Cloudflare Workers.
+  Provides direct Haskell bindings to the Cloudflare Workers runtime for
+  programs compiled with GHC's @wasm32-wasi@ backend. The package includes
+  HTTP request and response types, Worker entrypoints, streaming primitives,
+  outbound fetch, observability helpers, and typed access to Cloudflare
+  services such as KV, D1, R2, Durable Objects, Queues, Workflows, caches,
+  static assets, secrets, and service bindings.
 
 license:         BSD-1-Clause
 build-type:      Simple

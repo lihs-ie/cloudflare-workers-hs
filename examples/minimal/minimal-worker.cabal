@@ -2,6 +2,10 @@ cabal-version: 3.0
 name: minimal-worker
 version: 0.1.0.0
 synopsis: Minimal NamedRoutes HTTP Worker
+description:
+  A minimal Cloudflare Worker that serves a typed HTTP API defined with
+  Servant NamedRoutes. It shows the smallest application structure needed to
+  compile a Haskell handler for the @wasm32-wasi@ Worker runtime.
 license: BSD-3-Clause
 build-type: Simple
 

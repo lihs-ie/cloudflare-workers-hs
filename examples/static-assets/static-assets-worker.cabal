@@ -2,6 +2,10 @@ cabal-version: 3.0
 name: static-assets-worker
 version: 0.1.0.0
 synopsis: Static assets and a NamedRoutes Haskell API in one Worker
+description:
+  Demonstrates a Cloudflare Worker that combines static asset delivery with a
+  typed Haskell API defined using Servant NamedRoutes. The example shows how
+  asset bindings and dynamic @wasm32-wasi@ handlers share one Worker.
 license: BSD-3-Clause
 build-type: Simple
 

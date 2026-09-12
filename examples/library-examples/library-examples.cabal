@@ -1,6 +1,12 @@
 cabal-version: 3.0
 name: library-examples
 version: 0.1.0.0
+synopsis: Comprehensive examples for the Cloudflare Workers libraries
+description:
+  Demonstrates the public APIs provided by the Cloudflare Workers Haskell
+  packages, including storage, queues, outbound clients, logging, background
+  jobs, WebSockets, configuration, and failure handling. The executable is
+  built for @wasm32-wasi@ and includes dedicated fixtures for runtime tests.
 build-type: Simple
 license: BSD-3-Clause
 

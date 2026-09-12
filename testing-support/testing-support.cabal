@@ -2,6 +2,11 @@ cabal-version: 3.0
 name: testing-support
 version: 0.1.0.0
 synopsis: Development-only layered test discovery
+description:
+  Supplies the repository's development-only test discovery executable and
+  shared integration checks. It locates layered Sydtest specifications and
+  validates example API contracts on a host GHC. The package is intentionally
+  disabled for @wasm32-wasi@ builds.
 license: BSD-3-Clause
 build-type: Simple
 

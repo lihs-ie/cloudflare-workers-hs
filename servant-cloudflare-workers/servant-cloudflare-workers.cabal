@@ -5,14 +5,12 @@ synopsis:
   Self-implemented Servant server interpreter for Cloudflare Workers
 
 description:
-  Server package (ADR-0006/ADR-0019 fork-prohibition): reuses the `servant`
-  core type-level DSL (Verb/Capture/QueryParam/Header/ReqBody/:>/:<|>/...) and
-  self-implements a HasServer-equivalent interpreter (`HasWorkerServer`)
-  against the direct (non-WAI) HTTP types from `cloudflare-workers`. Does NOT
-  depend on servant-server / wai / warp / network. This chapter (ch-06-01)
-  introduces the package with just the `Handler` monad; `HasWorkerServer`
-  (ch-06-02), the real `ServerError` (ch-06-03) and the combinator instances
-  (ch-06-04 onward) are added by later chapters.
+  Runs APIs described with Servant's type-level DSL directly on Cloudflare
+  Workers. @HasWorkerServer@ interprets routes, captures, query parameters,
+  headers, request bodies, content types, and NamedRoutes using the HTTP types
+  from @cloudflare-workers@. It also provides Worker-oriented middleware and
+  response helpers. The package targets GHC's @wasm32-wasi@ backend and does
+  not require @servant-server@, WAI, Warp, or the @network@ package.
 
 license:       BSD-3-Clause
 build-type:    Simple

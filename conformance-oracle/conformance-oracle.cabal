@@ -2,6 +2,11 @@ cabal-version: 3.0
 name: conformance-oracle
 version: 0.1.0.0
 synopsis: Development-only servant-server compatibility oracle
+description:
+  Provides a development-only reference implementation for comparing
+  @servant-cloudflare-workers@ routing and HTTP behavior with
+  @servant-server@. It generates golden responses and property-based inputs
+  on a host GHC and is intentionally disabled for @wasm32-wasi@ builds.
 license: BSD-3-Clause
 build-type: Simple
 extra-source-files: README.md

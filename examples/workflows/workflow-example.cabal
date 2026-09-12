@@ -1,6 +1,12 @@
 cabal-version: 3.0
 name: workflow-example
 version: 0.1.0.0
+synopsis: Cloudflare Workflows with typed Haskell handlers
+description:
+  Demonstrates starting and handling Cloudflare Workflows from a Haskell
+  Worker. It combines a Servant HTTP API with workflow entrypoints, durable
+  state operations, and fixtures that exercise success and failure behavior
+  in the @wasm32-wasi@ runtime.
 build-type: Simple
 license: BSD-3-Clause
 flag wasm-coverage
