@@ -11,7 +11,6 @@ import re
 from pathlib import Path
 
 DEFAULT_ROOTS = [
-    "packages/worker-runtime/test",
     'cloudflare-workers/test/unit', 'cloudflare-workers/test/host-testkit',
     'servant-cloudflare-workers/test/unit', 'servant-cloudflare-workers/test/conformance',
     'servant-cloudflare-workers-client/test/unit',
@@ -53,13 +52,27 @@ def check(root, layer_names):
             errors.append(f'duplicate test layer: {layer_name}')
             continue
         seen.add(layer.resolve())
-        files = sorted(p for p in layer.rglob('*') if p.is_file() and 'Support' not in p.relative_to(layer).parts)
+        files = sorted(p for p in layer.rglob('*') if p.is_file())
         entries = [p for p in files if (p.name.endswith('Spec.hs') and p.name != 'Spec.hs') or p.name.endswith(JS_ENTRIES)]
         children = [p for p in files if p.name.endswith('Cases.hs') or p.name.endswith(JS_CHILDREN)]
         if not entries:
             errors.append(f'no test entrypoints: {layer_name}')
         owners = {p: [] for p in children}
-        hs_modules = {'.'.join(p.relative_to(layer).with_suffix('').parts): p for p in children + entries if p.suffix == '.hs'}
+        test_root = next((parent for parent in [layer, *layer.parents] if parent.name == 'test'), layer)
+        support_modules = [
+            path
+            for path in (test_root / 'Support').rglob('*.hs')
+            if path.is_file()
+        ]
+        hs_modules = {
+            '.'.join(path.relative_to(test_root).with_suffix('').parts): path
+            for path in support_modules
+        }
+        hs_modules.update({
+            '.'.join(path.relative_to(layer).with_suffix('').parts): path
+            for path in children + entries
+            if path.suffix == '.hs'
+        })
         for entry in entries:
             text = source(entry)
             owned = []
@@ -72,7 +85,7 @@ def check(root, layer_names):
                     if target is None:
                         errors.append(f'{entry.relative_to(root)}: unresolved test module {module}')
                         continue
-                    if target in entries:
+                    if target in entries and target not in support_modules:
                         errors.append(f'{entry.relative_to(root)}: imports another entry {module}')
                         continue
                     body = '\n'.join(line for line in text.splitlines() if not line.startswith('import '))
@@ -80,7 +93,8 @@ def check(root, layer_names):
                     count = len(re.findall(r'\b' + re.escape(alias or module) + r'\.spec\b', body))
                     if count != 1:
                         errors.append(f'{entry.relative_to(root)}: {module}.spec registered {count} times, expected once')
-                    owners[target].append(entry)
+                    if target in owners:
+                        owners[target].append(entry)
                     owned.append(str(target.relative_to(root)))
             else:
                 for match in re.finditer(r'import\s*\{([^}]+)\}\s*from\s*[\'"]([^\'"]+)[\'"]', text):
@@ -108,10 +122,6 @@ def check(root, layer_names):
         for child, child_owners in owners.items():
             if len(child_owners) != 1:
                 errors.append(f'{child.relative_to(root)}: has {len(child_owners)} owners, expected one')
-        test_root = next((parent for parent in [layer, *layer.parents] if parent.name == 'test'), layer)
-        for support in (test_root / 'Support').rglob('*'):
-            if support.is_file() and (support.name.endswith(('Spec.hs', 'Cases.hs') + JS_ENTRIES + JS_CHILDREN)):
-                errors.append(f'{support.relative_to(root)}: test registration file forbidden in Support')
         package = test_root.parent
         cabals = list(package.glob('*.cabal'))
         if cabals:

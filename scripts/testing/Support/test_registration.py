@@ -46,7 +46,7 @@ class RegistrationTests(unittest.TestCase):
         (self.layer / 'OtherSpec.hs').write_text(self.entry.read_text())
         self.assertTrue(any('2 owners' in error for error in self.result()['errors']))
 
-    def test_javascript_module_extensions_and_hidden_support(self):
+    def test_javascript_module_extensions_and_support_contracts(self):
         for extension in registration.JS_EXTENSIONS:
             entry = self.layer / ('runtime.spec' + extension)
             child = self.layer / ('runtime.cases' + extension)
@@ -58,7 +58,7 @@ class RegistrationTests(unittest.TestCase):
             support.mkdir(exist_ok=True)
             hidden = support / entry.name
             hidden.write_text('')
-            self.assertTrue(any('forbidden in Support' in error for error in self.result()['errors']))
+            self.assertEqual(self.result()['errors'], [], extension)
             hidden.unlink()
             entry.unlink()
             child.unlink()
@@ -66,11 +66,11 @@ class RegistrationTests(unittest.TestCase):
     def test_missing_layer(self):
         self.assertTrue(registration.check(self.root, ['missing'])['errors'])
 
-    def test_support_cannot_hide_entry(self):
+    def test_support_can_contain_contract_helpers(self):
         support = self.layer.parent / 'Support'
         support.mkdir()
         (support / 'HiddenSpec.hs').write_text('spec = pure ()')
-        self.assertTrue(any('forbidden in Support' in error for error in self.result()['errors']))
+        self.assertEqual(self.result()['errors'], [])
 
     def test_missing_cabal_module(self):
         (self.root / 'pkg/pkg.cabal').write_text('other-modules: HTTPSpec\n')

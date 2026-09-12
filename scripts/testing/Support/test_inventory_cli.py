@@ -121,7 +121,7 @@ export type Result = string;
                 self.assertEqual(result.returncode, 0, result.stderr)
                 report = json.loads(output.read_text())
                 self.assertGreater(len(report['rows']), 100)
-                self.assertTrue(any(row['name'] == 'createReactor' for row in report['rows']))
+                self.assertTrue(any(row['name'] == 'assetsFetch' for row in report['rows']))
                 if 'summary' in report:
                     self.assertEqual(report['summary']['verified_rows'], 0)
 

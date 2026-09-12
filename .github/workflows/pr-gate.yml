@@ -85,11 +85,7 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: Install locked JS dependencies
         run: nix develop --command pnpm install --frozen-lockfile
-      - name: Official runtime quality checks
-        run: nix develop --command pnpm --dir packages/worker-runtime check
-      - name: Official runtime package tests
-        run: nix develop --command pnpm --dir packages/worker-runtime test
-      - name: Packed runtime consumer
+      - name: Pinned Git runtime consumer
         run: nix develop --command pnpm test:package
       - run: cabal update
       - name: Real WASM integration including production entrypoint

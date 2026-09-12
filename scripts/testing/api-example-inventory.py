@@ -82,7 +82,7 @@ def main():
         if parsed:
             sources.setdefault(parsed[0], []).append((path, parsed[1]))
     consumers = []
-    for base in ['examples', *PACKAGES, 'packages/worker-runtime/test']:
+    for base in ['examples', *PACKAGES]:
         for path in (ROOT / base).rglob('*'):
             if not path.is_file() or path.suffix not in ('.hs', '.ts', '.mts', '.mjs'):
                 continue
@@ -126,17 +126,6 @@ def main():
                     kinds = {r['kind'] for r in refs}
                     status = 'example_source_candidate' if 'example_source' in kinds else 'test_only_candidate' if refs else 'no_direct_reference_found'
                     rows.append({'package': package, 'module': module, 'source': str(path.relative_to(ROOT)), 'export': export, 'name': name, 'internal': '.Internal' in module or module.startswith('GHC.'), 'status': status, 'references': refs})
-    source = ROOT / 'packages/worker-runtime/src/index.ts'
-    for match in re.finditer(r'^export (?:async )?(?:function|interface|type) (\w+)', source.read_text(), re.M):
-        name = match[1]
-        refs = []
-        for file, kind, _, body in consumers:
-            if file.endswith('.hs') or not re.search(r'worker-runtime|@cloudflare-workers-hs/runtime', (ROOT / file).read_text()):
-                continue
-            for lineno, line in enumerate(body.splitlines(), 1):
-                if re.search(r'\b' + name + r'\b', line):
-                    refs.append({'path': file, 'line': lineno, 'kind': kind})
-        rows.append({'package': '@cloudflare-workers-hs/runtime', 'module': 'index.ts', 'source': str(source.relative_to(ROOT)), 'export': name, 'name': name, 'internal': False, 'status': 'example_source_candidate' if any(r['kind'] == 'example_source' for r in refs) else 'test_only_candidate' if refs else 'no_direct_reference_found', 'references': refs})
     output = ROOT / args.output
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps({'method': 'Lexical candidates only. Export groups T(..) are not expanded; reexports, aliases, constructors, shadowing, CPP and transitive calls require manual resolution. TS import occurrences may be included. example_source is a path category, not proof of reachability from a production entrypoint. No runtime coverage or completeness claim.', 'rows': rows, 'unresolved_modules': unresolved}, ensure_ascii=False, indent=2) + '\n')

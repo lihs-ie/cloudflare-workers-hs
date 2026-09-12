@@ -47,7 +47,7 @@ def main():
             parsed = legacy.module_exports(text)
             if parsed:
                 sources.setdefault(parsed[0], []).append((path, text, parsed[1]))
-    for base in ['examples', *legacy.PACKAGES, 'packages/worker-runtime/test']:
+    for base in ['examples', *legacy.PACKAGES]:
         for path in (ROOT / base).rglob('*'):
             if not path.is_file() or path.suffix not in ('.hs', '.ts', '.mts', '.mjs'):
                 continue
@@ -125,20 +125,21 @@ def main():
                         for member in legacy.split_exports(group[1]):
                             add(package, module, rel, member, 'explicit_member', name)
     path = ROOT / 'packages/worker-runtime/src/index.ts'
-    raw = path.read_text()
-    rel = str(path.relative_to(ROOT))
-    hashes[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
-    modules.append({'package': '@cloudflare-workers-hs/runtime', 'module': 'index.ts', 'expansion_gaps': ['TS fields are lexical candidates; overloads, nested properties and exported aliases need compiler verification']})
-    for match in re.finditer(r'^export (?:async )?(function|interface|type|class|const) (\w+)', raw, re.M):
-        add('@cloudflare-workers-hs/runtime', 'index.ts', rel, match[2], 'typescript_' + match[1])
-        if match[1] == 'interface':
-            start = raw.find('{', match.end())
-            depth, stop = 1, start + 1
-            while start >= 0 and stop < len(raw) and depth:
-                depth += (raw[stop] == '{') - (raw[stop] == '}')
-                stop += 1
-            for field in re.findall(r'^\s*(?:readonly\s+)?(\w+)\??\s*:', raw[start + 1:stop - 1], re.M):
-                add('@cloudflare-workers-hs/runtime', 'index.ts', rel, field, 'typescript_field_candidate', match[2])
+    if path.is_file():
+        raw = path.read_text()
+        rel = str(path.relative_to(ROOT))
+        hashes[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+        modules.append({'package': '@cloudflare-workers-hs/runtime', 'module': 'index.ts', 'expansion_gaps': ['TS fields are lexical candidates; overloads, nested properties and exported aliases need compiler verification']})
+        for match in re.finditer(r'^export (?:async )?(function|interface|type|class|const) (\w+)', raw, re.M):
+            add('@cloudflare-workers-hs/runtime', 'index.ts', rel, match[2], 'typescript_' + match[1])
+            if match[1] == 'interface':
+                start = raw.find('{', match.end())
+                depth, stop = 1, start + 1
+                while start >= 0 and stop < len(raw) and depth:
+                    depth += (raw[stop] == '{') - (raw[stop] == '}')
+                    stop += 1
+                for field in re.findall(r'^\s*(?:readonly\s+)?(\w+)\??\s*:', raw[start + 1:stop - 1], re.M):
+                    add('@cloudflare-workers-hs/runtime', 'index.ts', rel, field, 'typescript_field_candidate', match[2])
     limits = ['Lexical inventory, not coverage or complete compiler API extraction.', 'T(..) expands locally declared constructors/record fields conservatively. Imported groups, CPP, reexports, operators, GADTs, associated types, nested TS properties and aliases may be incomplete.', 'Source candidates are textual identifier matches after direct module import. Aliasing, shadowing, reachability and overload resolution are not established.', 'executed_evidence is deliberately empty: test source mentions or aggregate passing counts do not prove an operation/option branch executed.', 'Internal/GHC modules excluded explicitly; opaque types expose no private constructors. Generated worker bundles excluded from candidate search.', 'Every expansion gap remains open; no completeness percentage is computed.']
     data = {'schema_version': 1, 'method_limits': limits, 'source_sha256': hashes, 'modules': modules, 'excluded_modules': exclusions, 'rows': rows, 'summary': {'rows': len(rows), 'kinds': dict(Counter(r['kind'] for r in rows)), 'verified_rows': 0, 'modules_with_expansion_gaps': sum(bool(m['expansion_gaps']) for m in modules)}}
     output.parent.mkdir(parents=True, exist_ok=True)
