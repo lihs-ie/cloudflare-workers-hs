@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - name: Check test registration and tooling regressions
@@ -26,7 +26,7 @@ jobs:
           python3 scripts/testing/registration.py --output artifacts/testing/registration.json
           python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
           python3 scripts/testing/Support/mutation_checks.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-registration
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - uses: haskell-actions/setup@v2
@@ -45,10 +45,10 @@ jobs:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
       - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 12.4.1
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cabal/store
@@ -78,7 +78,7 @@ jobs:
       - name: Representative mutation checks
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: host-test-evidence
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - uses: haskell-actions/setup@v2
@@ -97,7 +97,7 @@ jobs:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
       - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 12.4.1
       - name: Install locked JS dependencies
@@ -121,7 +121,7 @@ jobs:
       - name: Broader state exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wasm-test-evidence
