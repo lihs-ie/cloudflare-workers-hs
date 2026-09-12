@@ -1,0 +1,36 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "quickstart-aggregation",
+  "main": "../../worker/aggregation.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "quickstart",
+      "database_id": "a873fdd8-b80e-49f0-9969-fafda0423201",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+  "queues": {
+    "consumers": [
+      {
+        "queue": "quickstart-clicks",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "quickstart-clicks-dlq"
+      }
+    ]
+  }
+}

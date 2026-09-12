@@ -1,0 +1,7 @@
+{
+  "$schema": "../quickstart/node_modules/wrangler/config-schema.json",
+  "name": "minimal-haskell-worker",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-07-21",
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"] }]
+}

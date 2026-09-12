@@ -1,0 +1,14 @@
+{
+  "name": "cloudflare-workers-hs-workspace",
+  "private": true,
+  "packageManager": "pnpm@12.4.1",
+  "scripts": {
+    "test:package": "node scripts/testing/git-runtime-consumer.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare-workers-hs/runtime": "catalog:",
+    "esbuild": "0.28.1",
+    "istanbul-lib-instrument": "6.0.3",
+    "istanbul-lib-source-maps": "5.0.6"
+  }
+}

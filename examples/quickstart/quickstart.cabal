@@ -1,0 +1,145 @@
+cabal-version: 3.0
+name:          quickstart
+version:       0.1.0.0
+synopsis:      Multi-Worker URL shortener using Haskell and Servant
+description:
+  Independent HTTP applications and Queue, Scheduled and Durable Object
+  handlers, with shared domain types and real WASM integration tests.
+
+license:       BSD-3-Clause
+build-type:    Simple
+data-files: test/Support/Runtime/storage-bridge.mjs
+tested-with:   GHC ==9.14.1
+
+flag wasm-coverage
+  description: Collect per-invocation counters in explicit test builds only
+  default: False
+  manual: True
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:             warnings
+  hs-source-dirs:     src, apps/redirect/src, apps/export/src, apps/recovery/src,
+                      workers/common/src, workers/aggregation/src,
+                      workers/export-generation/src, workers/recovery-ingest/src,
+                      workers/maintenance/src, workers/export-coordinator/src
+  default-language:   GHC2024
+  default-extensions: OverloadedStrings
+  exposed-modules:
+    Quickstart.Redirect
+    Quickstart.Background.Coordinator
+    Quickstart.Runtime
+    Quickstart.Background.Environment
+    Quickstart.Export.Application
+    Quickstart.Recovery.Application
+    Quickstart.Aggregation.Application
+    Quickstart.ExportGeneration.Application
+    Quickstart.RecoveryIngest.Application
+    Quickstart.Maintenance.Application
+  other-modules: Quickstart.ExportGeneration.Producer
+
+  build-depends:
+    , aeson
+    , base                        >=4.22 && <4.23
+    , bytestring
+    , cloudflare-workers
+    , containers
+    , http-media
+    , time
+    , quickstart-domain
+    , quickstart-management
+    , quickstart-infrastructure
+    , servant-cloudflare-workers-access
+    , mtl
+    , servant                     ^>=0.20.3.0
+    , servant-cloudflare-workers
+    , text
+
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+
+test-suite unit
+  import:             warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test/unit, test, workers/export-generation/src
+  main-is:            Spec.hs
+  default-language:   GHC2024
+  default-extensions:
+    OverloadedStrings
+    TypeOperators
+
+  other-modules:
+    Quickstart.Background.CoordinatorSpec
+    Quickstart.ExportGeneration.ProducerSpec
+    Quickstart.ExportGeneration.Producer
+  build-tool-depends: testing-support:sydtest-discover-layer
+
+  build-depends: base, bytestring, text, cloudflare-workers, quickstart, sydtest
+
+executable quickstart
+  import:           warnings
+  hs-source-dirs:   app
+  main-is:          Main.hs
+  default-language: GHC2024
+  build-depends:    base, quickstart
+
+  if flag(wasm-coverage) && os(wasi)
+    hs-source-dirs: test
+    other-modules: Support.Coverage
+    build-depends: hpc, text, cloudflare-workers
+    cpp-options: -DWASM_COVERAGE
+    ghc-options: -hpcdir .hpc/wasm-quickstart
+
+  if os(wasi)
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=management" "-optl-Wl,--export=exportApi" "-optl-Wl,--export=recovery" "-optl-Wl,--export=aggregation" "-optl-Wl,--export=quickstartGeneration" "-optl-Wl,--export=recoveryIngest" "-optl-Wl,--export=maintenance" "-optl-Wl,--export=coordinator" "-optl-Wl,--export=coordinatorAlarm"
+
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin
+
+-- Development-only reactor: never used by wrangler.jsonc.
+executable runtime-tests
+  import: warnings
+  hs-source-dirs: test/Support/Runtime, test, ../../cloudflare-workers/test, workers/export-generation/src, ../../servant-cloudflare-workers/test, ../../servant-cloudflare-workers-access/test, ../../servant-cloudflare-workers-client/test
+  other-modules: Support.Cloudflare.Workers.ObservabilityContracts, Quickstart.ExportGeneration.Producer, Support.Runtime.ExportProducer, Support.Runtime.StoragePublicContracts, Support.Runtime.ExportRequestCodec, Support.Runtime.QuickstartDatabase, Support.Runtime.GenerationAsync, Support.Runtime.EntrypointLifecycleErrors, Support.Runtime.StorageErrors, Support.Runtime.AccessRoutes, Support.Runtime.AccessVerification, Support.Runtime.BindingEnv, Support.Runtime.MiddlewareExtra, Support.Runtime.SQLBoundaries, Support.Runtime.TypedQueueBoundaries, Support.Runtime.QuickstartBoundaries, Support.Runtime.RouterInternals, Envelope, Support.Runtime.SocketStream, Support.Runtime.StorageBoundaries, Support.Runtime.Routing, Support.Runtime.JWKSCache, Support.Runtime.Client, Support.Runtime.StorageObjectErrors, Support.Runtime.CacheServiceErrors, Support.Runtime.EntrypointErrors, Support.Runtime.WorkflowBoundaryExtra, Support.Runtime.TransportExtra, Support.Runtime.ClientRetryExtra, Support.Runtime.RoutingCoverage
+  main-is: Main.hs
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  if flag(wasm-coverage) && os(wasi)
+    ghc-options: -hpcdir .hpc/wasm-runtime-tests
+  build-depends: base, cloudflare-workers, containers, time, quickstart, quickstart-management, quickstart-infrastructure, bytestring, text, aeson, http-media, http-types, servant, servant-client-core, transformers, mtl, servant-cloudflare-workers, servant-cloudflare-workers-client, servant-cloudflare-workers-access, hpc
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=exportProducerProbe" "-optl-Wl,--export=storagePublicContractsProbe" "-optl-Wl,--export=exportRequestCodecProbe" "-optl-Wl,--export=quickstartDatabasePreparedProbe" "-optl-Wl,--export=generationAsyncProbe" "-optl-Wl,--export=entrypointLifecycleErrorsProbe" "-optl-Wl,--export=routingCoverageProbe" "-optl-Wl,--export=clientRetryExtraProbe" "-optl-Wl,--export=transportResponseExtra" "-optl-Wl,--export=transportRequestExtra" "-optl-Wl,--export=transportExtraProbe" "-optl-Wl,--export=workflowBoundaryExtraProbe" "-optl-Wl,--export=entrypointErrorsProbe" "-optl-Wl,--export=cacheServiceErrorsProbe" "-optl-Wl,--export=storageObjectErrors" "-optl-Wl,--export=storageErrorProbe" "-optl-Wl,--export=storage" "-optl-Wl,--export=cryptoVerify" "-optl-Wl,--export=jwtVerify" "-optl-Wl,--export=jwtVerifyConfigured" "-optl-Wl,--export=coverage" "-optl-Wl,--export=passThroughContext" "-optl-Wl,--export=waitUntilContext" "-optl-Wl,--export=envelopeProbe" "-optl-Wl,--export=socketProbe" "-optl-Wl,--export=streamProbe" "-optl-Wl,--export=producerProbe" "-optl-Wl,--export=bindingEnvProbe" "-optl-Wl,--export=middlewareExtraProbe" "-optl-Wl,--export=sqlProbe" "-optl-Wl,--export=typedQueueProbe" "-optl-Wl,--export=accessVerificationProbe" "-optl-Wl,--export=accessRoutesProbe" "-optl-Wl,--export=quickstartManagementProbe" "-optl-Wl,--export=quickstartLeaseProbe" "-optl-Wl,--export=storageNativeProbe" "-optl-Wl,--export=queueOutcome" "-optl-Wl,--export=d1DecoderBoundaries" "-optl-Wl,--export=routingProbe" "-optl-Wl,--export=jwksCacheProbe" "-optl-Wl,--export=clientServiceProbe"
+  else
+    buildable: False
+
+-- Run after building the WASM runtime bundle; each candidate starts fresh storage.
+test-suite model
+  import: warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/model, test
+  main-is: Spec.hs
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  other-modules:
+    Storage.DurableObjectSpec
+    Support.Storage.Model
+    Support.Storage.ContractSpec
+    Support.Storage.Runtime
+    Paths_quickstart
+  autogen-modules: Paths_quickstart
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends:
+    base, aeson, bytestring, containers, hedgehog, process, sydtest,
+    sydtest-hedgehog, text

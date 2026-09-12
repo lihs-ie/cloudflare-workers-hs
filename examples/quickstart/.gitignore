@@ -1,0 +1,7 @@
+node_modules
+/worker/*.wasm
+/worker/*-jsffi.mjs
+/worker/*.build.json
+/test-artifacts/**
+!/test-artifacts/README.md
+/.wrangler/

@@ -1,0 +1,156 @@
+cabal-version: 3.0
+name:          servant-cloudflare-workers
+version:       0.1.0.0
+synopsis:
+  Self-implemented Servant server interpreter for Cloudflare Workers
+
+description:
+  Server package (ADR-0006/ADR-0019 fork-prohibition): reuses the `servant`
+  core type-level DSL (Verb/Capture/QueryParam/Header/ReqBody/:>/:<|>/...) and
+  self-implements a HasServer-equivalent interpreter (`HasWorkerServer`)
+  against the direct (non-WAI) HTTP types from `cloudflare-workers`. Does NOT
+  depend on servant-server / wai / warp / network. This chapter (ch-06-01)
+  introduces the package with just the `Handler` monad; `HasWorkerServer`
+  (ch-06-02), the real `ServerError` (ch-06-03) and the combinator instances
+  (ch-06-04 onward) are added by later chapters.
+
+license:       BSD-3-Clause
+build-type:    Simple
+tested-with:   GHC ==9.14.1
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:             warnings
+  hs-source-dirs:     src
+  default-language:   GHC2024
+  default-extensions:
+    FlexibleContexts
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    KindSignatures
+    MultiParamTypeClasses
+    OverloadedStrings
+    PolyKinds
+    TypeFamilies
+    TypeOperators
+    UndecidableInstances
+
+  exposed-modules:
+    Servant.Cloudflare.Workers.Assets
+    Servant.Cloudflare.Workers.CacheControl
+    Servant.Cloudflare.Workers.ContentType
+    Servant.Cloudflare.Workers.EdgeDataCenter
+    Servant.Cloudflare.Workers.Error
+    Servant.Cloudflare.Workers.ErrorMapping
+    Servant.Cloudflare.Workers.Generic
+    Servant.Cloudflare.Workers.Handler
+    Servant.Cloudflare.Workers.Server
+    Servant.Cloudflare.Workers.Server.Internal
+    Servant.Cloudflare.Workers.Server.Internal.Delayed
+    Servant.Cloudflare.Workers.Server.Internal.DelayedIO
+    Servant.Cloudflare.Workers.Server.Internal.Router
+    Servant.Cloudflare.Workers.Server.Internal.RouteResult
+
+  build-depends:
+    , aeson               >=2.1       && <2.3
+    , base                >=4.22      && <4.23
+    , bytestring          >=0.11      && <0.13
+    , case-insensitive
+    , cloudflare-workers  ^>=0.1.0.0
+    , containers          >=0.8       && <0.9
+    , http-api-data       >=0.5       && <0.8
+    , http-media          >=0.8       && <0.9
+    , mtl                 >=2.2       && <2.4
+    , servant             ^>=0.20.3.0
+    , text                >=2.0       && <2.2
+    , transformers        >=0.5       && <0.7
+
+test-suite unit
+  import: warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  build-tool-depends: testing-support:sydtest-discover-layer
+  other-modules:
+    Support.Runtime.Routing
+    Support.Runtime.RouterInternals
+    Servant.Cloudflare.Workers.Server.Internal.RuntimeRoutingCases
+    Support.Router.Applications
+    Servant.Cloudflare.Workers.Server.Internal.StreamCases
+    Servant.Cloudflare.Workers.Server.Internal.BodyCases
+    Support.Server.Requests
+    Servant.Cloudflare.Workers.Server.InternalSpec
+    Servant.Cloudflare.Workers.Server.Internal.ParameterCases
+    Servant.Cloudflare.Workers.EdgeDataCenterSpec
+    Servant.Cloudflare.Workers.AssetsSpec
+    Servant.Cloudflare.Workers.Server.Internal.DelayedIOSpec
+    Servant.Cloudflare.Workers.Server.Internal.RouteResultSpec
+    Support.Handler.Runner
+    Support.Generic.Routes
+    Servant.Cloudflare.Workers.GenericSpec
+    Servant.Cloudflare.Workers.HandlerSpec
+    Servant.Cloudflare.Workers.ErrorMappingSpec
+    Servant.Cloudflare.Workers.CacheControlSpec
+    Servant.Cloudflare.Workers.ServerSpec
+    Support.Delayed.Trace
+    Servant.Cloudflare.Workers.Server.Internal.DelayedSpec
+    Servant.Cloudflare.Workers.ContentTypeSpec
+    Servant.Cloudflare.Workers.ErrorSpec
+    Servant.Cloudflare.Workers.Server.Internal.RouterSpec
+    Support.HTTP.Fixtures
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test/unit test
+  main-is:            Spec.hs
+  default-language:   GHC2024
+  default-extensions:
+    FlexibleInstances
+    MultiParamTypeClasses
+    OverloadedStrings
+    TypeFamilies
+    TypeOperators
+    UndecidableInstances
+
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cloudflare-workers
+    , containers
+    , ghc
+    , mtl
+    , servant                     ^>=0.20.3.0
+    , servant-cloudflare-workers
+    , sydtest
+    , hedgehog
+    , sydtest-hedgehog
+    , text
+    , transformers
+
+  -- A6b Unit A': cloudflare-workers:host-testkit is itself `if os(wasi):
+  -- buildable: False` -- guarded here too, same rationale
+  -- cloudflare-workers.cabal's own `test-suite unit` stanza documents
+  -- (neither G1 nor G3 ever select test-suite components at all
+  -- currently).
+  if !os(wasi)
+    build-depends: cloudflare-workers:host-testkit
+
+
+test-suite conformance
+  import: warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/conformance test
+  main-is: Spec.hs
+  default-language: GHC2024
+  build-tool-depends: testing-support:sydtest-discover-layer
+  other-modules:
+    RoutingSpec
+    Support.Conformance.Worker
+    Support.Conformance.Comparison
+    Support.HTTP.Fixtures
+  build-depends:
+    base, cloudflare-workers, cloudflare-workers:host-testkit,
+    servant, servant-cloudflare-workers, conformance-oracle,
+    bytestring, text, hedgehog, sydtest, sydtest-hedgehog
+  if os(wasi)
+    buildable: False

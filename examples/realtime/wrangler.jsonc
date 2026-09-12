@@ -1,0 +1,9 @@
+{
+  "name": "realtime-worker",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [{"type":"CompiledWasm","globs":["**/*.wasm"],"fallthrough":false}],
+  "durable_objects": {"bindings":[{"name":"ROOMS","class_name":"ChatRoom"}]},
+  "migrations": [{"tag":"v1","new_sqlite_classes":["ChatRoom"]}]
+}

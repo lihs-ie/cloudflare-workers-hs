@@ -1,0 +1,6 @@
+{
+  "name": "minimal-coverage-upload-contract",
+  "main": "coverage-upload.ts",
+  "compatibility_date": "2026-07-21",
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": false }]
+}

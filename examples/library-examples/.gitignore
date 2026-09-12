@@ -1,0 +1,7 @@
+/.wrangler/
+/.dev.vars
+/.dev.vars.*
+/.dev-test-*
+/worker/*.wasm
+/worker/*-jsffi.mjs
+/worker/build.json

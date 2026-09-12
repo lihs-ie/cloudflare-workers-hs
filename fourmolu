@@ -1,0 +1,54 @@
+#!/usr/bin/env dotslash
+{
+  "name": "fourmolu-0.20.0.0",
+  "platforms": {
+    "linux-x86_64": {
+      "size": 14000393,
+      "hash": "sha256",
+      "digest": "c1e290f504087a6fa1a647b9c19546512fee018e465f7ec4842c985ab9e29abc",
+      "format": "zip",
+      "path": "fourmolu-0.20.0.0-linux-x86_64/fourmolu",
+      "providers": [
+        {
+          "url": "https://github.com/fourmolu/fourmolu/releases/download/v0.20.0.0/fourmolu-0.20.0.0-linux-x86_64.zip"
+        }
+      ]
+    },
+    "linux-aarch64": {
+      "size": 18435373,
+      "hash": "sha256",
+      "digest": "11ec841cd63fcf62d2866335a1bc17388ba83f87f22acde22fce281bb6d87994",
+      "format": "zip",
+      "path": "fourmolu-0.20.0.0-linux-arm64/fourmolu",
+      "providers": [
+        {
+          "url": "https://github.com/fourmolu/fourmolu/releases/download/v0.20.0.0/fourmolu-0.20.0.0-linux-arm64.zip"
+        }
+      ]
+    },
+    "macos-x86_64": {
+      "size": 6935515,
+      "hash": "sha256",
+      "digest": "33e656e42110ae85d6709567237cd8699f059f7642a147a0487d20353c2135c0",
+      "format": "zip",
+      "path": "fourmolu-0.20.0.0-darwin-x86_64/fourmolu",
+      "providers": [
+        {
+          "url": "https://github.com/fourmolu/fourmolu/releases/download/v0.20.0.0/fourmolu-0.20.0.0-darwin-x86_64.zip"
+        }
+      ]
+    },
+    "macos-aarch64": {
+      "size": 22847465,
+      "hash": "sha256",
+      "digest": "ada23d9a0a370d4467e7310f729fef3bff6ee527d32e62b5c37ea66e688bf3da",
+      "format": "zip",
+      "path": "fourmolu-0.20.0.0-darwin-arm64/fourmolu",
+      "providers": [
+        {
+          "url": "https://github.com/fourmolu/fourmolu/releases/download/v0.20.0.0/fourmolu-0.20.0.0-darwin-arm64.zip"
+        }
+      ]
+    }
+  }
+}

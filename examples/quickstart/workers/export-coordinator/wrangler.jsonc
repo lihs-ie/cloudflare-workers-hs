@@ -1,0 +1,32 @@
+{
+  "name": "quickstart-export-coordinator",
+  "main": "../../worker/export-coordinator.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COORDINATOR",
+        "class_name": "ExportCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "ExportCoordinator"
+      ]
+    }
+  ]
+}

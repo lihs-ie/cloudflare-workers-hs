@@ -1,0 +1,53 @@
+packages:
+  - examples/*
+
+catalog:
+  "@cloudflare-workers-hs/runtime": "github:lihs-ie/cloudflare-workers-hs-runtime#46c21ba3d61ba4564bdef5cb167e7797dc73a6a0"
+
+allowBuilds:
+  "@cloudflare-workers-hs/runtime@https://codeload.github.com/lihs-ie/cloudflare-workers-hs-runtime/tar.gz/46c21ba3d61ba4564bdef5cb167e7797dc73a6a0": true
+  esbuild: false
+  workerd: false
+
+minimumReleaseAgeExclude:
+  - "@oxc-parser/binding-android-arm-eabi@0.149.0"
+  - "@oxc-parser/binding-android-arm64@0.149.0"
+  - "@oxc-parser/binding-darwin-arm64@0.149.0"
+  - "@oxc-parser/binding-darwin-x64@0.149.0"
+  - "@oxc-parser/binding-freebsd-x64@0.149.0"
+  - "@oxc-parser/binding-linux-arm-gnueabihf@0.149.0"
+  - "@oxc-parser/binding-linux-arm-musleabihf@0.149.0"
+  - "@oxc-parser/binding-linux-arm64-gnu@0.149.0"
+  - "@oxc-parser/binding-linux-arm64-musl@0.149.0"
+  - "@oxc-parser/binding-linux-ppc64-gnu@0.149.0"
+  - "@oxc-parser/binding-linux-riscv64-gnu@0.149.0"
+  - "@oxc-parser/binding-linux-riscv64-musl@0.149.0"
+  - "@oxc-parser/binding-linux-s390x-gnu@0.149.0"
+  - "@oxc-parser/binding-linux-x64-gnu@0.149.0"
+  - "@oxc-parser/binding-linux-x64-musl@0.149.0"
+  - "@oxc-parser/binding-openharmony-arm64@0.149.0"
+  - "@oxc-parser/binding-win32-arm64-msvc@0.149.0"
+  - "@oxc-parser/binding-win32-ia32-msvc@0.149.0"
+  - "@oxc-parser/binding-win32-x64-msvc@0.149.0"
+  - "@oxc-project/types@0.149.0"
+  - "@oxlint/binding-android-arm-eabi@1.82.0"
+  - "@oxlint/binding-android-arm64@1.82.0"
+  - "@oxlint/binding-darwin-arm64@1.82.0"
+  - "@oxlint/binding-darwin-x64@1.82.0"
+  - "@oxlint/binding-freebsd-x64@1.82.0"
+  - "@oxlint/binding-linux-arm-gnueabihf@1.82.0"
+  - "@oxlint/binding-linux-arm-musleabihf@1.82.0"
+  - "@oxlint/binding-linux-arm64-gnu@1.82.0"
+  - "@oxlint/binding-linux-arm64-musl@1.82.0"
+  - "@oxlint/binding-linux-ppc64-gnu@1.82.0"
+  - "@oxlint/binding-linux-riscv64-gnu@1.82.0"
+  - "@oxlint/binding-linux-riscv64-musl@1.82.0"
+  - "@oxlint/binding-linux-s390x-gnu@1.82.0"
+  - "@oxlint/binding-linux-x64-gnu@1.82.0"
+  - "@oxlint/binding-linux-x64-musl@1.82.0"
+  - "@oxlint/binding-openharmony-arm64@1.82.0"
+  - "@oxlint/binding-win32-arm64-msvc@1.82.0"
+  - "@oxlint/binding-win32-ia32-msvc@1.82.0"
+  - "@oxlint/binding-win32-x64-msvc@1.82.0"
+  - oxc-parser@0.149.0
+  - oxlint@1.82.0

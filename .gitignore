@@ -21,3 +21,13 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+artifacts/
+/docs/*
+!/docs/adr/
+!/docs/adr/**
+/packages/
+*.tix
+__pycache__/
+/.wrangler/
+_build
+node_modules

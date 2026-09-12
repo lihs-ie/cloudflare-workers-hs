@@ -1,0 +1,148 @@
+name: pr-gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 18 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testing-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+      - name: Check test registration and tooling regressions
+        run: |
+          python3 scripts/testing/registration.py --output artifacts/testing/registration.json
+          python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
+          python3 scripts/testing/Support/mutation_checks.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-registration
+          path: artifacts/testing/
+          if-no-files-found: error
+
+  build_and_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.14.1'
+          cabal-version: '3.16.1.0'
+      - uses: cachix/install-nix-action@v31
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-testing
+            dist-testing-coverage
+          key: host-${{ runner.os }}-${{ hashFiles('cabal.project', '**/*.cabal') }}
+      - run: cabal update
+      - name: Coverage collector regressions
+        run: python3 scripts/testing/Support/coverage_checks.py
+      - name: Host tests
+        run: python3 scripts/testing/run.py host
+      - name: Servant differential tests
+        if: success() || failure()
+        run: python3 scripts/testing/run.py conformance
+      - name: Coverage evidence report
+        if: success() || failure()
+        run: |
+          pnpm install --frozen-lockfile
+          nix develop --command wasm32-wasi-cabal update
+          nix develop --command pnpm run --dir examples/quickstart build:runtime
+          python3 scripts/testing/run.py coverage --skip-runtime-build --report-only
+      - name: Broader generated input exploration
+        if: github.event_name == 'schedule' && (success() || failure())
+        run: |
+          python3 scripts/testing/run.py host --seed "$GITHUB_RUN_NUMBER" --examples 1000
+          python3 scripts/testing/run.py conformance --seed "$GITHUB_RUN_NUMBER" --examples 1000
+      - name: Representative mutation checks
+        if: github.event_name == 'schedule' && (success() || failure())
+        run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: host-test-evidence
+          path: artifacts/testing/
+          if-no-files-found: error
+
+  integration_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python test dependencies
+        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.14.1'
+          cabal-version: '3.16.1.0'
+      - uses: cachix/install-nix-action@v31
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - name: Install locked JS dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Update WASM Cabal package index
+        run: nix develop --command wasm32-wasi-cabal update
+      - name: Pinned Git runtime consumer
+        run: nix develop --command pnpm test:package
+      - run: cabal update
+      - name: Real WASM integration including production entrypoint
+        run: nix develop --command python3 scripts/testing/run.py integration
+      - name: Production APIs through wrangler dev
+        if: success() || failure()
+        run: nix develop --command python3 scripts/testing/run.py dev
+      - name: Production APIs through Docker and wrangler dev
+        if: success() || failure()
+        run: nix develop --command python3 scripts/testing/run.py docker
+      - name: Generated state model against real WASM
+        if: success() || failure()
+        run: python3 scripts/testing/run.py model --examples 10 --skip-runtime-build
+      - name: Broader state exploration
+        if: github.event_name == 'schedule' && (success() || failure())
+        run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-test-evidence
+          path: |
+            artifacts/testing/
+            examples/quickstart/test-artifacts/
+          if-no-files-found: error
+
+  summary:
+    if: always()
+    needs: [policy, build_and_tests, integration_smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation job to succeed
+        env:
+          POLICY: ${{ needs.policy.result }}
+          HOST: ${{ needs.build_and_tests.result }}
+          WASM: ${{ needs.integration_smoke.result }}
+        run: |
+          printf 'registration=%s host=%s wasm=%s\n' "$POLICY" "$HOST" "$WASM"
+          test "$POLICY" = success
+          test "$HOST" = success
+          test "$WASM" = success
