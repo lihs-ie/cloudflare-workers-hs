@@ -1,12 +1,35 @@
 module Cloudflare.Workers.Binding.ServiceBinding (
     ServiceBinding (..),
-    serviceBindingFetch,
+    ServiceBindingError (..),
+    serviceFetch,
+    serviceCall,
 ) where
 
-import Cloudflare.Workers.HTTP (Request, Response, Status (Status), createResponse)
+import Cloudflare.Workers.Binding.DurableObject (DurableObjectValue (DurableObjectValue))
+import Cloudflare.Workers.HTTP (Request, Response)
+import Cloudflare.Workers.Internal.FFI.ServiceBinding (serviceBindingCallViaFFI, serviceBindingFetchViaFFI)
+import Control.Exception (Exception, throwIO)
+import Data.Text (Text)
+import GHC.Wasm.Prim (JSVal)
 
-data ServiceBinding = ServiceBindingSTUB
+newtype ServiceBinding = ServiceBinding JSVal
+
+data ServiceBindingError
+    = ServiceFetchFailed Text
+    | ServiceCallFailed Text
     deriving stock (Show, Eq)
 
-serviceBindingFetch :: ServiceBinding -> Request -> IO Response
-serviceBindingFetch _binding _request = pure (createResponse (Status 200) [] mempty)
+instance Exception ServiceBindingError
+
+serviceFetch :: ServiceBinding -> Request -> IO Response
+serviceFetch (ServiceBinding serviceJSVal) request = do
+    outcome <- serviceBindingFetchViaFFI serviceJSVal request
+    either (throwIO . ServiceFetchFailed) pure outcome
+
+serviceCall :: ServiceBinding -> Text -> [DurableObjectValue] -> IO (Either ServiceBindingError DurableObjectValue)
+serviceCall (ServiceBinding serviceJSVal) methodName args = do
+    outcome <- serviceBindingCallViaFFI serviceJSVal methodName (map unwrapDurableObjectValue args)
+    pure (either (Left . ServiceCallFailed) (Right . DurableObjectValue) outcome)
+  where
+    unwrapDurableObjectValue :: DurableObjectValue -> JSVal
+    unwrapDurableObjectValue (DurableObjectValue value) = value

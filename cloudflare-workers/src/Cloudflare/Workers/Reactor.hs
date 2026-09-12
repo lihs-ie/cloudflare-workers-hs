@@ -1,18 +1,22 @@
 module Cloudflare.Workers.Reactor (
-    Context (..),
     initializeRTS,
+    WorkersExecutionContext (..),
     passThroughOnException,
     waitUntil,
 ) where
 
-data Context = Context
-    deriving stock (Show, Eq)
+import Cloudflare.Workers.Internal.FFI.Reactor (ctxWaitUntil, contextPassThroughOnExceptionViaFFI)
+import GHC.Wasm.Prim (JSVal)
 
-waitUntil :: IO () -> IO ()
-waitUntil action = action
+newtype WorkersExecutionContext = WorkersExecutionContext JSVal
 
-passThroughOnException :: Context -> IO ()
-passThroughOnException _context = pure ()
+waitUntil :: WorkersExecutionContext -> IO () -> IO ()
+waitUntil (WorkersExecutionContext contextJSValue) = ctxWaitUntil contextJSValue
 
+passThroughOnException :: WorkersExecutionContext -> IO ()
+passThroughOnException (WorkersExecutionContext context) = contextPassThroughOnExceptionViaFFI context
+
+-- | Compatibility no-op. The JavaScript host must initialize the RTS before
+-- entering Haskell; this action cannot initialize an unstarted Haskell runtime.
 initializeRTS :: IO ()
 initializeRTS = pure ()

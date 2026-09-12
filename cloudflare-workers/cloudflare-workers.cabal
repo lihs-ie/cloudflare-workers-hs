@@ -1,14 +1,16 @@
-cabal-version: 3.0
-name:          cloudflare-workers
-version:       0.1.0.0
+cabal-version:   3.4
+name:            cloudflare-workers
+version:         0.1.0.0
 synopsis:
   Cloudflare Workers runtime bindings for GHC's wasm32-wasi backend
 
 description:
   Base package: Request/Response, platform bindings, reactor lifecycle and streaming primitives for Cloudflare Workers.
 
-license:       BSD-1-Clause
-build-type:    Simple
+license:         BSD-1-Clause
+build-type:      Simple
+tested-with:     GHC ==9.14.1
+extra-doc-files: CHANGELOG.md
 
 common warnings
   ghc-options: -Wall
@@ -18,39 +20,166 @@ library
   hs-source-dirs:     src
   default-language:   GHC2024
   default-extensions:
+    MultilineStrings
     OverloadedStrings
     TypeFamilies
 
   exposed-modules:
+    Cloudflare.Workers.Binding.Assets
     Cloudflare.Workers.Binding.D1
+    Cloudflare.Workers.Binding.D1.Query
     Cloudflare.Workers.Binding.DurableObject
+    Cloudflare.Workers.Binding.DurableObject.SQL
     Cloudflare.Workers.Binding.KV
     Cloudflare.Workers.Binding.Queue
     Cloudflare.Workers.Binding.R2
+    Cloudflare.Workers.Binding.Secret
     Cloudflare.Workers.Binding.ServiceBinding
+    Cloudflare.Workers.Binding.Var
+    Cloudflare.Workers.Binding.Workflow
+    Cloudflare.Workers.Bundle
+    Cloudflare.Workers.Cache
+    Cloudflare.Workers.Entrypoint.DurableObject
+    Cloudflare.Workers.Entrypoint.Env
     Cloudflare.Workers.Entrypoint.Fetch
+    Cloudflare.Workers.Entrypoint.Queue
+    Cloudflare.Workers.Entrypoint.Queue.Typed
+    Cloudflare.Workers.Entrypoint.Scheduled
+    Cloudflare.Workers.Entrypoint.Tail
+    Cloudflare.Workers.Entrypoint.Workflow
     Cloudflare.Workers.Env
+    Cloudflare.Workers.Headers
     Cloudflare.Workers.HTTP
+    Cloudflare.Workers.Internal.FFI.BindingEnv
+    Cloudflare.Workers.Internal.FFI.Bytes
+    Cloudflare.Workers.Internal.FFI.Cache
+    Cloudflare.Workers.Internal.FFI.D1
+    Cloudflare.Workers.Internal.FFI.DurableObject
+    Cloudflare.Workers.Internal.FFI.Env
+    Cloudflare.Workers.Internal.FFI.Envelope
+    Cloudflare.Workers.Internal.FFI.Headers
+    Cloudflare.Workers.Internal.FFI.KV
+    Cloudflare.Workers.Internal.FFI.Queue
+    Cloudflare.Workers.Internal.FFI.R2
+    Cloudflare.Workers.Internal.FFI.Reactor
+    Cloudflare.Workers.Internal.FFI.Request
+    Cloudflare.Workers.Internal.FFI.Response
+    Cloudflare.Workers.Internal.FFI.Scheduled
+    Cloudflare.Workers.Internal.FFI.ServiceBinding
+    Cloudflare.Workers.Internal.FFI.Socket
+    Cloudflare.Workers.Internal.FFI.Stream
+    Cloudflare.Workers.Internal.FFI.Tail
+    Cloudflare.Workers.Internal.FFI.Text
+    Cloudflare.Workers.Internal.FFI.URL
+    Cloudflare.Workers.Internal.FFI.Workflow
+    Cloudflare.Workers.Middleware
+    Cloudflare.Workers.Observability
     Cloudflare.Workers.Reactor
+    Cloudflare.Workers.Socket
     Cloudflare.Workers.Streaming
+    Cloudflare.Workers.URL
 
   build-depends:
-    , base        >=4.16 && <4.22
-    , bytestring
-    , text
+    , aeson                             >=2.1  && <2.3
+    , base                              >=4.22 && <4.23
+    , bytestring                        >=0.11 && <0.13
+    , cloudflare-workers:ghc-wasm-shim
+    , containers                        >=0.8  && <0.9
+    , text                              >=2.0  && <2.2
+    , time                              >=1.15 && <1.16
+
+  if !os(wasi)
+    build-depends: random >=1.2 && <1.4
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin
+
+  if os(wasi)
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+    default-extensions:
+      JavaScriptFFI
+      MultilineStrings
+
+library ghc-wasm-shim
+  import:           warnings
+  visibility:       public
+  default-language: GHC2024
+  build-depends:
+    , base  >=4.22 && <4.23
+    , ghc   >=9.14 && <9.15
+
+  if os(wasi)
+    hs-source-dirs:     shim/wasm
+    exposed-modules:    GHC.Wasm.FFI.Plugin
+    reexported-modules: GHC.Wasm.Prim
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+
+  else
+    hs-source-dirs:  shim/compat
+    exposed-modules:
+      GHC.Wasm.FFI.Plugin
+      GHC.Wasm.Prim
+      GHC.Wasm.Prim.Host.Internal
+
+library host-testkit
+  import:           warnings
+  visibility:       public
+  default-language: GHC2024
+  hs-source-dirs:   host-testkit/src
+  exposed-modules:  Cloudflare.Workers.HostTestKit
+  build-depends:
+    , base                              >=4.22 && <4.23
+    , cloudflare-workers:ghc-wasm-shim
+
+  if os(wasi)
+    buildable: False
+
+test-suite host-testkit-unit
+  import: warnings
+  ghc-options: -fplugin GHC.Wasm.FFI.Plugin -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/host-testkit, test
+  main-is: Spec.hs
+  other-modules: Cloudflare.Workers.HostTestKitSpec, Support.HostPlugin
+  default-language: GHC2024
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends: base, cloudflare-workers:host-testkit, cloudflare-workers:ghc-wasm-shim, sydtest
+  if os(wasi)
+    buildable: False
 
 test-suite unit
-  import:             warnings
-  type:               exitcode-stdio-1.0
-  hs-source-dirs:     test
-  main-is:            Spec.hs
-  default-language:   GHC2024
+  import: warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, test
+  main-is: Spec.hs
+  other-modules:
+    Cloudflare.Workers.Binding.D1.QuerySpec
+    Cloudflare.Workers.Binding.QueueSpec
+    Cloudflare.Workers.Binding.SecretSpec
+    Cloudflare.Workers.Binding.VarSpec
+    Cloudflare.Workers.Entrypoint.Queue.TypedSpec
+    Support.Cloudflare.Workers.Queue
+    Cloudflare.Workers.BundleSpec
+    Support.BundleFixture
+    Cloudflare.Workers.HTTPSpec
+    Cloudflare.Workers.HTTP.RequestCases
+    Cloudflare.Workers.HTTP.ResponseCases
+    Cloudflare.Workers.HeadersSpec
+    Cloudflare.Workers.Internal.FFI.BytesSpec
+    Cloudflare.Workers.ObservabilitySpec
+    Support.Cloudflare.Workers.ObservabilityContracts
+    Cloudflare.Workers.MiddlewareSpec
+    Cloudflare.Workers.URLSpec
+    Cloudflare.Workers.SocketSpec
+    Cloudflare.Workers.Binding.KVSpec
+    Cloudflare.Workers.Binding.R2Spec
+    Support.Cloudflare.Workers.Logging
+    Support.Cloudflare.Workers.HTTP
+    Support.Cloudflare.Workers.Generators
+  default-language: GHC2024
   default-extensions: OverloadedStrings
+  build-tool-depends: testing-support:sydtest-discover-layer
   build-depends:
-    , base
-    , bytestring
-    , cloudflare-workers
-    , tasty
-    , tasty-hunit
-    , tasty-quickcheck
-    , text
+    base, aeson, bytestring, cloudflare-workers, cloudflare-workers:host-testkit, text,
+    sydtest, hedgehog, sydtest-hedgehog, temporary, directory, filepath
+  if os(wasi)
+    buildable: False
