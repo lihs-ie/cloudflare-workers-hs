@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
       - name: Check test registration and tooling regressions
@@ -26,7 +26,7 @@ jobs:
           python3 scripts/testing/registration.py --output artifacts/testing/registration.json
           python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
           python3 scripts/testing/Support/mutation_checks.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: test-registration
@@ -37,18 +37,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
-      - uses: haskell-actions/setup@v2
+      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
-      - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v4
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.4.1
-      - uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cabal/store
@@ -78,7 +78,7 @@ jobs:
       - name: Representative mutation checks
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: host-test-evidence
@@ -89,15 +89,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
-      - uses: haskell-actions/setup@v2
+      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
-      - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v4
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.4.1
       - name: Install locked JS dependencies
@@ -121,7 +121,7 @@ jobs:
       - name: Broader state exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: wasm-test-evidence
