@@ -1,0 +1,65 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "quickstart-export-generation",
+  "main": "../../worker/export-generation.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "quickstart",
+      "database_id": "a873fdd8-b80e-49f0-9969-fafda0423201",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+  "vars": {
+    "ACCESS_TEAM": "replace-me",
+    "ACCESS_AUDIENCE": "replace-me",
+    "ACCESS_JWKS_URL": "https://replace-me.cloudflareaccess.com/cdn-cgi/access/certs"
+  },
+  "r2_buckets": [
+    {
+      "binding": "EXPORTS",
+      "bucket_name": "quickstart-exports"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "CLICKS",
+        "queue": "quickstart-clicks"
+      },
+      {
+        "binding": "EXPORT_QUEUE",
+        "queue": "quickstart-exports"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "quickstart-exports",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 3
+      }
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COORDINATOR",
+        "class_name": "ExportCoordinator",
+        "script_name": "quickstart-export-coordinator"
+      }
+    ]
+  }
+}

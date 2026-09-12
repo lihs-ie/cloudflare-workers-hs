@@ -1,7 +1,7 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "quickstart-redirect",
-  "main": "worker/redirect.ts",
+  "main": "../../worker/redirect.ts",
   "compatibility_date": "2026-07-21",
   "compatibility_flags": [
     "nodejs_compat"
@@ -19,7 +19,7 @@
       "binding": "DB",
       "database_name": "quickstart",
       "database_id": "a873fdd8-b80e-49f0-9969-fafda0423201",
-      "migrations_dir": "migrations"
+      "migrations_dir": "../../migrations"
     }
   ],
   "queues": {
@@ -29,8 +29,5 @@
         "queue": "quickstart-clicks"
       }
     ]
-  },
-  "build": {
-    "command": "bash scripts/build-wasm.sh"
   }
 }

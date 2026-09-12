@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node", "@cloudflare/vitest-pool-workers/types"]
+  },
+  "include": [
+    "scripts/**/*.mts",
+    "worker/**/*.ts",
+    "worker/**/*.d.mts",
+    "worker-configuration.d.ts",
+    ".wrangler/types/*.d.ts",
+    "test/**/*.ts",
+    "test/**/*.mts",
+    "vitest.config.mts",
+    "vitest.runtime.config.mts"
+  ]
+}

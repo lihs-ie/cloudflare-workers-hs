@@ -1,0 +1,10 @@
+{
+  "name": "quickstart-runtime-tests",
+  "main": "harness.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"] }],
+  "d1_databases": [{ "binding": "RUNTIME_DB", "database_name": "runtime-d1-tests", "database_id": "00000000-0000-0000-0000-000000000001" }],
+  "durable_objects": { "bindings": [{ "name": "STORAGE", "class_name": "StorageHarness" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["StorageHarness"] }]
+}

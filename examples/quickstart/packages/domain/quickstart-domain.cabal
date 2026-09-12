@@ -1,0 +1,25 @@
+cabal-version: 3.0
+name: quickstart-domain
+version: 0.1.0.0
+synopsis: Pure URL shortener domain contracts and rules
+license: BSD-3-Clause
+build-type: Simple
+
+library
+  hs-source-dirs: src
+  exposed-modules: URLShortener.Domain
+  default-language: GHC2024
+  default-extensions: OverloadedStrings DuplicateRecordFields
+  ghc-options: -Wall
+  build-depends: base >=4.22 && <4.23, aeson, text, time, network-uri
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, test
+  main-is: Spec.hs
+  other-modules: URLShortener.DomainSpec, Support.DomainFixtures
+  default-language: GHC2024
+  default-extensions: OverloadedStrings DuplicateRecordFields
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends: base, aeson, text, time, quickstart-domain, sydtest, sydtest-hedgehog, hedgehog

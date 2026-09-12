@@ -1,7 +1,7 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "quickstart-redirect",
-  "main": "worker/redirect.ts",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "quickstart-aggregation",
+  "main": "../../worker/aggregation.ts",
   "compatibility_date": "2026-07-21",
   "compatibility_flags": [
     "nodejs_compat"
@@ -19,18 +19,18 @@
       "binding": "DB",
       "database_name": "quickstart",
       "database_id": "a873fdd8-b80e-49f0-9969-fafda0423201",
-      "migrations_dir": "migrations"
+      "migrations_dir": "../../migrations"
     }
   ],
   "queues": {
-    "producers": [
+    "consumers": [
       {
-        "binding": "CLICKS",
-        "queue": "quickstart-clicks"
+        "queue": "quickstart-clicks",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "quickstart-clicks-dlq"
       }
     ]
-  },
-  "build": {
-    "command": "bash scripts/build-wasm.sh"
   }
 }
