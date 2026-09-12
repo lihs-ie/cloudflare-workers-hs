@@ -219,6 +219,7 @@ combinator は存在しない。A5 で stub から real になったのは `Acce
   `CF-Access-Client-Id`/`CF-Access-Client-Secret` の検証経路は未実装。対応方針は A6/A8 で検討する。
 - **unknown-`kid` 時の再取得に negative cache がない**。現状は miss のたびに `fetchAction` を呼ぶ
   （冪等 GET の重複は許容という判断）。悪意ある大量の unknown-`kid` リクエストへの対策は A6/A8 で検討。
+  → **対応済**: 本 ADR 追補 (2026-07-25) 決定 5（A8 SEC-9、URL 単位の kid-miss スロットル）。
 - **構造化ログ化**は A6 へ送付。現状は例外 constructor 名のみの `tailLog` 1 行。
 - **KV durability の open finding**: RE 実測で `POST /shorten` が 200 を返した後、対応する KV key が
   実 namespace の `list`/`get` いずれからも見つからなかった（60 秒超待機後も再現）。`kvPut` の Promise
@@ -233,3 +234,93 @@ combinator は存在しない。A5 で stub から real になったのは `Acce
   封筒もこの規約に従う）
 - 実装詳細・実機検証ログ: `~/.pschool/spikes/cloudflare-workers-hs-build/_phase_a/a5-plan.md`、
   `a5-re-memo.md`、`_phase_b/divergence-notes.md`「A5」節、`API-LEDGER.md` item 14（"A5 close"）
+
+## 追補 (2026-07-25): A8 SEC-9 — `kid` ミス即時再取得にスロットルを追加（追補 2026-07-23 決定 2 の変更）
+
+- ステータス: 承認（追補）
+- 日付: 2026-07-25
+- 決定者: lihs
+
+A8 のセキュリティレビュー（独立 reviewer の finding 6 = `docs/security-review.md` の SEC-9、MEDIUM）
+で、2026-07-23 追補 決定 2 の「`kid` ミス時は即時再取得」が **認証前の増幅経路**になっていることが
+指摘された。同追補の「残課題」が A6/A8 送りとしていた「unknown-`kid` 時の再取得に negative cache が
+ない」の項をここで閉じる。
+
+### 決定 5: `kid` ミス即時再取得は維持したうえで、URL 単位の kid-miss スロットルを課す — 追補 決定 2 からの変更
+
+**問題**: `lookupOrFetchJWKWith` が受け取る `kid` は **未検証の JWT ヘッダ**由来である
+（`verifyAccessJWTPipeline` はヘッダを decode して JWKS を引き、署名検証はその**後**に走る = 追補
+決定 1 の順序 (3) → (5)）。したがって `ZeroTrust` 経路に到達できる未認証の呼び出し元が、リクエスト
+ごとに異なるランダム `kid` を送るだけで **1 リクエスト = 1 outbound fetch** を強制できた。影響は
+subrequest 予算の消尽、同一 isolate を共有する正規検証のレイテンシ悪化、そして team の Access certs
+エンドポイントへ向いたトラフィック増幅である。
+
+**決定**: 即時再取得そのものは残す。**再取得が非生産的だった場合**（fetch は成功したが、その `kid` は
+新しく取得した document にも存在しなかった場合）に限り、その URL に対する kid-miss 再取得を
+`jwksKidMissThrottleSeconds = 60` 秒間だけ抑止し、**再取得せず即座に `Left "unknown kid"`**（= 401）を
+返す。抑止の対象は「fresh な cached document に対する kid ミス」の 1 分岐のみで、未キャッシュ・URL
+不一致・TTL 期限切れの再取得は無条件のまま変更しない。fetch 自体が失敗した場合はスロットルを
+arm も disarm もしない（応答が返っていない fetch は、そのエンドポイントがどの鍵を公開しているかを
+何も証明していないため）。
+
+状態は `JWKSCacheEntry` に `cacheEntryKidMissRefetchAtSeconds :: Maybe Integer` を追加して保持する。
+専用のセルを別に置かない理由: エントリ自体が既に「capacity=1、置換方式」で URL 単位に閉じているため、
+URL が変われば document と arming stamp が同時に evict され、スロットルが別の JWKS エンドポイントへ
+漏れることが構造的に起こり得ない。
+
+### TTL 値 60 秒の根拠
+
+- Cloudflare Access の鍵ローテーションは **6 週周期 +7 日 grace**（追補 決定 2 の根拠 (c) と同じ実測前提）
+  であり、60 秒は追従性の観点では無視できる大きさである。
+- JWKS cache TTL の default は 1 時間（`accessVerifierOptionsJWKSCacheTtlSeconds = 3600`）なので、
+  60 秒は TTL の 1/60 に収まる。スロットルが「cached document がどれだけ古くなり得るか」の律速に
+  なることはない。
+- 増幅側から見ると、isolate あたり **60 秒に 1 回**の上限になる。攻撃者がリクエストを何倍に増やしても
+  outbound fetch の本数は増えない（レビューで実測した pin: 未知 `kid` 20 連射で fetch 21 回 → 2 回）。
+
+### ローテーション追従が損なわれない論拠
+
+スロットルは **再取得の前ではなく後**に arm される。すなわち、ある cached document 世代に対する
+**最初の** kid ミスは従来どおり即座に再取得する。ローテーションで新しい `kid` が公開されたとき、その
+`kid` を載せた最初のリクエストは必ず再取得を起こし、新しい鍵をその場で取得して 200 を返す。60 秒待つ
+のは「直前 60 秒以内に、同じ URL に対する再取得が既に空振りしていた」場合だけであり、そのときの
+最大遅延は 60 秒である。追補 決定 2 が「`kid` ミス即時再取得でローテーションに追従できる」と述べた
+性質は、この境界条件付きでそのまま維持される。
+
+なお caller が TTL を 0 に設定してキャッシュ自体を無効化した場合、fresh entry が存在しなくなるため
+スロットルも同時に無効になる。これは「キャッシュを切る」という caller の明示的な選択の帰結であり、
+`accessConfigJWKSUrl` は server 側の設定値で攻撃者が制御できないため、増幅経路としては成立しない。
+
+### per-`(url, kid)` negative cache を採らなかった理由
+
+SEC-9 の推奨には per-`(url, kid)` の negative cache 案も併記されていたが**採らない**。`kid` は
+攻撃者が任意に選べるため、negative cache のキー空間も攻撃者が支配する。容量上限を設ければ、その上限を
+超える数の `kid` を巡回されるだけで entry が回転して増幅が復活する（容量の穴）。上限を設けなければ
+isolate の heap が攻撃者制御の入力で無制限に膨らむ（SEC-3 の isolate-OOM 面と合流する）。URL 単位の
+スロットルは状態が `Maybe Integer` 1 個で O(1)、キー空間が攻撃者の手に渡らないため、この穴が原理的に
+存在しない。
+
+### `AccessVerifierOptions` のフィールドにしなかった理由
+
+`jwksKidMissThrottleSeconds` は `AccessVerifierOptions`（追補 決定 3）に追加せず、
+`Internal.JWKSCache` の定数として固定する。これは per-deployment の運用ポリシーではなく、本ライブラリ
+自身の outbound 増幅に対する**下限（security floor）**であり、caller が設定したくなる値は現行値か、
+より弱い値のいずれかしかないためである。
+
+### 検証
+
+- host `tasty`（`servant-cloudflare-workers-access/test/Spec.hs`、`Internal.JWKSCache` グループ）:
+  増幅の pin（未知 `kid` 20 連射 → fetch 呼び出し 2 回。スロットル導入前は 21 回で RED）と、
+  スロットル満了後にローテーション相当の新 `kid` が cache TTL を待たずに拾われる pin の 2 本を追加。
+  **A5 で記録された既存 8 ケースは 1 行も変更せず通る**（arming が「再取得が空振りした後」に限られる
+  ため、既存の "a kid absent from an otherwise-fresh cached document triggers an immediate refetch"
+  は依然として再取得する）。
+- T2（`examples/quickstart/test/integration/access-jwks-fetch.spec.ts`）: 同じ増幅 pin を実 wasm
+  reactor と実 `globalThis.fetch` 越しに（注入クロックではなく `Internal.Clock.currentEpochSeconds`
+  で）確認する 1 ケースを追加。
+
+### 参考資料（本追補分）
+
+- `docs/security-review.md` SEC-9 / `docs/security-review-findings.md` finding 6
+- 実装: `servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs`
+  （`jwksKidMissThrottleSeconds` の Haddock に脅威・値の根拠・ローテーション追従の論拠を同内容で記載）

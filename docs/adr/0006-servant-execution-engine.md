@@ -171,3 +171,13 @@ Workers 固有の要素（`env` バインディングの注入: [ADR-0008](./000
 - [ADR-0019](./0019-monorepo-package-layout.md) 追補（移植コードの BSD-3 attribution）
 - RFC 9110 §15.5.6 — 405 Method Not Allowed（`Allow` ヘッダ要件）: https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6
 - servant-server (Hackage, 0.20.3.0): https://hackage.haskell.org/package/servant-server-0.20.3.0
+
+## 追補: 独自エラー契約の維持（2026-09-07合意）
+
+ユーザー合意により、上記のconformance比較境界を次のように更新する。過去の決定本文は履歴として保持する。
+
+- 成功応答はステータス、Content-Type（charset込み）、本文を参照実装と比較する。
+- エラー応答はステータスのみを参照実装と比較する。
+- エラーのContent-Typeと本文は独自仕様を維持し、専用の固定・生成テストで検証する。参照実装との差異を隠す正規化ではなく、意図した契約として扱う。
+
+実装計画への反映であり、比較器・テストの修正完了を示すものではない。[追加実装計画](../specs/quickstart-full-library-plan.md)を参照。

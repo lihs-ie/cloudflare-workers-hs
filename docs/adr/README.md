@@ -65,3 +65,5 @@ ADR (Architecture Decision Record) は、プロジェクトにとって重要な
 | [0021](./0021-language-edition-ghc2024.md) | 全パッケージの default-language を GHC2024 に統一する | 承認 |
 | [0022](./0022-workers-cache.md) | Workers Cache は値レベル typed builder と servant 型レベル combinator の両方を提供する | 承認 |
 | [0023](./0023-js-glue-typescript-policy.md) | JS glue 層は TypeScript 化し、wasmExports 境界型は API-LEDGER manifest から生成する | 承認 |
+| [0024](./0024-scope-out-wai-only-combinators.md) | servant の HttpVersion / IsSecure / RemoteHost / Vault を Workers 上ではスコープ外とする | 承認 |
+| [0025](./0025-separate-typescript-runtime-repository.md) | TypeScript runtimeを独立リポジトリへ分離する | 承認 |
