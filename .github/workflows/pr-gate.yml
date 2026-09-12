@@ -44,6 +44,7 @@ jobs:
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
+      - uses: cachix/install-nix-action@v31
       - uses: actions/cache@v4
         with:
           path: |
@@ -61,7 +62,10 @@ jobs:
         run: python3 scripts/testing/run.py conformance
       - name: Coverage target
         if: success() || failure()
-        run: python3 scripts/testing/run.py coverage
+        run: |
+          nix develop --command pnpm install --frozen-lockfile
+          nix develop --command wasm32-wasi-cabal update
+          nix develop --command python3 scripts/testing/run.py coverage
       - name: Broader generated input exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: |

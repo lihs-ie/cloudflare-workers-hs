@@ -31,6 +31,7 @@
               ghc-wasm-meta.packages.${system}.all_9_14
               pkgs.nodejs_24
               pkgs.pnpm
+              pkgs.gmp
               fourmolu
               pkgs.hlint
               pkgs.just
@@ -39,7 +40,10 @@
             shellHook = ''
               echo "cloudflare-workers-hs dev shell: wasm32-wasi (ghc-wasm-meta) + Node 24 + pnpm"
               echo "host GHC 9.14.1 is intentionally NOT supplied by this flake -- install it via ghcup instead"
-              source ${ghc-wasm-meta.packages.${system}.all_9_14}/bin/env
+              wasm_env=${ghc-wasm-meta.packages.${system}.all_9_14}/bin/env
+              if [ -f "$wasm_env" ]; then
+                source "$wasm_env"
+              fi
             '';
           };
         }
