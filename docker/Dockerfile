@@ -1,4 +1,4 @@
-FROM haskell:9.12.2
+FROM haskell:9.14.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   curl ca-certificates xz-utils zstd gzip tar unzip git make procps jq \
@@ -8,13 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PREFIX=/opt/ghc-wasm
 RUN curl -fsSL https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/raw/master/bootstrap.sh \
-  | FLAVOUR=9.12 sh
+  | FLAVOUR=9.14 sh
 
 ENV BASH_ENV=/opt/ghc-wasm/env
 RUN echo 'source /opt/ghc-wasm/env' >> /etc/bash.bashrc
 
 RUN npm install -g pnpm@11 \
   && npm install -g wrangler@4.106.0
+
+ENV PATH="/opt/ghc-wasm/bin:${PATH}"
 
 WORKDIR /work
 CMD ["bash"]

@@ -1,0 +1,38 @@
+cabal-version: 3.0
+name: testing-support
+version: 0.1.0.0
+synopsis: Development-only layered test discovery
+license: BSD-3-Clause
+build-type: Simple
+
+library
+  hs-source-dirs: src
+  exposed-modules: Support.Discovery
+  default-language: GHC2024
+  ghc-options: -Wall
+  build-depends: base >=4.22 && <4.23, directory, filepath, sydtest-discover ==0.0.0.4
+  if os(wasi)
+    buildable: False
+
+executable sydtest-discover-layer
+  hs-source-dirs: app
+  main-is: Main.hs
+  default-language: GHC2024
+  ghc-options: -Wall
+  build-depends: base, testing-support
+  if os(wasi)
+    buildable: False
+
+test-suite integration
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/integration, test, ../examples/minimal/src, ../examples/realtime/src, ../examples/static-assets/src, ../examples/workflows/src
+  main-is: Spec.hs
+  other-modules: LayerDiscoverySpec, APIContractsSpec, Support.DiscoveryFixtures, Support.APIContracts, Minimal.API, Realtime.API, StaticAssets.API, WorkflowExample.API, WorkflowExample.Domain
+  default-language: GHC2024
+  ghc-options: -Wall
+  build-tool-depends: testing-support:sydtest-discover-layer
+  default-extensions: OverloadedStrings
+  build-depends: base, testing-support, sydtest, directory, filepath, temporary, aeson, text, time, servant
+  if os(wasi)
+    buildable: False

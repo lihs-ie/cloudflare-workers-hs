@@ -1,0 +1,1571 @@
+{
+  "schema": 1,
+  "policy": "Pure Haskell host; Cloudflare runtime dependency closure WASM; explicit WASI CPP implementation differences host and WASM; Worker entries WASM. Only explicitly fingerprinted generated provenance exclusions; no zero-tick exemptions. New paths retain conservative defaults pending review.",
+  "runtimes": [
+    {
+      "path": "cloudflare-workers/host-testkit/src/Cloudflare/Workers/HostTestKit.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native test/oracle component, not a deployed Worker.",
+      "evidence": "cloudflare-workers/host-testkit/src/Cloudflare/Workers/HostTestKit.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Assets.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Assets.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1/Query.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1/Query.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/DurableObject.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/DurableObject.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/DurableObject/SQL.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/DurableObject/SQL.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/KV.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/KV.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Queue.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Queue.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/R2.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/R2.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Secret.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Secret.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/ServiceBinding.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/ServiceBinding.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Var.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Var.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Workflow.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Workflow.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Bundle.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Bundle.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Cache.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Cache.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/DurableObject.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/DurableObject.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Env.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Env.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Fetch.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Fetch.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Queue.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Queue.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Queue/Typed.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Queue/Typed.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Scheduled.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Scheduled.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Tail.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Tail.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Workflow.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Entrypoint/Workflow.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Env.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Env.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/HTTP.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/HTTP.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Headers.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Headers.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/BindingEnv.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/BindingEnv.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Bytes.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Bytes.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Cache.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Cache.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/D1.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/D1.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/DurableObject.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/DurableObject.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Env.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Env.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Envelope.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Envelope.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Headers.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Headers.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/KV.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/KV.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Queue.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Queue.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/R2.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/R2.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Reactor.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Reactor.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Request.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Request.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Response.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Response.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Scheduled.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Scheduled.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/ServiceBinding.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/ServiceBinding.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Socket.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Socket.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Stream.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Stream.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Tail.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Tail.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Text.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Text.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/URL.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/URL.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Workflow.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Workflow.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Middleware.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Source has an explicit WASI/wasm CPP implementation split. Both the native alternative and deployed branch require execution evidence.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Middleware.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Observability.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Source has an explicit WASI/wasm CPP implementation split. Both the native alternative and deployed branch require execution evidence.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Observability.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Reactor.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Reactor.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Socket.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Socket.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Streaming.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Streaming.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/URL.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "cloudflare-workers/src/Cloudflare/Workers/URL.hs"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Cloudflare/Workers/ObservabilityContracts.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Shared diagnostic and JSON contract consumed by native unit tests and the workerd runtime fixture.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "conformance-oracle/src/Support/Conformance/Generators.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native test/oracle component, not a deployed Worker.",
+      "evidence": "conformance-oracle/src/Support/Conformance/Generators.hs"
+    },
+    {
+      "path": "conformance-oracle/src/Support/Conformance/Oracle.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native test/oracle component, not a deployed Worker.",
+      "evidence": "conformance-oracle/src/Support/Conformance/Oracle.hs"
+    },
+    {
+      "path": "examples/library-examples/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/library-examples/app/Main.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/API.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/API.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Application.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Archives.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Archives.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Attachments.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Attachments.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/CachePurge.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/CachePurge.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Client.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Client.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Configuration.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Configuration.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Database.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Database.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Jobs.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Jobs.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Logging.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Logging.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/QueueExamples.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/QueueExamples.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/R2.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/R2.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/R2Archive.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/R2Archive.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/SocketExamples.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/SocketExamples.hs"
+    },
+    {
+      "path": "examples/library-examples/src/LibraryExamples/Storage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/library-examples/src/LibraryExamples/Storage.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/AttachmentRequest.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/library-examples/test/Support/AttachmentRequest.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/ClientDefaults.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/library-examples/test/Support/ClientDefaults.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/ClientStream.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/Database.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/JobsFailures.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/library-examples/test/Support/JobsFailures.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/LibraryExamples/Misc.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/library-examples/test/Support/LibraryExamples/Misc.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/LibraryExamples/R2Failures.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/library-examples/test/Support/Main.hs"
+    },
+    {
+      "path": "examples/library-examples/test/Support/QueueContracts.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/R2ArchiveFixtures.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/SocketFailures.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/library-examples/test/Support/Storage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/library-examples/library-examples.cabal"
+    },
+    {
+      "path": "examples/minimal/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/minimal/app/Main.hs"
+    },
+    {
+      "path": "examples/minimal/src/Minimal/API.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/minimal/src/Minimal/API.hs"
+    },
+    {
+      "path": "examples/minimal/src/Minimal/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/minimal/src/Minimal/Application.hs"
+    },
+    {
+      "path": "examples/minimal/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/minimal/test/Support/Coverage.hs"
+    },
+    {
+      "path": "examples/quickstart/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/quickstart/app/Main.hs"
+    },
+    {
+      "path": "examples/quickstart/apps/export/src/Quickstart/Export/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/apps/export/src/Quickstart/Export/Application.hs"
+    },
+    {
+      "path": "examples/quickstart/apps/management/src/Quickstart/Management.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/apps/management/src/Quickstart/Management.hs"
+    },
+    {
+      "path": "examples/quickstart/apps/recovery/src/Quickstart/Recovery/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/apps/recovery/src/Quickstart/Recovery/Application.hs"
+    },
+    {
+      "path": "examples/quickstart/apps/redirect/src/Quickstart/Redirect.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/apps/redirect/src/Quickstart/Redirect.hs"
+    },
+    {
+      "path": "examples/quickstart/packages/domain/src/URLShortener/Domain.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/quickstart/packages/domain/src/URLShortener/Domain.hs"
+    },
+    {
+      "path": "examples/quickstart/packages/infrastructure/src/Quickstart/Database.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/packages/infrastructure/src/Quickstart/Database.hs"
+    },
+    {
+      "path": "examples/quickstart/src/Quickstart/Runtime.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/src/Quickstart/Runtime.hs"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/BindingEnv.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASM regression fixture in the Quickstart runtime-tests component.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/CacheServiceErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/EntrypointErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/EntrypointLifecycleErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI-only JSVal lifecycle error fixture, exercised through workerd runtime-tests.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/Envelope.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/ExportProducer.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Development reactor invokes the same internal CSV producer with controlled valid stream outcomes.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/ExportRequestCodec.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Runtime-only fixture is linked into the Quickstart WASM test reactor and invoked by the boundary suite.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/GenerationAsync.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/quickstart/test/Support/Runtime/GenerationAsync.hs"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/MiddlewareExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI-only runtime-tests fixture executed through the workerd harness; native shim compilation is not a runtime contract.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/QuickstartBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASM regression fixture in the Quickstart runtime-tests component.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/QuickstartDatabase.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/quickstart/test/Support/Runtime/QuickstartDatabase.hs"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/SQLBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI-only runtime-tests fixture executed through the workerd harness; native shim compilation is not a runtime contract.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/SocketStream.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/StorageBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/StorageErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/StorageObjectErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/StoragePublicContracts.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Runtime-only fixture is linked into the Quickstart WASM test reactor and invoked by the boundary suite.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/TransportExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/TypedQueueBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI-only runtime-tests fixture using JSVal command and result conversion, executed in the workerd harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/Support/Runtime/WorkflowBoundaryExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/test/unit/Quickstart/ExportGeneration/ProducerSpec.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native unit contract for the shared internal CSV producer; the same producer also has a separate workerd fixture.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/workers/aggregation/src/Quickstart/Aggregation/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/aggregation/src/Quickstart/Aggregation/Application.hs"
+    },
+    {
+      "path": "examples/quickstart/workers/common/src/Quickstart/Background/Environment.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/common/src/Quickstart/Background/Environment.hs"
+    },
+    {
+      "path": "examples/quickstart/workers/export-coordinator/src/Quickstart/Background/Coordinator.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/export-coordinator/src/Quickstart/Background/Coordinator.hs"
+    },
+    {
+      "path": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Application.hs"
+    },
+    {
+      "path": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Producer.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Shared internal CSV producer exercised by native deterministic contracts and workerd production/runtime contracts.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "examples/quickstart/workers/maintenance/src/Quickstart/Maintenance/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/maintenance/src/Quickstart/Maintenance/Application.hs"
+    },
+    {
+      "path": "examples/quickstart/workers/recovery-ingest/src/Quickstart/RecoveryIngest/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/quickstart/workers/recovery-ingest/src/Quickstart/RecoveryIngest/Application.hs"
+    },
+    {
+      "path": "examples/realtime/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/realtime/app/Main.hs"
+    },
+    {
+      "path": "examples/realtime/src/Realtime/API.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/realtime/src/Realtime/API.hs"
+    },
+    {
+      "path": "examples/realtime/src/Realtime/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/realtime/src/Realtime/Application.hs"
+    },
+    {
+      "path": "examples/realtime/src/Realtime/Room.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/realtime/src/Realtime/Room.hs"
+    },
+    {
+      "path": "examples/realtime/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/realtime/test/Support/Coverage.hs"
+    },
+    {
+      "path": "examples/realtime/test/Support/RoomFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/realtime/test/Support/RoomFixture.hs"
+    },
+    {
+      "path": "examples/realtime/test/Support/SQLFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/realtime/realtime-worker.cabal"
+    },
+    {
+      "path": "examples/static-assets/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/static-assets/app/Main.hs"
+    },
+    {
+      "path": "examples/static-assets/src/StaticAssets/API.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/static-assets/src/StaticAssets/API.hs"
+    },
+    {
+      "path": "examples/static-assets/src/StaticAssets/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/static-assets/src/StaticAssets/Application.hs"
+    },
+    {
+      "path": "examples/static-assets/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/static-assets/test/Support/Coverage.hs"
+    },
+    {
+      "path": "examples/workflows/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/workflows/app/Main.hs"
+    },
+    {
+      "path": "examples/workflows/src/WorkflowExample/API.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/workflows/src/WorkflowExample/API.hs"
+    },
+    {
+      "path": "examples/workflows/src/WorkflowExample/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/workflows/src/WorkflowExample/Application.hs"
+    },
+    {
+      "path": "examples/workflows/src/WorkflowExample/Domain.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/workflows/src/WorkflowExample/Domain.hs"
+    },
+    {
+      "path": "examples/workflows/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/workflows/test/Support/Coverage.hs"
+    },
+    {
+      "path": "examples/workflows/test/Support/D1QueryFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/workflows/workflow-example.cabal"
+    },
+    {
+      "path": "examples/workflows/test/Support/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/workflows/test/Support/Main.hs"
+    },
+    {
+      "path": "examples/workflows/test/Support/WorkflowFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/workflows/workflow-example.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Source has an explicit WASI/wasm CPP implementation split. Both the native alternative and deployed branch require execution evidence.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/FFI/SubtleCrypto.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/FFI/SubtleCrypto.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Header.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Header.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/SubtleCrypto.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/SubtleCrypto.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessRoutes.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Shared native unit runner with a WASI-specific wrapper; CPP implementations differ and both native and WASM execution are required.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessVerification.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASM runtime regression fixture uses native CryptoKey and FFI callbacks. Native -fno-code only checks compilation, not runtime behavior.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/test/Support/Runtime/JWKSCache.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch/Request.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch/Request.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Internal/FFI/Fetch.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Internal/FFI/Fetch.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-client/test/Support/Runtime/Client.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers-client/test/Support/Runtime/ClientRetryExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Assets.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Assets.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/CacheControl.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/CacheControl.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/ContentType.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/ContentType.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/EdgeDataCenter.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/EdgeDataCenter.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Error.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Error.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/ErrorMapping.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/ErrorMapping.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Generic.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Generic.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Handler.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Handler.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Router.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Runtime/RouterInternals.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell/IORef router contract fixture, called by native RuntimeRoutingCases through routingFixture matrix/runRouterInternals. No JavaScript FFI in this fixture; native execution measures the same logic.",
+      "evidence": "servant-cloudflare-workers/test/unit/Servant/Cloudflare/Workers/Server/Internal/RuntimeRoutingCases.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Runtime/Routing.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Runtime/RoutingCoverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Dedicated fixture observes native HTTP stream cancellation through workerd runtime-tests.",
+      "evidence": "examples/quickstart/quickstart.cabal"
+    },
+    {
+      "path": "testing-support/src/Support/Discovery.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native test/oracle component, not a deployed Worker.",
+      "evidence": "testing-support/src/Support/Discovery.hs"
+    }
+  ],
+  "exclusions": [
+    {
+      "path": "examples/minimal/artifacts/testing/workers-deploy-20260908/minimal-bundle/index.js",
+      "kind": "generated",
+      "reason": "Retained historical Wrangler dry-run bundle, not authored source. Fingerprinted bundle, source map, embedded sources and successful build log are validated; authored minimal sources remain required.",
+      "evidence": "docs/audits/generated-minimal-bundle.json",
+      "provenance_format": "wrangler-bundle-v1",
+      "evidence_sha256": "cc991d09aa932aa073e265df8ee4d481c9570d45553c8e3dd79737747d17edf9"
+    }
+  ],
+  "validations": [
+    {
+      "path": "examples/library-examples/worker/library-examples-fixtures-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/library-examples/worker/library-examples-fixtures-jsffi.d.mts"
+    },
+    {
+      "path": "examples/library-examples/worker/library-examples-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/library-examples/worker/library-examples-jsffi.d.mts"
+    },
+    {
+      "path": "examples/minimal/worker/minimal-worker-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/minimal/worker/minimal-worker-jsffi.d.mts"
+    },
+    {
+      "path": "examples/quickstart/test/env.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/test/env.d.ts"
+    },
+    {
+      "path": "examples/quickstart/worker-configuration.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/worker-configuration.d.ts"
+    },
+    {
+      "path": "examples/quickstart/worker/quickstart-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/worker/quickstart-jsffi.d.mts"
+    },
+    {
+      "path": "examples/quickstart/worker/runtime-tests-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/worker/runtime-tests-jsffi.d.mts"
+    },
+    {
+      "path": "examples/quickstart/worker/wasm-exports.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/worker/wasm-exports.d.ts"
+    },
+    {
+      "path": "examples/quickstart/worker/wasm-module.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/quickstart/worker/wasm-module.d.ts"
+    },
+    {
+      "path": "examples/realtime/worker/wasm.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/realtime/worker/wasm.d.ts"
+    },
+    {
+      "path": "examples/static-assets/worker/wasm.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/static-assets/worker/wasm.d.ts"
+    },
+    {
+      "path": "examples/workflows/worker/wasm.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/workflows/worker/wasm.d.ts"
+    },
+    {
+      "path": "packages/worker-runtime/test/Support/consumer.ts",
+      "kind": "type-contract",
+      "reason": "Consumer compiler fixture contains deliberately invalid calls with @ts-expect-error. Its contract is compiler acceptance/rejection under noEmit, not executing invalid calls.",
+      "evidence": "packages/worker-runtime/tsconfig.check.json"
+    },
+    {
+      "path": "cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs",
+      "kind": "haskell-reexport",
+      "reason": "Only reexports JSVal from Host.Internal; fresh GHC compilation/interface proof must show no local executable declarations except compiler module metadata.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal"
+    },
+    {
+      "path": "scripts/testing/Support/readiness.d.mts",
+      "kind": "declaration",
+      "reason": "Shared readiness ambient API is imported by Quickstart Dev/run.mts. Validate against that actual TypeScript project input list; implementation/readiness specs remain executable JS coverage targets.",
+      "evidence": "examples/quickstart/tsconfig.json",
+      "compiler_project": "examples/quickstart"
+    }
+  ]
+}

@@ -4,5 +4,34 @@ packages:
   servant-cloudflare-workers-access/servant-cloudflare-workers-access.cabal
   servant-cloudflare-workers-client/servant-cloudflare-workers-client.cabal
   examples/quickstart/quickstart.cabal
+  conformance-oracle/conformance-oracle.cabal
+  testing-support/testing-support.cabal
 
-index-state: 2026-07-01T10:20:13Z
+optional-packages:
+  examples/minimal/*.cabal
+  examples/static-assets/*.cabal
+  examples/realtime/*.cabal
+  examples/workflows/*.cabal
+  examples/quickstart/packages/*/*.cabal
+  examples/quickstart/apps/*/*.cabal
+  examples/library-examples/*.cabal
+
+with-compiler: ghc-9.14.1
+
+index-state: 2026-08-11T04:22:47Z
+
+-- Keep runner and Hedgehog adapter on a mutually compatible API generation.
+constraints:
+  sydtest ==0.28.0.0,
+  sydtest-discover ==0.0.0.4,
+  hedgehog ==1.7,
+  sydtest-hedgehog ==0.4.0.0
+
+allow-newer:
+  -- svg-builder 0.1.1 bounds exclude base 4.22; compile under GHC 9.14.1.
+  svg-builder:base,
+  http-media:containers,
+  servant:base,
+  servant-server:base,
+  servant-client-core:base,
+  servant-client-core:template-haskell

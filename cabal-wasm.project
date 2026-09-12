@@ -5,9 +5,24 @@ packages:
   servant-cloudflare-workers-client/servant-cloudflare-workers-client.cabal
   examples/quickstart/quickstart.cabal
 
+optional-packages:
+  examples/minimal/*.cabal
+  examples/static-assets/*.cabal
+  examples/realtime/*.cabal
+  examples/workflows/*.cabal
+  examples/quickstart/packages/*/*.cabal
+  examples/quickstart/apps/*/*.cabal
+  examples/library-examples/*.cabal
+
 with-compiler: wasm32-wasi-ghc
 with-hc-pkg: wasm32-wasi-ghc-pkg
 
-index-state: 2026-07-01T11:15:03Z
+index-state: 2026-08-11T04:22:47Z
 optimization: 0
 jobs: $ncpus
+
+allow-newer:
+  http-media:containers,
+  servant:base,
+  servant-client-core:base,
+  servant-client-core:template-haskell

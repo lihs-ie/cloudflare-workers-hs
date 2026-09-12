@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/.wrangler
+dist-*
+artifacts
+**/.DS_Store
+**/.dev.vars*
+**/.env*
+**/.dev-test-*

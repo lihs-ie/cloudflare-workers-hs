@@ -1,0 +1,48 @@
+import: cabal-wasm.project
+
+-- Instrument authored packages without changing external dependencies.
+package cloudflare-workers
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package servant-cloudflare-workers
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package servant-cloudflare-workers-access
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package servant-cloudflare-workers-client
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package quickstart
+  flags: +wasm-coverage
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+
+package library-examples
+  flags: +wasm-coverage
+  ghc-options: -fhpc
+
+package minimal-worker
+  flags: +wasm-coverage
+  ghc-options: -fhpc
+
+package static-assets-worker
+  flags: +wasm-coverage
+  ghc-options: -fhpc
+
+package realtime-worker
+  flags: +wasm-coverage
+  ghc-options: -fhpc
+
+package workflow-example
+  flags: +wasm-coverage
+  ghc-options: -fhpc
+
+package quickstart-domain
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package quickstart-infrastructure
+  ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package quickstart-management
+  ghc-options: -fhpc -hpcdir .hpc/wasm

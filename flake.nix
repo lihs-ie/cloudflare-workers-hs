@@ -17,22 +17,29 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          fourmolu = pkgs.writeShellApplication {
+            name = "fourmolu";
+            runtimeInputs = [ pkgs.dotslash ];
+            text = ''
+              exec dotslash ${./fourmolu} "$@"
+            '';
+          };
         in
         {
           default = pkgs.mkShell {
             buildInputs = [
-              ghc-wasm-meta.packages.${system}.all_9_12
+              ghc-wasm-meta.packages.${system}.all_9_14
               pkgs.nodejs_24
-              pkgs.nodePackages.pnpm
-              pkgs.fourmolu
+              pkgs.pnpm
+              fourmolu
               pkgs.hlint
               pkgs.just
             ];
 
             shellHook = ''
               echo "cloudflare-workers-hs dev shell: wasm32-wasi (ghc-wasm-meta) + Node 24 + pnpm"
-              echo "host GHC 9.12.2 is intentionally NOT supplied by this flake (nixos-26.05's haskell.compiler.ghc912 alias resolves to 9.12.3) -- install it via ghcup instead"
-              source ${ghc-wasm-meta.packages.${system}.all_9_12}/bin/env
+              echo "host GHC 9.14.1 is intentionally NOT supplied by this flake -- install it via ghcup instead"
+              source ${ghc-wasm-meta.packages.${system}.all_9_14}/bin/env
             '';
           };
         }
