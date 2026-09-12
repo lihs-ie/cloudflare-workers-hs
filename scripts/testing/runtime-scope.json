@@ -1465,16 +1465,7 @@
       "evidence": "testing-support/src/Support/Discovery.hs"
     }
   ],
-  "exclusions": [
-    {
-      "path": "examples/minimal/artifacts/testing/workers-deploy-20260908/minimal-bundle/index.js",
-      "kind": "generated",
-      "reason": "Retained historical Wrangler dry-run bundle, not authored source. Fingerprinted bundle, source map, embedded sources and successful build log are validated; authored minimal sources remain required.",
-      "evidence": "docs/audits/generated-minimal-bundle.json",
-      "provenance_format": "wrangler-bundle-v1",
-      "evidence_sha256": "cc991d09aa932aa073e265df8ee4d481c9570d45553c8e3dd79737747d17edf9"
-    }
-  ],
+  "exclusions": [],
   "validations": [
     {
       "path": "examples/library-examples/worker/library-examples-fixtures-jsffi.d.mts",
@@ -1547,12 +1538,6 @@
       "kind": "declaration",
       "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
       "evidence": "examples/workflows/worker/wasm.d.ts"
-    },
-    {
-      "path": "packages/worker-runtime/test/Support/consumer.ts",
-      "kind": "type-contract",
-      "reason": "Consumer compiler fixture contains deliberately invalid calls with @ts-expect-error. Its contract is compiler acceptance/rejection under noEmit, not executing invalid calls.",
-      "evidence": "packages/worker-runtime/tsconfig.check.json"
     },
     {
       "path": "cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs",

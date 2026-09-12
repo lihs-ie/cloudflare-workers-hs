@@ -24,8 +24,6 @@ def validation_project(entry):
     path = Path(entry['path'])
     if path.parts[:1] == ('examples',) and len(path.parts) >= 3:
         return 'examples/' + path.parts[1], 'tsconfig.json'
-    if path.parts[:2] == ('packages', 'worker-runtime'):
-        return 'packages/worker-runtime', 'tsconfig.check.json'
     raise ValueError('No approved compiler project for ' + entry['path'])
 
 
