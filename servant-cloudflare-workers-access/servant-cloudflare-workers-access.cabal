@@ -5,11 +5,12 @@ synopsis:
   Cloudflare Zero Trust (Access) authentication for servant-cloudflare-workers
 
 description:
-  Auth package: verifies Cloudflare Access JWTs via
-  SubtleCrypto -- not crypton / cryptonite, which bundle cbits that do not
-  compile to wasm32-wasi (claim servant-auth-crypto-incompatible) -- and
-  provides a ZeroTrust HasWorkerServer combinator that injects verified
-  claims into the handler context. 
+  Adds Cloudflare Access authentication to @servant-cloudflare-workers@.
+  The package verifies Access JWT signatures with the Workers SubtleCrypto
+  API, validates issuer, audience, time, and token-type claims, caches JWKS
+  documents, and exposes a @ZeroTrust@ combinator that supplies verified
+  claims to handlers. It targets GHC's @wasm32-wasi@ backend and avoids native
+  cryptography dependencies that cannot run in a Worker isolate.
 
 license:       BSD-3-Clause
 build-type:    Simple

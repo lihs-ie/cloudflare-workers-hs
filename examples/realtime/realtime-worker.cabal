@@ -2,6 +2,11 @@ cabal-version: 3.0
 name: realtime-worker
 version: 0.1.0.0
 synopsis: Hibernating WebSocket chat with Durable Object SQL
+description:
+  Demonstrates a real-time chat Worker using WebSocket hibernation, Durable
+  Objects, and the Durable Object SQL storage API. The @wasm32-wasi@
+  executable exposes HTTP upgrade, message, close, and storage entrypoints for
+  runtime integration tests.
 license: BSD-3-Clause
 build-type: Simple
 flag wasm-coverage

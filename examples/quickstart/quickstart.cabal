@@ -3,8 +3,10 @@ name:          quickstart
 version:       0.1.0.0
 synopsis:      Multi-Worker URL shortener using Haskell and Servant
 description:
-  Independent HTTP applications and Queue, Scheduled and Durable Object
-  handlers, with shared domain types and real WASM integration tests.
+  A multi-Worker URL shortener that demonstrates typed HTTP applications,
+  Queues, scheduled handlers, Durable Objects, D1, R2, KV, service bindings,
+  and Workflows. It separates shared domain code from Worker infrastructure
+  and includes integration tests against the real @wasm32-wasi@ artifacts.
 
 license:       BSD-3-Clause
 build-type:    Simple

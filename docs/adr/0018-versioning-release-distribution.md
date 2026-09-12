@@ -116,6 +116,16 @@ major、`C` が minor、`D` がパッチ）とする。公開 API 表面は以�
 - Servant コアの非互換更新には、対応マトリクスの `servant` 範囲更新と互換性テスト
   （[ADR-0006](./0006-servant-execution-engine.md) の `servant-server` 互換性検証）の再実行で追従する。
 
+### Cabal package metadata
+
+ソース管理対象のすべての Cabal package は、`synopsis` と `description` を英語で記述する。
+公開ライブラリだけでなく、examples と開発専用 package も対象とする。説明には利用者が package の
+役割を判断するために必要な用途、主要機能、実行環境、重要な互換性制約を記載する。
+
+設計判断の経緯、開発工程、教材の章番号、内部検証ラベルは package metadata に含めない。これらは
+`docs/adr/**` など、目的に合った開発文書に記録する。Cabal metadata はリポジトリ外で単独表示されても
+意味が通る内容に保つ。
+
 ## 結果 (Consequences)
 
 ### 良い結果 (Positive)
@@ -170,6 +180,9 @@ major、`C` が minor、`D` がパッチ）とする。公開 API 表面は以�
       CI 検証行列（[ADR-0015](./0015-build-deploy-ci-pipeline.md)）と一致させる。
 - [ ] 公開 API 削除前に一つ前の major で `DEPRECATED` の猶予を設ける（不可避な場合はその理由を変更ログに記す）。
 - [ ] パッケージ説明に WASM（`wasm32-wasi`）専用・stock GHC では実行不可・要ツールチェーンを明記する。
+- [ ] 全 Cabal package の `synopsis` と `description` を英語で記述し、用途・主要機能・実行環境・
+      重要な互換性制約に限定する。
+- [ ] Cabal package metadata に ADR 番号、教材の章番号、pschool、開発フェーズ、内部検証ラベルを含めない。
 
 ## 参考資料 (References)
 

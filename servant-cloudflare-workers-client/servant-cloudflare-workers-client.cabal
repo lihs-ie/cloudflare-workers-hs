@@ -1,27 +1,21 @@
 cabal-version:   3.0
 name:            servant-cloudflare-workers-client
 version:         0.1.0.0
-synopsis:        fetch-backed Servant client for Cloudflare Workers
+synopsis:        Fetch-backed Servant client for Cloudflare Workers
 description:
-  Client package of the cloudflare-workers-hs family (ADR-0011 \/ ADR-0019).
-  Outbound HTTP from a Worker goes through the runtime's own @fetch@ API;
-  this package supplies a @RunClient@ backend (@FetchClient@) over it, so
-  @servant-client-core@'s own @HasClient@ \/ @clientIn@ machinery generates
-  client functions unchanged. There is deliberately no hand-written
-  client-side type class here.
+  Generates typed Servant clients that send requests through the Cloudflare
+  Workers @fetch@ API. @FetchClient@ implements @RunClient@, allowing the
+  standard @HasClient@ and @clientIn@ machinery from @servant-client-core@ to
+  construct client functions for Worker applications.
   .
-  The @exposed-modules@ list splits in two.
-  @Servant.Cloudflare.Workers.Client.Fetch@ and @.Client.Fetch.Request@ are
-  the __public facade__, covered by the Package Versioning Policy
-  (ADR-0018). @Servant.Cloudflare.Workers.Client.Internal.*@ is
-  __mechanism__
-  runtime @fetch@ call
-  guarantee__: any release, including a patch release, may change or remove
-  it without notice. See @README.md@ for the module-by-module split.
+  Use @Servant.Cloudflare.Workers.Client.Fetch@ and
+  @Servant.Cloudflare.Workers.Client.Fetch.Request@ as the stable public
+  interface. Modules below @Servant.Cloudflare.Workers.Client.Internal@ are
+  implementation details and may change between releases.
   .
-  These are ordinary Haskell sources and type-check on stock GHC, but a
-  Worker built from them only runs on @wasm32-wasi@; supplying that
-  toolchain is the downstream user's responsibility (ADR-0018).
+  The Haskell modules can be type-checked on a host GHC. Executing their
+  runtime fetch operations requires a Worker built with GHC's @wasm32-wasi@
+  toolchain.
 
 license:         MIT
 license-file:    LICENSE
