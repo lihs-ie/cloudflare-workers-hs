@@ -82,6 +82,42 @@ class RunLaneTests(unittest.TestCase):
                 if failure is None:
                     self.assertIn('quickstart:test:model', commands[-1])
 
+    def test_model_can_reuse_runtime_built_by_an_earlier_ci_step(self):
+        with tempfile.TemporaryDirectory() as directory:
+            code, commands, _ = self.run_lane(
+                Path(directory), 'model', ['--skip-runtime-build']
+            )
+            self.assertEqual(code, 0)
+            self.assertEqual(commands[0], ['pnpm', 'run', 'build:model'])
+            self.assertEqual(len(commands), 2)
+
+    def test_coverage_can_reuse_runtime_without_skipping_model_bundle(self):
+        import types
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            seen = []
+
+            def collect(repo, output, targets, snapshot, **kwargs):
+                seen.extend(targets)
+                output.mkdir(parents=True)
+                (output / 'proof.json').write_text('{}')
+                return {'exit_code': 0}
+
+            module = types.ModuleType('Support.host_coverage')
+            module.collect = collect
+            shared = types.ModuleType('Support.coverage_evidence')
+            shared.validated_shared_javascript = Mock(side_effect=ValueError)
+            with patch.dict(sys.modules, {
+                'Support.host_coverage': module,
+                'Support.coverage_evidence': shared,
+            }), patch.object(runner, 'verified_hpc_arguments', return_value=[]):
+                code, commands, _ = self.run_lane(
+                    root, 'coverage', ['--skip-runtime-build'], reports=False
+                )
+            self.assertEqual(commands[0], ['pnpm', 'run', 'build:model'])
+            self.assertIn('quickstart:test:model', seen)
+            self.assertNotEqual(code, 0)
+
     def test_empty_example_never_starts_unbounded_node_discovery(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, 'No integration tests'):

@@ -45,6 +45,9 @@ jobs:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
       - uses: cachix/install-nix-action@v31
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
       - uses: actions/cache@v4
         with:
           path: |
@@ -63,9 +66,10 @@ jobs:
       - name: Coverage target
         if: success() || failure()
         run: |
-          nix develop --command pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile
           nix develop --command wasm32-wasi-cabal update
-          nix develop --command python3 scripts/testing/run.py coverage
+          nix develop --command pnpm run --dir examples/quickstart build:runtime
+          python3 scripts/testing/run.py coverage --skip-runtime-build
       - name: Broader generated input exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: |
@@ -93,8 +97,11 @@ jobs:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
       - uses: cachix/install-nix-action@v31
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
       - name: Install locked JS dependencies
-        run: nix develop --command pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Update WASM Cabal package index
         run: nix develop --command wasm32-wasi-cabal update
       - name: Pinned Git runtime consumer
@@ -110,10 +117,10 @@ jobs:
         run: nix develop --command python3 scripts/testing/run.py docker
       - name: Generated state model against real WASM
         if: success() || failure()
-        run: nix develop --command python3 scripts/testing/run.py model --examples 10
+        run: python3 scripts/testing/run.py model --examples 10 --skip-runtime-build
       - name: Broader state exploration
         if: github.event_name == 'schedule' && (success() || failure())
-        run: nix develop --command python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100
+        run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
       - uses: actions/upload-artifact@v4
         if: always()
         with:

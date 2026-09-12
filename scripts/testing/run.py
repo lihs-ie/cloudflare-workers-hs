@@ -214,6 +214,8 @@ def main():
     parser.add_argument('--compile-proof', type=Path, help='Successful compiler input/source proof for the coverage lane')
     parser.add_argument('--native-compile-proof', type=Path, help='Native compiler evidence for verified Haskell reexports')
     parser.add_argument('--shell-json', type=Path, help='Source-matched kcov evidence for the coverage lane; branches remain unmeasured')
+    parser.add_argument('--skip-runtime-build', action='store_true',
+                        help='Reuse a runtime WASM artifact built earlier in the same CI job')
     args = parser.parse_args()
     if args.examples <= 0:
         parser.error('--examples must be positive')
@@ -281,7 +283,7 @@ def main():
     elif args.lane == 'replay':
         codes.append(cabal([args.target]))
     elif args.lane in ('integration', 'model'):
-        build = run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
+        build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
         codes.append(build)
         if build == 0:
             if args.lane == 'integration':
@@ -343,7 +345,7 @@ def main():
             codes.append(run(['node', '--test', '--test-concurrency=1', *tests]))
     elif args.lane == 'coverage':
         directory = ROOT / 'dist-testing-coverage'
-        model_build = run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
+        model_build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
         codes.append(model_build)
         if model_build == 0:
             model_build = run(['pnpm', 'run', 'build:model'], EXAMPLE)
