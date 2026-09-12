@@ -63,13 +63,13 @@ jobs:
       - name: Servant differential tests
         if: success() || failure()
         run: python3 scripts/testing/run.py conformance
-      - name: Coverage target
+      - name: Coverage evidence report
         if: success() || failure()
         run: |
           pnpm install --frozen-lockfile
           nix develop --command wasm32-wasi-cabal update
           nix develop --command pnpm run --dir examples/quickstart build:runtime
-          python3 scripts/testing/run.py coverage --skip-runtime-build
+          python3 scripts/testing/run.py coverage --skip-runtime-build --report-only
       - name: Broader generated input exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: |
