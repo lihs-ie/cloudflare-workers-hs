@@ -1,22 +1,46 @@
-cabal-version: 3.0
-name:          servant-cloudflare-workers-client
-version:       0.1.0.0
-synopsis:
-  Self-implemented fetch-backed servant-client-core interpreter for Cloudflare Workers
-
+cabal-version:   3.0
+name:            servant-cloudflare-workers-client
+version:         0.1.0.0
+synopsis:        fetch-backed Servant client for Cloudflare Workers
 description:
-  Client package (ADR-0011/ADR-0019): reuses `servant-client-core`
-  (no http-client / no network package) and self-implements a
-  RunClient backend against the Workers `fetch` API, the same
-  reuse-not-refork stance ADR-0006 already applied to the server
-  package. This chapter (ch-09-01) introduces the package with
-  FetchClient -- real Functor/Applicative/Monad/MonadIO, stub
-  RunClient method bodies; Servant.Cloudflare.Workers.Client (the
-  HasWorkerClient class and its combinator instances, ch-09-02 and
-  ch-09-03) is added by later chapters.
+  Client package of the cloudflare-workers-hs family (ADR-0011 \/ ADR-0019).
+  Outbound HTTP from a Worker goes through the runtime's own @fetch@ API;
+  this package supplies a @RunClient@ backend (@FetchClient@) over it, so
+  @servant-client-core@'s own @HasClient@ \/ @clientIn@ machinery generates
+  client functions unchanged. There is deliberately no hand-written
+  client-side type class here.
+  .
+  The @exposed-modules@ list splits in two.
+  @Servant.Cloudflare.Workers.Client.Fetch@ and @.Client.Fetch.Request@ are
+  the __public facade__, covered by the Package Versioning Policy
+  (ADR-0018). @Servant.Cloudflare.Workers.Client.Internal.*@ is
+  __mechanism__
+  runtime @fetch@ call
+  guarantee__: any release, including a patch release, may change or remove
+  it without notice. See @README.md@ for the module-by-module split.
+  .
+  These are ordinary Haskell sources and type-check on stock GHC, but a
+  Worker built from them only runs on @wasm32-wasi@; supplying that
+  toolchain is the downstream user's responsibility (ADR-0018).
 
-license:       BSD-3-Clause
-build-type:    Simple
+license:         MIT
+license-file:    LICENSE
+author:          lihs
+maintainer:      lihs.dev@gmail.com
+copyright:       (c) 2026 lihs
+homepage:        https://github.com/lihs-ie/cloudflare-workers-hs
+bug-reports:     https://github.com/lihs-ie/cloudflare-workers-hs/issues
+category:        Web
+build-type:      Simple
+tested-with:     GHC ==9.14.1
+extra-doc-files:
+  CHANGELOG.md
+  README.md
+
+source-repository head
+  type:     git
+  location: https://github.com/lihs-ie/cloudflare-workers-hs.git
+  subdir:   servant-cloudflare-workers-client
 
 common warnings
   ghc-options: -Wall
@@ -26,28 +50,69 @@ library
   hs-source-dirs:     src
   default-language:   GHC2024
   default-extensions:
+    FlexibleContexts
+    FlexibleInstances
+    KindSignatures
+    MultiParamTypeClasses
+    MultilineStrings
     OverloadedStrings
     TypeFamilies
+    TypeOperators
 
-  exposed-modules:    Servant.Cloudflare.Workers.Client.Fetch
+  exposed-modules:
+    Servant.Cloudflare.Workers.Client.Fetch
+    Servant.Cloudflare.Workers.Client.Fetch.Request
+    Servant.Cloudflare.Workers.Client.Internal.FFI.Fetch
+
   build-depends:
-    , base                 >=4.16 && <4.22
-    , bytestring
-    , cloudflare-workers
-    , http-api-data
-    , servant
-    , servant-client-core
-    , text
+    , base                              >=4.22     && <4.23
+    , bytestring                        >=0.11     && <0.13
+    , case-insensitive                  >=1.2      && <1.3
+    , cloudflare-workers                ^>=0.1.0.0
+    , cloudflare-workers:ghc-wasm-shim
+    , containers                        >=0.8      && <0.9
+    , http-api-data                     >=0.5      && <0.8
+    , http-media                        >=0.8      && <0.9
+    , http-types                        >=0.12     && <0.13
+    , servant                           >=0.20     && <0.21
+    , servant-client-core               >=0.20     && <0.21
+    , text                              >=2.0      && <2.2
+    , transformers                      >=0.5      && <0.7
+
+  if !os(wasi)
+    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+  if os(wasi)
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
 
 test-suite unit
-  import:           warnings
-  type:             exitcode-stdio-1.0
-  hs-source-dirs:   test
-  main-is:          Spec.hs
+  import: warnings
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, test
+  main-is: Spec.hs
   default-language: GHC2024
+  default-extensions: OverloadedStrings
+  build-tool-depends: testing-support:sydtest-discover-layer
   build-depends:
     , base
+    , aeson
+    , base64-bytestring
+    , bytestring
+    , cloudflare-workers
+    , containers
+    , hedgehog >=1.7 && <1.8
+    , http-media
+    , http-types
     , servant-client-core
+    , servant
+    , transformers
+    , sydtest >=0.28 && <0.29
+    , sydtest-hedgehog >=0.4 && <0.5
+    , text
     , servant-cloudflare-workers-client
-    , tasty
-    , tasty-hunit
+  other-modules:
+    Servant.Cloudflare.Workers.Client.Fetch.RequestSpec
+    Servant.Cloudflare.Workers.Client.FetchSpec
+    Servant.Cloudflare.Workers.Client.ServiceBindingSpec
