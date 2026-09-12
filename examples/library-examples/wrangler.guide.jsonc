@@ -1,0 +1,24 @@
+{
+  "name": "library-guide",
+  "main": "worker/entry.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "tail_consumers": [
+    {
+      "service": "library-tail"
+    }
+  ],
+  "vars": {
+    "EXAMPLE_MODE": "example"
+  }
+}

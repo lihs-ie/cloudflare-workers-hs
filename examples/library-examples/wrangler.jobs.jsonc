@@ -1,0 +1,5 @@
+{
+  "name": "library-examples-jobs-validator",
+  "main": "worker/jobs-service.ts",
+  "compatibility_date": "2026-07-21"
+}

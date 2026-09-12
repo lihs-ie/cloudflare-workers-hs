@@ -1,0 +1,7 @@
+{
+  "name": "library-tail",
+  "main": "worker/entry.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [{ "type": "CompiledWasm", "globs": ["**/*.wasm"] }]
+}

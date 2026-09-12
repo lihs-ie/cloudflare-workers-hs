@@ -1,0 +1,88 @@
+{
+  "name": "library-examples",
+  "main": "entry.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "00000000000000000000000000000001"
+    }
+  ],
+  "services": [
+    {
+      "binding": "GUIDE",
+      "service": "library-guide"
+    },
+    {
+      "binding": "JOBS_VALIDATOR",
+      "service": "library-examples-jobs-validator",
+      "entrypoint": "JobsValidator"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EXAMPLE_BUCKET",
+      "bucket_name": "library-examples"
+    }
+  ],
+  "vars": {
+    "EXAMPLE_MODE": "fixture"
+  },
+  "d1_databases": [
+    {
+      "binding": "JOBS_DB",
+      "database_name": "library-jobs",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "JOBS_STATE",
+        "class_name": "JobsState"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "JobsState"
+      ]
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOBS_QUEUE",
+        "queue": "library-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "library-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "library-jobs-dlq"
+      },
+      {
+        "queue": "library-jobs-dlq",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1
+      }
+    ]
+  }
+}
