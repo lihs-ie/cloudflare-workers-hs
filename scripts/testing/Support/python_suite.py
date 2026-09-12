@@ -12,8 +12,10 @@ def main():
     parser.add_argument('--result', required=True, type=Path)
     args = parser.parse_args()
     suite = unittest.TestSuite()
+    test_directory = str(args.test_directory.resolve())
     for pattern in ['test_*.py', 'coverage_checks.py']:
-        suite.addTests(unittest.defaultTestLoader.discover(str(args.test_directory), pattern=pattern))
+        loader = unittest.TestLoader()
+        suite.addTests(loader.discover(test_directory, pattern=pattern, top_level_dir=test_directory))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     successful = result.wasSuccessful() and result.testsRun > 0
     args.result.write_text(json.dumps({'tests': result.testsRun, 'successful': successful}) + '\n')
