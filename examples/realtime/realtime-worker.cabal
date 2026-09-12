@@ -1,0 +1,33 @@
+cabal-version: 3.0
+name: realtime-worker
+version: 0.1.0.0
+synopsis: Hibernating WebSocket chat with Durable Object SQL
+license: BSD-3-Clause
+build-type: Simple
+flag wasm-coverage
+  description: Report test-only HPC snapshots after each export invocation
+  default: False
+  manual: True
+
+executable realtime-worker
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      hs-source-dirs: test
+      other-modules: Support.Coverage
+      cpp-options: -DWASM_COVERAGE
+      ghc-options: -fhpc -hpcdir .hpc/wasm-realtime-worker
+  hs-source-dirs: app, src, test
+  main-is: Main.hs
+  other-modules: Support.RoomFixture, Realtime.API, Realtime.Application, Realtime.Room, Support.SQLFixture
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall
+  build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=roomFetch" "-optl-Wl,--export=initializeRoom" "-optl-Wl,--export=roomMessage" "-optl-Wl,--export=roomClose" "-optl-Wl,--export=sqlChecks" "-optl-Wl,--export=roomOversizeCheck" "-optl-Wl,--export=upgradeChecks"
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
