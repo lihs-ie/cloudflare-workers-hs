@@ -21,6 +21,13 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
-
-# agent-policy local evidence (CI で再生成)
-.agent-evidence/
+/artifacts/
+/docs/*
+!/docs/adr/
+!/docs/adr/**
+/packages/
+*.tix
+__pycache__/
+/.wrangler/
+_build
+node_modules
