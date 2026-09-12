@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../quickstart/node_modules/@types"
+    ]
+  },
+  "include": [
+    "worker/**/*.ts",
+    "worker/**/*.d.mts",
+    "test/**/*.ts",
+    ".wrangler/types/worker-configuration.d.ts"
+  ]
+}

@@ -1,0 +1,67 @@
+cabal-version: 3.0
+name: workflow-example
+version: 0.1.0.0
+build-type: Simple
+license: BSD-3-Clause
+flag wasm-coverage
+  description: Report test-only HPC snapshots after each export invocation
+  default: False
+  manual: True
+
+executable workflow-example
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      hs-source-dirs: test
+      other-modules: Support.Coverage
+      cpp-options: -DWASM_COVERAGE
+      ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example
+  hs-source-dirs: app, src
+  main-is: Main.hs
+  other-modules: WorkflowExample.API, WorkflowExample.Domain, WorkflowExample.Application
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall
+  build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text, time
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=workflow"
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+executable workflow-example-fixture
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      hs-source-dirs: test
+      other-modules: Support.Coverage
+      cpp-options: -DWASM_COVERAGE
+      ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example-fixture
+  hs-source-dirs: test/Support, src, test
+  main-is: Main.hs
+  other-modules: WorkflowExample.Domain, Support.WorkflowFixture, Support.D1QueryFixture
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall
+  build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text, time
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=workflowFixture" "-optl-Wl,--export=d1QueryFixture"
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, src
+  main-is: Spec.hs
+  other-modules: WorkflowExample.Domain, WorkflowExample.DomainSpec
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
+  build-depends: base, aeson, text, time, sydtest
+  build-tool-depends: testing-support:sydtest-discover-layer

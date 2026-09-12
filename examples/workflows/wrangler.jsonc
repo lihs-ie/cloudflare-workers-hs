@@ -1,0 +1,10 @@
+{
+  "$schema": "../quickstart/node_modules/wrangler/config-schema.json",
+  "name": "haskell-workflow-example",
+  "main": "worker/entry.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [{"type":"CompiledWasm","globs":["**/*.wasm"]}],
+  "workflows": [{"binding":"APPROVALS","name":"haskell-approval","class_name":"ApprovalWorkflow"}],
+  "d1_databases": [{"binding":"AUDIT","database_name":"haskell-workflow-audit","database_id":"00000000-0000-0000-0000-000000000001"}]
+}
