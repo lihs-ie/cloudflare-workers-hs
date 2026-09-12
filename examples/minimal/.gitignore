@@ -1,0 +1,4 @@
+/worker/*.wasm
+/worker/*-jsffi.mjs
+/.wrangler/
+/worker/build.json
