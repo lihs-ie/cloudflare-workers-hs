@@ -64,10 +64,10 @@ class CompileProducerTests(unittest.TestCase):
                 self.assertEqual(pointer.read_text(), 'prior successful proof')
                 self.assertTrue(json.loads((output / 'proof.json').read_text())['errors'])
 
-    def test_projects_reject_contracts_outside_example_projects(self):
-        for path in ('packages/worker-runtime/test/Support/consumer.ts', 'other/contracts.ts'):
-            with self.subTest(path=path), self.assertRaises(ValueError):
-                producer.compiler_projects([{'path': path}])
+    def test_projects_include_consumer_and_reject_unknown_locations(self):
+        self.assertEqual(producer.compiler_projects([{'path': 'packages/worker-runtime/test/Support/consumer.ts'}]), {'packages/worker-runtime': 'tsconfig.check.json'})
+        with self.assertRaises(ValueError):
+            producer.compiler_projects([{'path': 'other/contracts.ts'}])
 
     def test_shared_declaration_uses_explicit_project(self):
         entry = {'path': 'scripts/testing/Support/readiness.d.mts', 'compiler_project': 'examples/quickstart'}
