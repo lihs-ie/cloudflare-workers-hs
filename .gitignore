@@ -21,7 +21,7 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
-/artifacts/
+artifacts/
 /docs/*
 !/docs/adr/
 !/docs/adr/**
