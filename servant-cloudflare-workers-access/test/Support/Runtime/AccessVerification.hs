@@ -6,9 +6,11 @@ module Support.Runtime.AccessVerification (accessVerificationProbe) where
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, fromException, throwIO, try)
+import Control.Monad (when)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (parseEither, (.:), (.:?), (.!=))
 import Data.ByteString.Lazy qualified as LBS
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Encoding
@@ -28,7 +30,7 @@ accessVerificationProbe inputValue nativeKey = do
     value <- either fail pure (Aeson.eitherDecodeStrict (Encoding.encodeUtf8 input))
     (mode, rawToken, reset) <- either fail pure $ parseEither
       (Aeson.withObject "Access probe" $ \o -> (,,) <$> o .: "mode" <*> (o .:? "token" .!= "") <*> (o .:? "reset" .!= True)) value
-    if reset then resetJWKSCacheForTesting else pure ()
+    when reset resetJWKSCacheForTesting
     -- Consumer code keeps the unverified assertion wrapped until invoking the
     -- verifier; unwrap only at the public Text-based verification boundary.
     let assertion = AccessJWT rawToken
@@ -106,8 +108,8 @@ valueDiagnostics = Aeson.object
       , snapshot "lookup-error" JWKSKidNotFound [JWKSKidAmbiguous]
       , snapshot "cache-entry" entry [entry{cacheEntryURL = "other"}, entry{cacheEntryFetchedAtSeconds = 2}, entry{cacheEntryDocument = JWKSDocument []}, entry{cacheEntryKidMissRefetchAtSeconds = Just 2}]
       ]
-  , "jwkRequiresValue" Aeson..= ((Aeson.omittedField :: Maybe JWK) == Nothing)
-  , "documentRequiresValue" Aeson..= ((Aeson.omittedField :: Maybe JWKSDocument) == Nothing)
+  , "jwkRequiresValue" Aeson..= isNothing (Aeson.omittedField :: Maybe JWK)
+  , "documentRequiresValue" Aeson..= isNothing (Aeson.omittedField :: Maybe JWKSDocument)
   ]
   where
     user = AccessClaims "synthetic@example.test" "subject" ["audience"] "issuer" 1

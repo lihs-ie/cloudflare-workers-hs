@@ -96,6 +96,8 @@ jobs:
         run: nix develop --command wasm32-wasi-cabal update
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
+      - name: HLint
+        run: nix develop --command scripts/hlint
       - name: Coverage collector regressions
         run: python3 scripts/testing/Support/coverage_checks.py
       - name: Host tests

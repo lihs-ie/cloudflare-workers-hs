@@ -1,18 +1,24 @@
--- | JSON queue consumption with explicit, per-message settlement. Payloads and
--- action results are evaluated to WHNF inside the protected processing phase.
-module Cloudflare.Workers.Entrypoint.Queue.Typed
-    ( QueueMessageFailure(..), QueueFailureDisposition(..), QueueFailurePolicy
-    , consumeJSONMessages, consumeJSONMessagesWith
-    , createJSONQueueHandler, createJSONQueueHandlerWith
-    ) where
+{- | JSON queue consumption with explicit, per-message settlement. Payloads and
+action results are evaluated to WHNF inside the protected processing phase.
+-}
+module Cloudflare.Workers.Entrypoint.Queue.Typed (
+    QueueMessageFailure (..),
+    QueueFailureDisposition (..),
+    QueueFailurePolicy,
+    consumeJSONMessages,
+    consumeJSONMessagesWith,
+    createJSONQueueHandler,
+    createJSONQueueHandlerWith,
+) where
 
 import Cloudflare.Workers.Entrypoint.Queue
 import Cloudflare.Workers.Env (BindingEnv)
 import Cloudflare.Workers.Internal.FFI.BindingEnv (BuildBindingEnv, BuildDOSEnv)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext)
-import Control.Exception (SomeException, SomeAsyncException, evaluate, fromException, tryJust)
-import Control.Monad (forM_)
+import Control.Exception (SomeAsyncException, SomeException, evaluate, fromException, tryJust)
+import Control.Monad (forM_, void)
 import Data.Aeson (FromJSON, eitherDecodeStrict')
+import Data.Either (fromRight)
 import GHC.Wasm.Prim (JSVal)
 
 data QueueMessageFailure
@@ -35,14 +41,15 @@ trySynchronous = tryJust $ \exception -> case fromException exception :: Maybe S
 defaultRetry :: QueueFailureDisposition
 defaultRetry = RetryMessage (QueueRetryOptions Nothing)
 
-consumeJSONMessages :: FromJSON a => (QueueMessage -> a -> IO ()) -> QueueBatch -> IO ()
+consumeJSONMessages :: (FromJSON a) => (QueueMessage -> a -> IO ()) -> QueueBatch -> IO ()
 consumeJSONMessages = consumeJSONMessagesWith (\_ _ -> pure defaultRetry)
 
--- | Policy exceptions fall back to the default retry. Settlement failures escape
--- to the runtime; we never attempt a second settlement after ack/retry fails.
--- Action and policy callbacks must leave ack/retry to this helper: the original
--- QueueMessage is provided for metadata and compatibility, not manual settlement.
-consumeJSONMessagesWith :: FromJSON a => QueueFailurePolicy -> (QueueMessage -> a -> IO ()) -> QueueBatch -> IO ()
+{- | Policy exceptions fall back to the default retry. Settlement failures escape
+to the runtime; we never attempt a second settlement after ack/retry fails.
+Action and policy callbacks must leave ack/retry to this helper: the original
+QueueMessage is provided for metadata and compatibility, not manual settlement.
+-}
+consumeJSONMessagesWith :: (FromJSON a) => QueueFailurePolicy -> (QueueMessage -> a -> IO ()) -> QueueBatch -> IO ()
 consumeJSONMessagesWith policy action batch = forM_ (queueBatchMessages batch) $ \message -> do
     decoded <- trySynchronous $ do
         result <- evaluate (eitherDecodeStrict' (queueMessageBody message))
@@ -59,7 +66,7 @@ consumeJSONMessagesWith policy action batch = forM_ (queueBatchMessages batch) $
         Right () -> pure AcknowledgeMessage
         Left failure -> do
             chosen <- trySynchronous $ policy message failure >>= forceDisposition
-            pure (either (const defaultRetry) id chosen)
+            pure (fromRight defaultRetry chosen)
     case disposition of
         AcknowledgeMessage -> queueMessageAck message
         RetryMessage options -> queueMessageRetry message options
@@ -70,20 +77,28 @@ consumeJSONMessagesWith policy action batch = forM_ (queueBatchMessages batch) $
             AcknowledgeMessage -> pure value
             RetryMessage options -> do
                 delay <- evaluate (queueRetryOptionsDelaySeconds options)
-                case delay of Nothing -> pure (); Just seconds -> evaluate seconds >> pure ()
+                case delay of { Nothing -> pure (); Just seconds -> void (evaluate seconds) }
                 pure value
 
 createJSONQueueHandler ::
     (FromJSON a, BuildBindingEnv bindings, BuildDOSEnv dos) =>
     (QueueMessage -> a -> BindingEnv kvs dos bindings -> WorkersExecutionContext -> IO ()) ->
-    JSVal -> JSVal -> JSVal -> IO ()
+    JSVal ->
+    JSVal ->
+    JSVal ->
+    IO ()
 createJSONQueueHandler = createJSONQueueHandlerWith (\_ _ _ _ -> pure defaultRetry)
 
 createJSONQueueHandlerWith ::
     (FromJSON a, BuildBindingEnv bindings, BuildDOSEnv dos) =>
     (QueueMessage -> QueueMessageFailure -> BindingEnv kvs dos bindings -> WorkersExecutionContext -> IO QueueFailureDisposition) ->
     (QueueMessage -> a -> BindingEnv kvs dos bindings -> WorkersExecutionContext -> IO ()) ->
-    JSVal -> JSVal -> JSVal -> IO ()
+    JSVal ->
+    JSVal ->
+    JSVal ->
+    IO ()
 createJSONQueueHandlerWith policy action = createQueueHandler $ \batch env context ->
-    consumeJSONMessagesWith (\message failure -> policy message failure env context)
-        (\message value -> action message value env context) batch
+    consumeJSONMessagesWith
+        (\message failure -> policy message failure env context)
+        (\message value -> action message value env context)
+        batch
