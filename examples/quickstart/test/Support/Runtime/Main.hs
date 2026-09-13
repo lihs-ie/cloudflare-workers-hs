@@ -1,60 +1,64 @@
 module Main (main) where
-import Support.Runtime.StoragePublicContracts qualified as StoragePublicContracts
-import Support.Runtime.ExportRequestCodec qualified as ExportRequestCodec
-import Support.Runtime.ExportProducer qualified as ExportProducer
-import Support.Runtime.QuickstartDatabase qualified as QuickstartDatabase
-import Support.Runtime.GenerationAsync qualified as GenerationAsync
-import Support.Runtime.EntrypointLifecycleErrors qualified as EntrypointLifecycleErrors
-import Support.Runtime.RoutingCoverage qualified as RoutingCoverage
-import Cloudflare.Workers.Streaming qualified as Streaming
-import Support.Runtime.ClientRetryExtra qualified as ClientRetryExtra
-import Support.Runtime.TransportExtra qualified as TransportExtra
-import Support.Runtime.WorkflowBoundaryExtra qualified as WorkflowBoundaryExtra
-import Support.Runtime.EntrypointErrors qualified as EntrypointErrors
-import Support.Runtime.CacheServiceErrors qualified as CacheServiceErrors
-import Support.Runtime.StorageObjectErrors qualified as StorageObjectErrors
-import Support.Runtime.StorageErrors qualified as StorageErrors
+
 import Cloudflare.Workers.Binding.D1
-import Support.Runtime.Routing qualified as Routing
-import Support.Runtime.AccessVerification qualified as AccessVerification
-import Support.Runtime.AccessRoutes qualified as AccessRoutes
-import Support.Runtime.BindingEnv qualified as BindingEnvProbe
-import Support.Runtime.MiddlewareExtra qualified as MiddlewareExtra
-import Support.Runtime.SQLBoundaries qualified as SQLBoundaries
-import Support.Runtime.TypedQueueBoundaries qualified as TypedQueueBoundaries
-import Support.Runtime.QuickstartBoundaries qualified as QuickstartBoundaries
-import Support.Runtime.JWKSCache qualified as JWKSCache
-import Support.Runtime.Client qualified as Client
-import Data.ByteString.Lazy qualified as LazyBytes
-import Envelope qualified
-import Support.Runtime.SocketStream qualified as SocketStream
-import Support.Runtime.StorageBoundaries qualified as StorageBoundaries
 import Cloudflare.Workers.Binding.DurableObject
 import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler)
 import Cloudflare.Workers.Env (BindingEnv)
 import Cloudflare.Workers.HTTP
 import Cloudflare.Workers.Headers (headersFromList)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArrayToByteString)
-import Cloudflare.Workers.Reactor (WorkersExecutionContext(..), passThroughOnException, waitUntil)
-import Data.Text qualified as Text
-import Control.Exception (throwIO, try, SomeException, displayException)
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
+import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Reactor (WorkersExecutionContext (..), passThroughOnException, waitUntil)
+import Cloudflare.Workers.Streaming qualified as Streaming
+import Control.Exception (SomeException, displayException, throwIO, try)
+import Control.Monad (when)
 import Data.Aeson qualified as Aeson
-import Data.Aeson.Types (parseEither, (.:), (.:?), (.!=))
+import Data.Aeson.Types (parseEither, (.!=), (.:), (.:?))
+import Data.ByteString.Lazy qualified as LazyBytes
+import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TextEncoding
-import Servant.Cloudflare.Workers.Access (AccessConfig (..), AccessClaims (..), AccessError(..), AccessVerifierOptions(..), verifyAccessJWT, verifyAccessJWTWithOptions, verifyAccessServiceJWTWithOptions, AccessServiceClaims(..))
+import Envelope qualified
+import GHC.Wasm.Prim (JSVal)
+import Servant.Cloudflare.Workers.Access (AccessClaims (..), AccessConfig (..), AccessError (..), AccessServiceClaims (..), AccessVerifierOptions (..), verifyAccessJWT, verifyAccessJWTWithOptions, verifyAccessServiceJWTWithOptions)
 import Servant.Cloudflare.Workers.Access.Internal.JWKSCache (resetJWKSCacheForTesting)
 import Servant.Cloudflare.Workers.Access.SubtleCrypto (subtleImportKey, subtleVerify)
-import GHC.Wasm.Prim (JSVal)
+import Support.Runtime.AccessRoutes qualified as AccessRoutes
+import Support.Runtime.AccessVerification qualified as AccessVerification
+import Support.Runtime.BindingEnv qualified as BindingEnvProbe
+import Support.Runtime.CacheServiceErrors qualified as CacheServiceErrors
+import Support.Runtime.Client qualified as Client
+import Support.Runtime.ClientRetryExtra qualified as ClientRetryExtra
+import Support.Runtime.EntrypointErrors qualified as EntrypointErrors
+import Support.Runtime.EntrypointLifecycleErrors qualified as EntrypointLifecycleErrors
+import Support.Runtime.ExportProducer qualified as ExportProducer
+import Support.Runtime.ExportRequestCodec qualified as ExportRequestCodec
+import Support.Runtime.GenerationAsync qualified as GenerationAsync
+import Support.Runtime.JWKSCache qualified as JWKSCache
+import Support.Runtime.MiddlewareExtra qualified as MiddlewareExtra
+import Support.Runtime.QuickstartBoundaries qualified as QuickstartBoundaries
+import Support.Runtime.QuickstartDatabase qualified as QuickstartDatabase
+import Support.Runtime.Routing qualified as Routing
+import Support.Runtime.RoutingCoverage qualified as RoutingCoverage
+import Support.Runtime.SQLBoundaries qualified as SQLBoundaries
+import Support.Runtime.SocketStream qualified as SocketStream
+import Support.Runtime.StorageBoundaries qualified as StorageBoundaries
+import Support.Runtime.StorageErrors qualified as StorageErrors
+import Support.Runtime.StorageObjectErrors qualified as StorageObjectErrors
+import Support.Runtime.StoragePublicContracts qualified as StoragePublicContracts
+import Support.Runtime.TransportExtra qualified as TransportExtra
+import Support.Runtime.TypedQueueBoundaries qualified as TypedQueueBoundaries
+import Support.Runtime.WorkflowBoundaryExtra qualified as WorkflowBoundaryExtra
 import Trace.Hpc.Reflect (examineTix)
 
 main :: IO ()
 main = pure ()
 
 handler :: Request -> BindingEnv '[] '[] '[] -> WorkersExecutionContext -> IO Response
-handler request _ _ = pure $ createResponse (Status 200) (headersFromList [("X-Method", methodToText (requestMethod request))]) $
-  maybe (ResponseBodyBytes "") ResponseBodyStream (requestBody request)
+handler request _ _ =
+    pure $
+        createResponse (Status 200) (headersFromList [("X-Method", methodToText (requestMethod request))]) $
+            maybe (ResponseBodyBytes "") ResponseBodyStream (requestBody request)
 
 jsFetch :: JSVal -> JSVal -> JSVal -> IO JSVal
 jsFetch = createFetchHandler handler
@@ -62,89 +66,99 @@ foreign export javascript "fetch" jsFetch :: JSVal -> JSVal -> JSVal -> IO JSVal
 
 storage :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
 storage storageValue commandValue keyValue bytesValue = do
-  command <- jsValToText commandValue
-  key <- jsValToText keyValue
-  let handle = DurableObjectStorage storageValue
-  case command of
-    "put" -> do
-      bytes <- jsByteArrayToByteString bytesValue
-      doStoragePut handle key bytes
-      textToJSVal "ok"
-    "get" -> do
-      result <- doStorageGet handle key
-      maybe (textToJSVal "absent") byteStringToJSByteArray result
-    "delete" -> textToJSVal . Text.pack . show =<< doStorageDelete handle key
-    "rollback" -> do
-      bytes <- jsByteArrayToByteString bytesValue
-      result <- doStorageTransaction handle [DurableObjectStorageOperationPut key bytes, DurableObjectStorageOperationFail]
-      case result of
-        Left _ -> textToJSVal "rolled-back"
-        Right () -> error "Expected transaction failure"
-    "transaction" -> do
-      bytes <- jsByteArrayToByteString bytesValue
-      either throwIO pure =<< doStorageTransaction handle [DurableObjectStorageOperationPut key bytes]
-      textToJSVal "ok"
-    _ -> error "unknown test operation"
+    command <- jsValToText commandValue
+    key <- jsValToText keyValue
+    let handle = DurableObjectStorage storageValue
+    case command of
+        "put" -> do
+            bytes <- jsByteArrayToByteString bytesValue
+            doStoragePut handle key bytes
+            textToJSVal "ok"
+        "get" -> do
+            result <- doStorageGet handle key
+            maybe (textToJSVal "absent") byteStringToJSByteArray result
+        "delete" -> textToJSVal . Text.pack . show =<< doStorageDelete handle key
+        "rollback" -> do
+            bytes <- jsByteArrayToByteString bytesValue
+            result <- doStorageTransaction handle [DurableObjectStorageOperationPut key bytes, DurableObjectStorageOperationFail]
+            case result of
+                Left _ -> textToJSVal "rolled-back"
+                Right () -> error "Expected transaction failure"
+        "transaction" -> do
+            bytes <- jsByteArrayToByteString bytesValue
+            either throwIO pure =<< doStorageTransaction handle [DurableObjectStorageOperationPut key bytes]
+            textToJSVal "ok"
+        _ -> error "unknown test operation"
 foreign export javascript "storage" storage :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
 
 -- Exercise the production Haskell wrapper and FFI from the reactor, rather than
 -- calling JavaScript crypto directly from the test harness.
 cryptoVerify :: JSVal -> JSVal -> JSVal -> IO JSVal
 cryptoVerify jwkValue signatureValue messageValue = do
-  jwkJSON <- jsValToText jwkValue
-  jwk <- either fail pure (Aeson.eitherDecodeStrict (TextEncoding.encodeUtf8 jwkJSON))
-  key <- subtleImportKey "runtime-fixture" jwk
-  signature <- jsByteArrayToByteString signatureValue
-  message <- jsByteArrayToByteString messageValue
-  result <- subtleVerify key signature message
-  textToJSVal (if result then "valid" else "invalid")
+    jwkJSON <- jsValToText jwkValue
+    jwk <- either fail pure (Aeson.eitherDecodeStrict (TextEncoding.encodeUtf8 jwkJSON))
+    key <- subtleImportKey "runtime-fixture" jwk
+    signature <- jsByteArrayToByteString signatureValue
+    message <- jsByteArrayToByteString messageValue
+    result <- subtleVerify key signature message
+    textToJSVal (if result then "valid" else "invalid")
 foreign export javascript "cryptoVerify" cryptoVerify :: JSVal -> JSVal -> JSVal -> IO JSVal
 
 jwtVerify :: JSVal -> IO JSVal
 jwtVerify tokenValue = do
-  token <- jsValToText tokenValue
-  resetJWKSCacheForTesting
-  result <- verifyAccessJWT (AccessConfig "runtime-audience" "runtime-team" "https://runtime-team.cloudflareaccess.com/cdn-cgi/access/certs") token
-  textToJSVal (either (const "rejected") accessClaimsEmail result)
+    token <- jsValToText tokenValue
+    resetJWKSCacheForTesting
+    result <- verifyAccessJWT (AccessConfig "runtime-audience" "runtime-team" "https://runtime-team.cloudflareaccess.com/cdn-cgi/access/certs") token
+    textToJSVal (either (const "rejected") accessClaimsEmail result)
 foreign export javascript "jwtVerify" jwtVerify :: JSVal -> IO JSVal
 
 -- Test-only configuration: exercise real verifier policy and cache without
 -- introducing short TTLs or alternate issuers into production bindings.
 jwtVerifyConfigured :: JSVal -> IO JSVal
 jwtVerifyConfigured inputValue = do
-  input <- jsValToText inputValue
-  value <- either fail pure (Aeson.eitherDecodeStrict (TextEncoding.encodeUtf8 input))
-  (token, audience, team, url, skew, ttl, issuer, reset) <- either fail pure $ parseEither
-    (Aeson.withObject "Access verification fixture" $ \object ->
-      (,,,,,,,) <$> object .: "token" <*> object .: "audience" <*> object .: "team"
-        <*> object .: "url" <*> object .: "skew" <*> object .: "ttl"
-        <*> object .:? "issuer" <*> (object .:? "reset" .!= False)) value
-  if reset then resetJWKSCacheForTesting else pure ()
-  kind <- either fail pure $ parseEither (Aeson.withObject "Identity kind" (\o -> o .:? "identityKind" .!= ("user" :: Text.Text))) value
-  if skew < 0 || ttl <= 0
-    then textToJSVal "rejected"
-    else case kind of
-      "service" -> do
-        result <- verifyAccessServiceJWTWithOptions (AccessVerifierOptions skew ttl issuer) (AccessConfig audience team url) token
-        textToJSVal (either (const "rejected") accessServiceClaimsIdentifier result)
-      "user" -> do
-        result <- verifyAccessJWTWithOptions (AccessVerifierOptions skew ttl issuer) (AccessConfig audience team url) token
-        textToJSVal (either (const "rejected") accessClaimsEmail result)
-      _ -> textToJSVal "rejected"
+    input <- jsValToText inputValue
+    value <- either fail pure (Aeson.eitherDecodeStrict (TextEncoding.encodeUtf8 input))
+    (token, audience, team, url, skew, ttl, issuer, reset) <-
+        either fail pure $
+            parseEither
+                ( Aeson.withObject "Access verification fixture" $ \object ->
+                    (,,,,,,,)
+                        <$> object .: "token"
+                        <*> object .: "audience"
+                        <*> object .: "team"
+                        <*> object .: "url"
+                        <*> object .: "skew"
+                        <*> object .: "ttl"
+                        <*> object .:? "issuer"
+                        <*> (object .:? "reset" .!= False)
+                )
+                value
+    when reset resetJWKSCacheForTesting
+    kind <- either fail pure $ parseEither (Aeson.withObject "Identity kind" (\o -> o .:? "identityKind" .!= ("user" :: Text.Text))) value
+    if skew < 0 || ttl <= 0
+        then textToJSVal "rejected"
+        else case kind of
+            "service" -> do
+                result <- verifyAccessServiceJWTWithOptions (AccessVerifierOptions skew ttl issuer) (AccessConfig audience team url) token
+                textToJSVal (either (const "rejected") accessServiceClaimsIdentifier result)
+            "user" -> do
+                result <- verifyAccessJWTWithOptions (AccessVerifierOptions skew ttl issuer) (AccessConfig audience team url) token
+                textToJSVal (either (const "rejected") accessClaimsEmail result)
+            _ -> textToJSVal "rejected"
 
 foreign export javascript "jwtVerifyConfigured" jwtVerifyConfigured :: JSVal -> IO JSVal
 
 -- A real D1 SELECT must yield the selected row, not run() metadata.
 d1Lookup :: JSVal -> JSVal -> IO JSVal
 d1Lookup databaseValue keyValue = do
-  key <- jsValToText keyValue
-  statement <- d1Prepare (D1 databaseValue) "SELECT value FROM runtime_d1_lookup WHERE key = ?"
-  bound <- d1Bind statement [D1Text key]
-  row <- d1First bound
-  case row of
-    Nothing -> textToJSVal "absent"
-    Just [("value", D1Text value)] -> textToJSVal value
-    Just _ -> fail "D1 first returned an unexpected row shape"
+    key <- jsValToText keyValue
+    statement <- d1Prepare (D1 databaseValue) "SELECT value FROM runtime_d1_lookup WHERE key = ?"
+    bound <- d1Bind statement [D1Text key]
+    row <- d1First bound
+    case row of
+        Nothing -> textToJSVal "absent"
+        Just [("value", D1Text value)] -> textToJSVal value
+        Just _ -> fail "D1 first returned an unexpected row shape"
 foreign export javascript "d1Lookup" d1Lookup :: JSVal -> JSVal -> IO JSVal
 
 -- Development-only snapshot of this reactor; never exported by production.
@@ -155,8 +169,8 @@ foreign export javascript "coverage" coverage :: IO JSVal
 -- Reflect Haskell exceptions explicitly at the fixture's JavaScript boundary.
 observeContext :: IO () -> IO JSVal
 observeContext action = do
-  outcome <- try action
-  textToJSVal $ either (Text.pack . displayException @SomeException) (const "ok") outcome
+    outcome <- try action
+    textToJSVal $ either (Text.pack . displayException @SomeException) (const "ok") outcome
 
 passThroughContext :: JSVal -> IO JSVal
 passThroughContext = observeContext . passThroughOnException . WorkersExecutionContext
@@ -164,8 +178,8 @@ foreign export javascript "passThroughContext" passThroughContext :: JSVal -> IO
 
 waitUntilContext :: JSVal -> JSVal -> IO JSVal
 waitUntilContext context action = observeContext $ waitUntil (WorkersExecutionContext context) $ do
-  result <- invokeContextAction action
-  decodeEnveloped (const (pure ())) result >>= either (throwIO . userError . Text.unpack) pure
+    result <- invokeContextAction action
+    decodeEnveloped (const (pure ())) result >>= either (throwIO . userError . Text.unpack) pure
 foreign export javascript "waitUntilContext" waitUntilContext :: JSVal -> JSVal -> IO JSVal
 foreign import javascript safe "(async()=>{try{await $1();return {ok:true,value:null};}catch(error){return {ok:false,message:String(error)};}})()" invokeContextAction :: JSVal -> IO JSVal
 

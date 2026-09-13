@@ -1,16 +1,17 @@
 module Support.Runtime.StorageErrors (storageErrorProbe) where
 
-import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage(..))
-import Cloudflare.Workers.Binding.DurableObject.SQL
-import Data.Aeson (eitherDecode)
 import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
-import Cloudflare.Workers.Internal.FFI.KV qualified as KVFFI
+import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage (..))
+import Cloudflare.Workers.Binding.DurableObject.SQL
 import Cloudflare.Workers.Binding.KV
+import Cloudflare.Workers.Internal.FFI.KV qualified as KVFFI
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
 import Control.Applicative (liftA2)
-import Control.Monad (unless)
 import Control.Exception (SomeException, displayException, evaluate, try)
+import Control.Monad (unless)
+import Data.Aeson (eitherDecode)
+import Data.Maybe (fromMaybe)
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
 
@@ -31,8 +32,8 @@ storageErrorProbe handle commandValue = do
             "d1-composition" -> do
                 let a = d1Column "a" d1Integer
                     b = d1Column "b" d1Integer
-                    good = [("a",D1Integer 2),("b",D1Integer 3)]
-                    bad = [("a",D1Text "wrong"),("b",D1Integer 3)]
+                    good = [("a", D1Integer 2), ("b", D1Integer 3)]
+                    bad = [("a", D1Text "wrong"), ("b", D1Integer 3)]
                     check condition = unless condition (fail "D1 composition contract failed")
                 check (decodeD1Row (liftA2 (+) a b) good == Right 5)
                 check (decodeD1Row (a *> b) good == Right 3)
@@ -52,7 +53,7 @@ storageErrorProbe handle commandValue = do
                 case caught of
                     Left failure -> pure (Text.pack (displayException failure))
                     Right _ -> fail "Expected typed decoder exception"
-            "kv-cache-status" -> maybe "missing" id . kvListResultCacheStatus <$> kvList (KV handle) Nothing Nothing Nothing
+            "kv-cache-status" -> fromMaybe "missing" . kvListResultCacheStatus <$> kvList (KV handle) Nothing Nothing Nothing
             "d1-prepare" -> d1Prepare (D1 handle) "SELECT 1.25 AS value" >>= fmap shown . d1First
             "d1-all" -> shown <$> d1All (D1PreparedStatement handle)
             "d1-first" -> shown <$> d1First (D1PreparedStatement handle)
@@ -83,7 +84,7 @@ storageErrorProbe handle commandValue = do
   where
     options = KVReadOptions (Just 30)
     batch = KVKeyBatch "key" ["missing"]
-    shown :: Show a => a -> Text.Text
+    shown :: (Show a) => a -> Text.Text
     shown = Text.pack . show
     valueText (KVTextValue value) = value
     valueText (KVJSONValue value) = value
