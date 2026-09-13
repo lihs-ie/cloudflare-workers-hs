@@ -7,9 +7,8 @@ module Support.Runtime.TypedQueueBoundaries (typedQueueProbe) where
 import Cloudflare.Workers.Entrypoint.Queue
 import Cloudflare.Workers.Entrypoint.Queue.Typed
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Control.Exception (AsyncException (..), SomeException, displayException, fromException, throwIO, try)
-import Control.Monad (when)
-import Data.Aeson (FromJSON (..), eitherDecodeStrict', encode, object, (.=))
+import Control.Exception (AsyncException(..), SomeException, displayException, fromException, throwIO, try)
+import Data.Aeson (FromJSON(..), eitherDecodeStrict', encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy
 import Data.IORef
 import Data.Text qualified as Text
@@ -28,37 +27,24 @@ typedQueueProbe commandValue = do
     command <- jsValToText commandValue
     events <- newIORef ([] :: [String])
     let record event = modifyIORef' events (<> [event])
-        message index body =
-            QueueMessage
-                (Text.pack (show index))
-                0
-                1
-                body
-                (record ("ack:" <> show index) >> when (command == "ack-throws") (fail "ack failed"))
-                ( \options -> do
-                    record ("retry:" <> show index <> ":" <> show (queueRetryOptionsDelaySeconds options))
-                    when (command == "retry-throws") $ fail "retry failed"
-                )
+        message index body = QueueMessage (Text.pack (show index)) 0 1 body
+            (record ("ack:" <> show index) >> if command == "ack-throws" then fail "ack failed" else pure ())
+            (\options -> do
+                record ("retry:" <> show index <> ":" <> show (queueRetryOptionsDelaySeconds options))
+                if command == "retry-throws" then fail "retry failed" else pure ())
         malformed = command `elem` ["malformed", "policy-throws", "policy-lazy", "options-lazy", "delay-lazy", "seconds-lazy", "policy-async", "retry-throws", "policy-ack", "delayed-retry"]
         firstBody = if malformed then "bad" else "1"
-        batch =
-            QueueBatch
-                "typed-fixture"
-                [message (1 :: Int) firstBody, message 2 "2"]
-                Nothing
-                (fail "batch ack must not run")
-                (\_ -> fail "batch retry must not run")
+        batch = QueueBatch "typed-fixture" [message (1 :: Int) firstBody, message 2 "2"] Nothing
+            (fail "batch ack must not run") (\_ -> fail "batch retry must not run")
         action messageValue (_ :: Int) = do
             record ("action:" <> Text.unpack (queueMessageID messageValue))
-            if queueMessageID messageValue /= "1"
-                then pure ()
-                else case command of
-                    "action-throws" -> fail "action failed"
-                    "action-lazy" -> pure (error "lazy action result")
-                    "action-async" -> throwIO ThreadKilled
-                    _ -> pure ()
+            if queueMessageID messageValue /= "1" then pure () else case command of
+                "action-throws" -> fail "action failed"
+                "action-lazy" -> pure (error "lazy action result")
+                "action-async" -> throwIO ThreadKilled
+                _ -> pure ()
         policy _ failure = do
-            when (command == "decode-diagnostic") $ record ("diagnostic:" <> show failure)
+            if command == "decode-diagnostic" then record ("diagnostic:" <> show failure) else pure ()
             record $ case failure of
                 QueueDecodeFailure _ -> "failure:decode"
                 QueueDecodeException _ -> "failure:decode-exception"
@@ -78,6 +64,7 @@ typedQueueProbe commandValue = do
                 record $ case omittedField @LazyDecoded of Nothing -> "required"; Just _ -> "unexpected-default"
                 record $ case eitherDecodeStrict' @[LazyDecoded] "[]" of Right values | null values -> "empty-list"; _ -> "invalid-empty-list"
                 record $ case eitherDecodeStrict' @[LazyDecoded] "null" of Left _ -> "non-list-rejected"; Right _ -> "unexpected-list"
+
             "decode-diagnostic" -> consumeJSONMessagesWith policy (\_ (_ :: LazyDecoded) -> record "unexpected-action") batch
             "decode-lazy" -> consumeJSONMessagesWith policy (\_ (_ :: LazyDecoded) -> record "unexpected-action") batch
             "default-policy" -> consumeJSONMessages (\m (_ :: Int) -> if queueMessageID m == "1" then fail "default retry" else record "action:2") batch

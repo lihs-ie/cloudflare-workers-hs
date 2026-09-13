@@ -3,9 +3,10 @@
 module Support.Runtime.TransportExtra (transportExtraProbe, transportRequestExtra, transportResponseExtra) where
 
 import Cloudflare.Workers.HTTP
-import Cloudflare.Workers.Headers (headersFromList, headersToList)
+import Cloudflare.Workers.Headers (headersFromList)
 import Cloudflare.Workers.Internal.FFI.Bytes qualified as Bytes
 import Cloudflare.Workers.Internal.FFI.Headers qualified as HeadersFFI
+import Cloudflare.Workers.Headers (headersToList)
 import Cloudflare.Workers.Internal.FFI.Request qualified as RequestFFI
 import Cloudflare.Workers.Internal.FFI.Response qualified as ResponseFFI
 import Cloudflare.Workers.Internal.FFI.Stream qualified as StreamFFI
@@ -109,7 +110,7 @@ transportRequestExtra source commandValue = do
     let stream = if command == "stream" then Just (readableStreamFromJSVal source) else Nothing
         reader = case command of
             "reader" -> Just (\_ -> pure (Right "reader bytes"))
-            "reader-budget" -> Just (pure . Right . Lazy.fromStrict . Text.encodeUtf8 . shown)
+            "reader-budget" -> Just (\limit -> pure (Right (Lazy.fromStrict (Text.encodeUtf8 (shown limit)))))
             "reader-limit" -> Just (\_ -> pure (Left ReadableStreamExceededByteLimit))
             "reader-stalled" -> Just (\_ -> pure (Left ReadableStreamStalled))
             _ -> Nothing
@@ -156,7 +157,7 @@ diagnosticContract name samples = Text.decodeUtf8 . Lazy.toStrict . Aeson.encode
         , "diagnostics" Aeson..= map show observations
         , "collection" Aeson..= show observations
         , "showListConsistent" Aeson..= (showList observations "tail" == show observations <> "tail")
-        , "showsPrecConsistent" Aeson..= all (\value -> shows value "tail" == show value <> "tail") observations
+        , "showsPrecConsistent" Aeson..= all (\value -> showsPrec 0 value "tail" == show value <> "tail") observations
         , "equality" Aeson..= [[left == right | right <- observations] | left <- observations]
         , "inequality" Aeson..= [[left /= right | right <- observations] | left <- observations]
         ]

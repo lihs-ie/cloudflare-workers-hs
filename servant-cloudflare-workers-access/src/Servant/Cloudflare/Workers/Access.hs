@@ -47,9 +47,8 @@ data AccessClaims = AccessClaims
     }
     deriving stock (Show, Eq)
 
-{- | Verified service identity. The identifier is Cloudflare's common_name
-(service token client identifier), never the empty service-token subject.
--}
+-- | Verified service identity. The identifier is Cloudflare's common_name
+-- (service token client identifier), never the empty service-token subject.
 data AccessServiceClaims = AccessServiceClaims
     { accessServiceClaimsIdentifier :: Text
     , accessServiceClaimsAudience :: [Text]
@@ -72,9 +71,8 @@ data AccessError
     | AccessErrorMalformed Text
     deriving stock (Show, Eq)
 
-{- | Verification policy. TeamDomain remains the short team name; an explicit
-issuer overrides the Cloudflare domain derivation without normalization.
--}
+-- | Verification policy. TeamDomain remains the short team name; an explicit
+-- issuer overrides the Cloudflare domain derivation without normalization.
 data AccessVerifierOptions = AccessVerifierOptions
     { accessVerifierOptionsClockSkewSeconds :: Integer
     , accessVerifierOptionsJWKSCacheTtlSeconds :: Integer
@@ -93,20 +91,17 @@ verifyAccessJWT = verifyAccessJWTWithOptions defaultAccessVerifierOptions
 verifyAccessJWTWithOptions :: AccessVerifierOptions -> AccessConfig -> Text -> IO (Either AccessError AccessClaims)
 verifyAccessJWTWithOptions options config = verifyJWTWithIdentity options config $ \claims ->
     case rawClaimsIdentity claims of
-        RawUserIdentity email ->
-            pure
-                AccessClaims
-                    { accessClaimsEmail = email
-                    , accessClaimsSubject = rawClaimsSubject claims
-                    , accessClaimsAudience = rawClaimsAudience claims
-                    , accessClaimsIssuer = rawClaimsIssuer claims
-                    , accessClaimsExpiresAt = rawClaimsExpiresAt claims
-                    }
+        RawUserIdentity email -> pure AccessClaims
+            { accessClaimsEmail = email
+            , accessClaimsSubject = rawClaimsSubject claims
+            , accessClaimsAudience = rawClaimsAudience claims
+            , accessClaimsIssuer = rawClaimsIssuer claims
+            , accessClaimsExpiresAt = rawClaimsExpiresAt claims
+            }
         RawServiceIdentity _ -> throwIO (AccessErrorMalformed "expected user identity")
 
-{- | Verify an Access application JWT issued to a service token.
-User JWTs are rejected even when their signature and audience are valid.
--}
+-- | Verify an Access application JWT issued to a service token.
+-- User JWTs are rejected even when their signature and audience are valid.
 verifyAccessServiceJWT :: AccessConfig -> Text -> IO (Either AccessError AccessServiceClaims)
 verifyAccessServiceJWT = verifyAccessServiceJWTWithOptions defaultAccessVerifierOptions
 
@@ -114,14 +109,12 @@ verifyAccessServiceJWT = verifyAccessServiceJWTWithOptions defaultAccessVerifier
 verifyAccessServiceJWTWithOptions :: AccessVerifierOptions -> AccessConfig -> Text -> IO (Either AccessError AccessServiceClaims)
 verifyAccessServiceJWTWithOptions options config = verifyJWTWithIdentity options config $ \claims ->
     case rawClaimsIdentity claims of
-        RawServiceIdentity identifier ->
-            pure
-                AccessServiceClaims
-                    { accessServiceClaimsIdentifier = identifier
-                    , accessServiceClaimsAudience = rawClaimsAudience claims
-                    , accessServiceClaimsIssuer = rawClaimsIssuer claims
-                    , accessServiceClaimsExpiresAt = rawClaimsExpiresAt claims
-                    }
+        RawServiceIdentity identifier -> pure AccessServiceClaims
+            { accessServiceClaimsIdentifier = identifier
+            , accessServiceClaimsAudience = rawClaimsAudience claims
+            , accessServiceClaimsIssuer = rawClaimsIssuer claims
+            , accessServiceClaimsExpiresAt = rawClaimsExpiresAt claims
+            }
         RawUserIdentity _ -> throwIO (AccessErrorMalformed "expected service identity")
 
 verifyJWTWithIdentity :: AccessVerifierOptions -> AccessConfig -> (RawClaims -> IO identity) -> Text -> IO (Either AccessError identity)
@@ -150,11 +143,10 @@ verifyJWTWithIdentity options config identity rawJWT = do
         header <- malformed (decodeJWTHeader rawJWT)
         jwk <-
             lookupOrFetchJWKWith
-                ( ( do
+                ( (do
                         baseURL <- parseBaseUrl (Text.unpack (accessConfigJWKSURL config))
                         Right <$> runFetchClient (clientIn (Proxy @JWKSAPI) (Proxy @FetchClient)) baseURL
-                  )
-                    `catch` (\(_ :: SomeException) -> pure (Left "JWKS fetch failed"))
+                  ) `catch` (\(_ :: SomeException) -> pure (Left "JWKS fetch failed"))
                 )
                 currentEpochSeconds
                 (max 0 (accessVerifierOptionsJWKSCacheTtlSeconds options))
@@ -189,5 +181,5 @@ accessErrorConstructorName (AccessErrorMalformed _) = "AccessErrorMalformed"
 jwtParts :: Text -> Maybe (Text, Text, Text)
 jwtParts raw = case Text.splitOn "." raw of
     [headerPart, payloadPart, signaturePart]
-        | not (any Text.null [headerPart, payloadPart, signaturePart]) -> Just (headerPart, payloadPart, signaturePart)
+        | all (not . Text.null) [headerPart, payloadPart, signaturePart] -> Just (headerPart, payloadPart, signaturePart)
     _ -> Nothing

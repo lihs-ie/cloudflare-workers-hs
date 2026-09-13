@@ -32,8 +32,6 @@ import Servant.Cloudflare.Workers.Server.Internal.RouteResult
 import Support.Runtime.RouterInternals (runForwardingContracts)
 import Data.Typeable (typeRep)
 import Data.Map.Strict qualified as Map
-import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe)
 import Cloudflare.Workers.Streaming (ReadableStream)
 import Data.Aeson (encode)
 import Data.Aeson qualified
@@ -60,7 +58,7 @@ routingCoverageFixture mode request context source = case mode of
   "custom-typeclass-response" -> serveWithContext
     (Proxy @(ReqBody '[ContractMime] Text :> Verb ContractMethod 207 '[ContractMime] (Headers '[Header "X-Contract" Text] Text))) EmptyContext
     (\body -> pure (addHeader ("custom" :: Text) (body <> "-response")))
-    request{HTTP.requestHeaders=Headers.headersFromList [("Content-Type",fromMaybe "application/x-contract" (Headers.headerLookup "Content-Type" (HTTP.requestHeaders request))),("Accept","application/x-contract")],HTTP.requestBodyReaderField=Just (\_ -> pure (Right "input"))} context ()
+    request{HTTP.requestHeaders=Headers.headersFromList [("Content-Type",maybe "application/x-contract" id (Headers.headerLookup "Content-Type" (HTTP.requestHeaders request))),("Accept","application/x-contract")],HTTP.requestBodyReaderField=Just (\_ -> pure (Right "input"))} context ()
   "custom-typeclass-stream" -> serveWithContext
     (Proxy @(Stream ContractMethod 206 NoFraming ContractMime ReadableStream)) EmptyContext
     (pure source) request context ()
@@ -146,7 +144,7 @@ routingCoverageFixture mode request context source = case mode of
     (pure 2) request context ()
   "payload-error" -> pure (serverErrorToResponse request err413)
   "media-error" -> pure (serverErrorToResponse request err415)
-  "delayed-forwarding" -> runForwardingContracts request <&> jsonResponse
+  "delayed-forwarding" -> runForwardingContracts request >>= pure . jsonResponse
   "capture-metadata" -> do
     let captured = route (Proxy @(Capture "item" Int :> Get '[JSON] Int)) EmptyContext (emptyDelayed (Route pure)) :: Router () ()
         allCaptured = route (Proxy @(CaptureAll "items" Int :> Get '[JSON] [Int])) EmptyContext (emptyDelayed (Route pure)) :: Router () ()
@@ -209,7 +207,7 @@ type ContextMatrix = ("missing" :> ContextValue) :<|>
     :> Header "X-Value" Int :> ReqBody '[JSON] Int :> EdgeDataCenter
     :> CacheControlled '[Public] :> ContextValue)
 
-newtype ContextRoutes mode = ContextRoutes { named :: mode :- ContextValue }
+data ContextRoutes mode = ContextRoutes { named :: mode :- ContextValue }
   deriving stock Generic
 
 -- Downstream header serialization may supply raw bytes outside UTF-8.

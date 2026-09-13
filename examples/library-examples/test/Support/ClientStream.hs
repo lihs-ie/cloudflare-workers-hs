@@ -1,41 +1,35 @@
 module Support.ClientStream (clientStreamLifecycle, clientHTTPStreamLifecycle, clientUploadLifecycle) where
 
-import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding (..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding(..))
+import Cloudflare.Workers.Internal.FFI.Text (textToJSVal, jsValToText)
+import Control.Exception (SomeException, displayException, try, finally, fromException)
 import Control.Concurrent (threadDelay)
-import Control.Exception (SomeException, displayException, finally, fromException, try)
-import Control.Monad (when)
+import Data.IORef
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString qualified as Bytes
 import Data.ByteString.Lazy qualified as Lazy
-import Data.IORef
-import Data.Proxy (Proxy (..))
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Wasm.Prim (JSVal)
+import Data.Proxy (Proxy(..))
 import Servant.API (OctetStream, contentType)
-import Servant.Client.Core (BaseUrl (..), ClientError (..), RequestBody (..), RequestF (..), ResponseF (..), RunStreamingClient (..), Scheme (..), defaultRequest, parseBaseUrl)
-import Servant.Cloudflare.Workers.Client.Fetch (FetchClientOptions (..), FetchTransportError, fetchTransportErrorConstructorName, fetchWithOptions, runFetchClient, runFetchClientWithServiceBinding)
+import Servant.Client.Core (ClientError(..), RequestF(..), RequestBody(..), BaseUrl(..), Scheme(..), RunStreamingClient(..), ResponseF(..), defaultRequest, parseBaseUrl)
+import Servant.Cloudflare.Workers.Client.Fetch (runFetchClientWithServiceBinding, runFetchClient, fetchWithOptions, FetchClientOptions(..), FetchTransportError, fetchTransportErrorConstructorName)
 import Servant.Types.SourceT qualified as SourceT
 
 -- Exercise the public callback lifetime, retaining the native stream in JS so
 -- the test can inspect its lock and cancellation after the callback exits.
 clientStreamLifecycle :: JSVal -> Int -> IO JSVal
 clientStreamLifecycle binding mode = do
-    outcome <-
-        try @SomeException $
-            runFetchClientWithServiceBinding
-                ( withStreamingRequest defaultRequest $ \response -> do
-                    when (mode == 2) $ fail "consumer failed before reading"
-                    chunks <-
-                        if mode == 1 || mode == 3
-                            then firstChunk (responseBody response)
-                            else either fail pure =<< runExceptT (SourceT.runSourceT (responseBody response))
-                    if mode == 3 then fail "consumer failed after reading" else pure chunks
-                )
-                (ServiceBinding binding)
-                (BaseUrl Https "fixture.invalid" 443 "")
+    outcome <- try @SomeException $ runFetchClientWithServiceBinding
+        (withStreamingRequest defaultRequest $ \response -> do
+            if mode == 2 then fail "consumer failed before reading" else pure ()
+            chunks <- if mode == 1 || mode == 3
+                then firstChunk (responseBody response)
+                else either fail pure =<< runExceptT (SourceT.runSourceT (responseBody response))
+            if mode == 3 then fail "consumer failed after reading" else pure chunks)
+        (ServiceBinding binding) (BaseUrl Https "fixture.invalid" 443 "")
     let result = case outcome of
             Left failure -> object ["error" .= displayException failure]
             Right chunks -> object ["bytes" .= Bytes.unpack (Bytes.concat chunks)]
@@ -53,20 +47,12 @@ clientStreamLifecycle binding mode = do
 clientHTTPStreamLifecycle :: JSVal -> IO JSVal
 clientHTTPStreamLifecycle origin = do
     target <- parseBaseUrl . Text.unpack =<< jsValToText origin
-    chunks <-
-        runFetchClient
-            ( withStreamingRequest defaultRequest $ \response ->
-                SourceT.unSourceT (responseBody response) firstChunk
-            )
-            target{baseUrlPath = "/stream-response"}
-    textToJSVal
-        ( decodeUtf8
-            ( Lazy.toStrict
-                ( encode
-                    (object ["bytes" .= Bytes.unpack (Bytes.concat chunks)])
-                )
-            )
-        )
+    chunks <- runFetchClient
+        (withStreamingRequest defaultRequest $ \response ->
+            SourceT.unSourceT (responseBody response) firstChunk)
+        target{baseUrlPath = "/stream-response"}
+    textToJSVal (decodeUtf8 (Lazy.toStrict (encode
+        (object ["bytes" .= Bytes.unpack (Bytes.concat chunks)]))))
   where
     firstChunk SourceT.Stop = pure []
     firstChunk (SourceT.Error message) = fail message
@@ -83,24 +69,17 @@ clientUploadLifecycle origin = do
     generated <- newIORef (0 :: Int)
     let step 10 = SourceT.Stop
         step index = SourceT.Effect $ do
-            when (index > 0) $ threadDelay 100000
+            if index > 0 then threadDelay 100000 else pure ()
             modifyIORef' generated (+ 1)
             pure (SourceT.Yield (Lazy.pack [0, 128, 255]) (step (index + 1)))
         source = SourceT.SourceT $ \consume -> consume (step (0 :: Int)) `finally` writeIORef stopped True
-        request =
-            defaultRequest
-                { requestMethod = "PUT"
-                , requestHeaders = pure ("X-Stream-Trace", "upload-lifecycle")
-                , requestBody = Just (RequestBodySource source, contentType (Proxy @OctetStream))
-                }
-    outcome <-
-        try @ClientError
-            ( fetchWithOptions
-                (FetchClientOptions 3000 2 0)
-                Nothing
-                target{baseUrlPath = "/stream-upload"}
-                request
-            )
+        request = defaultRequest
+            { requestMethod = "PUT"
+            , requestHeaders = pure ("X-Stream-Trace", "upload-lifecycle")
+            , requestBody = Just (RequestBodySource source, contentType (Proxy @OctetStream))
+            }
+    outcome <- try @ClientError (fetchWithOptions (FetchClientOptions 3000 2 0) Nothing
+        target{baseUrlPath = "/stream-upload"} request)
     atResponse <- readIORef generated
     let wait 0 = pure ()
         wait remaining = do
@@ -113,13 +92,5 @@ clientUploadLifecycle origin = do
             Right _ -> "success"
             Left (ConnectionError exception) -> maybe "unexpected-transport" fetchTransportErrorConstructorName (fromException @FetchTransportError exception)
             Left _ -> "unexpected-client-error"
-    textToJSVal
-        ( decodeUtf8
-            ( Lazy.toStrict
-                ( encode
-                    ( object
-                        ["outcome" .= result, "stopped" .= done, "generated" .= count, "atResponse" .= atResponse]
-                    )
-                )
-            )
-        )
+    textToJSVal (decodeUtf8 (Lazy.toStrict (encode (object
+        [ "outcome" .= result, "stopped" .= done, "generated" .= count, "atResponse" .= atResponse ]))))

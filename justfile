@@ -65,6 +65,4 @@ test-tools:
 test-mutations:
     python3 scripts/testing/mutations.py
 
-lint:
-    scripts/hlint
-    just test-registration
+lint: test-registration

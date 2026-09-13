@@ -6,8 +6,8 @@ import Control.Exception (bracket_, finally)
 import Data.IORef
 import Servant.Cloudflare.Workers.Access.Internal.JWKS
 import Servant.Cloudflare.Workers.Access.Internal.JWKSCache
-import Support.Fixtures.Claims
 import Support.Runtime.JWKSCache (runJWKSCacheScenarios)
+import Support.Fixtures.Claims
 import Test.Syd
 
 spec :: Spec
@@ -28,7 +28,7 @@ spec = sequential $ describe "JWKS cache" $ do
     it "throttles unknown keys for exactly sixty seconds relative to the miss" $ bracket_ resetJWKSCacheForTesting resetJWKSCacheForTesting $ do
         calls <- newIORef (0 :: Int)
         let fetch = modifyIORef' calls (+ 1) >> pure (Right (JWKSDocument [key "known"]))
-            lookupAt time = lookupOrFetchJWKWith fetch (pure time) 300 "url"
+            lookupAt time kid = lookupOrFetchJWKWith fetch (pure time) 300 "url" kid
         lookupAt 1000 "known" `shouldReturn` Right (key "known")
         lookupAt 1001 "missing" `shouldReturn` Left "unknown kid"
         lookupAt 1060 "missing" `shouldReturn` Left "unknown kid"
@@ -46,7 +46,7 @@ spec = sequential $ describe "JWKS cache" $ do
         lookupKid "duplicate" `shouldReturn` Left "ambiguous kid"
         readIORef calls `shouldReturn` 1
     it "restores miss retry eligibility after an uninformative refresh" $ bracket_ resetJWKSCacheForTesting resetJWKSCacheForTesting $ do
-        let lookupWith fetch = lookupOrFetchJWKWith fetch (pure 1000) 300 "url"
+        let lookupWith fetch kid = lookupOrFetchJWKWith fetch (pure 1000) 300 "url" kid
         lookupWith (pure (Right (JWKSDocument [key "known"]))) "known" `shouldReturn` Right (key "known")
         lookupWith (pure (Left "offline")) "new" `shouldReturn` Left "JWKS fetch failed"
         lookupWith (pure (Right (JWKSDocument [key "new"]))) "new" `shouldReturn` Right (key "new")
@@ -85,7 +85,7 @@ spec = sequential $ describe "JWKS cache" $ do
         lookupAt 1300 (pure (Left "offline")) `shouldReturn` Left "JWKS fetch failed"
         lookupAt 1300 (pure (Right (JWKSDocument [key "known"]))) `shouldReturn` Right (key "known")
     it "preserves the known key and retry eligibility after empty and ambiguous miss refreshes" $ bracket_ resetJWKSCacheForTesting resetJWKSCacheForTesting $ do
-        let lookupWith fetch = lookupOrFetchJWKWith fetch (pure 1000) 300 "url"
+        let lookupWith fetch kid = lookupOrFetchJWKWith fetch (pure 1000) 300 "url" kid
             noFetch = expectationFailure "uninformative refresh replaced the known key" >> pure (Left "unexpected")
         lookupWith (pure (Right (JWKSDocument [key "known"]))) "known" `shouldReturn` Right (key "known")
         lookupWith (pure (Right (JWKSDocument []))) "new" `shouldReturn` Left "unknown kid"
@@ -94,7 +94,7 @@ spec = sequential $ describe "JWKS cache" $ do
         lookupWith noFetch "known" `shouldReturn` Right (key "known")
         lookupWith (pure (Right (JWKSDocument [key "new"]))) "new" `shouldReturn` Right (key "new")
     it "does not clear a newer entry's miss throttle when an older refresh fails" $ bracket_ resetJWKSCacheForTesting resetJWKSCacheForTesting $ do
-        let lookupAt time fetch = lookupOrFetchJWKWith fetch (pure time) 300 "url"
+        let lookupAt time fetch kid = lookupOrFetchJWKWith fetch (pure time) 300 "url" kid
             failingRefresh = do
                 lookupAt 1300 (pure (Right (JWKSDocument [key "new"]))) "missing" `shouldReturn` Left "unknown kid"
                 pure (Left "offline")

@@ -1,10 +1,9 @@
 -- | Run the exported default application policy against an owned HTTP fixture.
 module Support.ClientDefaults (clientDefaultOptions, clientOptionDiagnostics) where
 
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Internal.FFI.Text (textToJSVal, jsValToText)
 import Data.Aeson (encode, toJSON)
 import Data.ByteString.Lazy qualified as Lazy
-import Data.Either (fromLeft)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Wasm.Prim (JSVal)
@@ -21,5 +20,5 @@ clientDefaultOptions origin = do
 clientOptionDiagnostics :: IO JSVal
 clientOptionDiagnostics = do
     let rejected = [mkExampleClientOptions 0 0 0, mkExampleClientOptions 1000 (-1) 0, mkExampleClientOptions 1000 0 (-1)]
-        diagnostics = map (fromLeft "unexpected valid policy") rejected
+        diagnostics = map (either id (const "unexpected valid policy")) rejected
     textToJSVal (decodeUtf8 (Lazy.toStrict (encode (toJSON diagnostics))))

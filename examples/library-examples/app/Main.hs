@@ -1,63 +1,61 @@
 {-# LANGUAGE CPP #-}
-
 module Main (main) where
 #ifdef WASM_COVERAGE
 import Trace.Hpc.Reflect (examineTix)
 import Data.Text qualified as CoverageText
 #endif
-import Cloudflare.Workers.Binding.D1 (D1 (..))
-import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace (..), DurableObjectStorage (..))
-import Cloudflare.Workers.Binding.KV (KV (..))
-import Cloudflare.Workers.Binding.Queue (QueueProducer (..))
-import Cloudflare.Workers.Binding.R2 (R2Bucket (..))
-import Cloudflare.Workers.Binding.Secret (Secret (..))
-import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding (..))
+import Cloudflare.Workers.Binding.R2 (R2Bucket(..))
+import Cloudflare.Workers.Binding.KV (KV(..))
+import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding(..))
 import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler)
-import Cloudflare.Workers.Entrypoint.Queue (QueueRetryOptions (..))
-import Cloudflare.Workers.Entrypoint.Queue.Typed (QueueFailureDisposition (..), createJSONQueueHandlerWith)
 import Cloudflare.Workers.Entrypoint.Tail
 import Cloudflare.Workers.Env (BindingEnv, getDurableObjectNamespace)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Entrypoint.Queue (QueueRetryOptions(..))
+import Cloudflare.Workers.Entrypoint.Queue.Typed (createJSONQueueHandlerWith, QueueFailureDisposition(..))
 import Cloudflare.Workers.Observability (tailLog)
 import Cloudflare.Workers.Socket
-import Control.Exception (throwIO)
-import Data.Aeson (eitherDecodeStrict', toJSON)
-import Data.Maybe (fromMaybe)
-import Data.Proxy (Proxy (..))
+import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import Data.Text.Encoding (decodeUtf8)
+import Data.Proxy (Proxy(..))
 import Data.Text qualified as Text
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import GHC.Wasm.Prim (JSVal)
+import Cloudflare.Workers.Binding.D1 (D1(..))
+import Cloudflare.Workers.Binding.Queue (QueueProducer(..))
+import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace(..), DurableObjectStorage(..))
+import Cloudflare.Workers.Binding.Secret (Secret(..))
+import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import LibraryExamples.Jobs qualified as Jobs
+import Data.Aeson (eitherDecodeStrict', toJSON)
+import Data.Text.Encoding (encodeUtf8)
+import Control.Exception (throwIO)
+import Servant.Client.Core (parseBaseUrl)
+import LibraryExamples.Configuration qualified as Configuration
+import LibraryExamples.SocketExamples (socketEndpoints)
 import LibraryExamples.API (API)
 import LibraryExamples.Application (server)
-import LibraryExamples.Configuration qualified as Configuration
-import LibraryExamples.Jobs qualified as Jobs
-import LibraryExamples.SocketExamples (socketEndpoints)
-import Servant.Client.Core (parseBaseUrl)
-import Servant.Cloudflare.Workers.Server (Context (..), serveWithContext)
+import Servant.Cloudflare.Workers.Server (serveWithContext, Context(..))
 
 main :: IO ()
 main = pure ()
 
 fetch :: JSVal -> JSVal -> JSVal -> IO JSVal
 fetch request env context = do
-    endpoints <- socketEndpoints env
-    bucket <- R2Bucket <$> exampleBucket env
-    kv <- KV <$> settingsBinding env
-    service <- ServiceBinding <$> guideBinding env
-    connector <- SocketConnector <$> socketConnector env
-    database <- D1 <$> jobsDatabase env
-    validator <- ServiceBinding <$> jobsValidator env
-    producer <- QueueProducer <$> jobsProducer env
-    namespace <- DurableObjectNamespace <$> jobsNamespace env
-    secretText <- attachmentKey env >>= jsValToText
-    origin <- clientOrigin env >>= jsValToText
-    clientBase <- parseBaseUrl (Text.unpack origin)
-    let secret = if Text.null secretText then Nothing else Just (Secret secretText)
-    createFetchHandler
-        (Configuration.instrumented (\req (bindings :: Configuration.ConfigurationBindings) ctx -> serveWithContext (Proxy @API) EmptyContext (server database validator producer namespace secret clientBase kv service connector bucket endpoints (Configuration.settingsFromBindings bindings)) req ctx ()))
-        request
-        env
-        context
+  endpoints <- socketEndpoints env
+  bucket <- R2Bucket <$> exampleBucket env
+  kv <- KV <$> settingsBinding env
+  service <- ServiceBinding <$> guideBinding env
+  connector <- SocketConnector <$> socketConnector env
+  database <- D1 <$> jobsDatabase env
+  validator <- ServiceBinding <$> jobsValidator env
+  producer <- QueueProducer <$> jobsProducer env
+  namespace <- DurableObjectNamespace <$> jobsNamespace env
+  secretText <- attachmentKey env >>= jsValToText
+  origin <- clientOrigin env >>= jsValToText
+  clientBase <- parseBaseUrl (Text.unpack origin)
+  let secret = if Text.null secretText then Nothing else Just (Secret secretText)
+  createFetchHandler
+    (Configuration.instrumented (\req (bindings :: Configuration.ConfigurationBindings) ctx -> serveWithContext (Proxy @API) EmptyContext (server database validator producer namespace secret clientBase kv service connector bucket endpoints (Configuration.settingsFromBindings bindings)) req ctx ()))
+    request env context
 foreign export javascript "fetch" fetch :: JSVal -> JSVal -> JSVal -> IO JSVal
 foreign import javascript unsafe "$1.EXAMPLE_BUCKET" exampleBucket :: JSVal -> IO JSVal
 foreign import javascript unsafe "$1.SETTINGS" settingsBinding :: JSVal -> IO JSVal
@@ -65,12 +63,10 @@ foreign import javascript unsafe "$1.GUIDE" guideBinding :: JSVal -> IO JSVal
 foreign import javascript unsafe "$1.SOCKET_CONNECT" socketConnector :: JSVal -> IO JSVal
 
 tailEvents :: JSVal -> JSVal -> JSVal -> IO ()
-tailEvents =
-    createTailHandler
-        ( \events (_ :: BindingEnv '[] '[] '[]) _ ->
-            mapM_ (\event -> tailLog ("tail outcome=" <> tailEventOutcome event <> " script=" <> fromMaybe "unknown" (tailEventScriptName event) <> " timestamp=" <> Text.pack (show (tailEventEventTimestamp event)))) events
-        )
+tailEvents = createTailHandler (\events (_ :: BindingEnv '[] '[] '[]) _ ->
+  mapM_ (\event -> tailLog ("tail outcome=" <> tailEventOutcome event <> " script=" <> maybe "unknown" id (tailEventScriptName event) <> " timestamp=" <> Text.pack (show (tailEventEventTimestamp event)))) events)
 foreign export javascript "tail" tailEvents :: JSVal -> JSVal -> JSVal -> IO ()
+
 
 foreign import javascript unsafe "$1.JOBS_DB" jobsDatabase :: JSVal -> IO JSVal
 foreign import javascript unsafe "$1.JOBS_VALIDATOR" jobsValidator :: JSVal -> IO JSVal
@@ -96,20 +92,18 @@ jobsSettingsHistory storage = Jobs.settingsHistory (DurableObjectStorage storage
 foreign export javascript "jobsSettingsHistory" jobsSettingsHistory :: JSVal -> IO JSVal
 processJob :: JSVal -> JSVal -> IO ()
 processJob env input = do
-    namespace <- DurableObjectNamespace <$> jobsNamespace env
-    text <- jsValToText input
-    body <- either (const (throwIO Jobs.JobInput)) pure (eitherDecodeStrict' (encodeUtf8 text))
-    Jobs.processJob namespace body
+  namespace <- DurableObjectNamespace <$> jobsNamespace env
+  text <- jsValToText input
+  body <- either (const (throwIO Jobs.JobInput)) pure (eitherDecodeStrict' (encodeUtf8 text))
+  Jobs.processJob namespace body
 foreign export javascript "processJob" processJob :: JSVal -> JSVal -> IO ()
 
 -- The typed helper isolates poison messages and settles only after DO commit.
 jobsQueue :: JSVal -> JSVal -> JSVal -> IO ()
-jobsQueue =
-    createJSONQueueHandlerWith
-        (\_ _ _ _ -> pure (RetryMessage (QueueRetryOptions (Just 1))))
-        ( \_ (job :: Jobs.Job) (env :: BindingEnv '[] '["JOBS_STATE"] '[]) _ ->
-            Jobs.processJob (getDurableObjectNamespace (Proxy @"JOBS_STATE") env) (toJSON job)
-        )
+jobsQueue = createJSONQueueHandlerWith
+  (\_ _ _ _ -> pure (RetryMessage (QueueRetryOptions (Just 1))))
+  (\_ (job :: Jobs.Job) (env :: BindingEnv '[] '["JOBS_STATE"] '[]) _ ->
+    Jobs.processJob (getDurableObjectNamespace (Proxy @"JOBS_STATE") env) (toJSON job))
 foreign export javascript "queue" jobsQueue :: JSVal -> JSVal -> JSVal -> IO ()
 
 #ifdef WASM_COVERAGE

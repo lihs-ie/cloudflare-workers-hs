@@ -67,6 +67,6 @@ data AudienceIssuerError
 
 matchAudienceAndIssuer :: Text -> Text -> RawClaims -> Either AudienceIssuerError ()
 matchAudienceAndIssuer expectedAudience expectedIssuer rawClaims
-    | expectedAudience `notElem` rawClaimsAudience rawClaims = Left AudienceMismatchError
+    | expectedAudience `notElem` (rawClaimsAudience rawClaims) = Left AudienceMismatchError
     | rawClaimsIssuer rawClaims /= expectedIssuer = Left IssuerMismatchError
     | otherwise = Right ()

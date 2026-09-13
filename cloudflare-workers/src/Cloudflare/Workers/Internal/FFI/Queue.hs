@@ -22,7 +22,7 @@ module Cloudflare.Workers.Internal.FFI.Queue (
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArrayToByteString)
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Control.Monad (forM, void)
+import Control.Monad (forM)
 import Data.ByteString (ByteString)
 import Data.Foldable (for_)
 import Data.Text (Text)
@@ -46,7 +46,7 @@ buildQueueMessageBodyJSVal (QueueV8ViaFFI value) = pure (Right value)
 
 sendViaFFI :: JSVal -> QueueBodyViaFFI -> Text -> Maybe Int -> IO (Either Text ())
 sendViaFFI producerJSVal messageBody contentTypeTag maybeDelaySeconds = do
-    fmap void (sendResultViaFFI producerJSVal messageBody contentTypeTag maybeDelaySeconds)
+    fmap (fmap (const ())) (sendResultViaFFI producerJSVal messageBody contentTypeTag maybeDelaySeconds)
 
 sendResultViaFFI :: JSVal -> QueueBodyViaFFI -> Text -> Maybe Int -> IO (Either Text (Maybe QueueMetricsViaFFI))
 sendResultViaFFI producerJSVal messageBody contentTypeTag maybeDelaySeconds = do
@@ -63,7 +63,7 @@ sendResultViaFFI producerJSVal messageBody contentTypeTag maybeDelaySeconds = do
 
 sendBatchViaFFI :: JSVal -> [(QueueBodyViaFFI, Text, Maybe Int)] -> IO (Either Text ())
 sendBatchViaFFI producerJSVal messages = do
-    fmap void (sendBatchResultViaFFI producerJSVal messages Nothing)
+    fmap (fmap (const ())) (sendBatchResultViaFFI producerJSVal messages Nothing)
 
 sendBatchResultViaFFI ::
     JSVal -> [(QueueBodyViaFFI, Text, Maybe Int)] -> Maybe Int -> IO (Either Text (Maybe QueueMetricsViaFFI))

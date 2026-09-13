@@ -1,16 +1,14 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
-
 module URLShortener.DomainSpec (spec) where
-
 import Data.Aeson
-import Data.Either (isLeft, isRight)
-import Data.List (isInfixOf, nub)
-import Data.Text qualified as T
-import Data.Time (addDays, addUTCTime, fromGregorian)
 import GHC.Generics (Generic)
 import GHC.Generics qualified as Generic
+import Data.List (nub, isInfixOf)
+import Data.Either (isLeft, isRight)
+import Data.Text qualified as T
+import Data.Time (addDays, addUTCTime, fromGregorian)
 import GHC.Records (getField)
 import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
@@ -26,8 +24,7 @@ spec = do
         it "accepts public DNS HTTP and HTTPS URLs" $
             map (isRight . validateDestination) ["https://example.com/a?q=x#part", "http://api.example.com:8080/"] `shouldBe` [True, True]
         it "rejects credentials, local addresses, numeric hosts and malformed URLs" $
-            map
-                (isLeft . validateDestination)
+            map (isLeft . validateDestination)
                 ["javascript:alert(1)", "https://user:pass@example.com", "http://localhost", "http://127.0.0.1", "http://[::1]", "http://2130706433", "http://service.local", "https://example.com:0", "https://example.com:65536", "https://example.com/ a", "//example.com", "https://a..com"]
                 `shouldBe` replicate 12 True
         it "accepts generated public DNS labels without altering destinations" $ H.property $ do
@@ -35,31 +32,15 @@ spec = do
             let target = "https://" <> label <> ".example.com/path"
             validateDestination target H.=== Right target
         it "accepts public IPv4 and IPv6 literals" $
-            map
-                (isRight . validateDestination)
+            map (isRight . validateDestination)
                 ["https://1.1.1.1", "http://8.8.8.8:8080/a", "https://[2606:4700:4700::1111]", "https://[2001:4860:4860::8888]"]
                 `shouldBe` replicate 4 True
         it "rejects private, reserved and alternative numeric IP forms" $
-            map
-                (isLeft . validateDestination)
-                [ "http://10.0.0.1"
-                , "http://172.16.0.1"
-                , "http://192.168.0.1"
-                , "http://169.254.169.254"
-                , "http://100.64.0.1"
-                , "http://192.0.2.1"
-                , "http://198.18.0.1"
-                , "http://224.0.0.1"
-                , "http://127.1"
-                , "http://0177.0.0.1"
-                , "http://0x7f000001"
-                , "http://127.0.0.0x1"
-                , "http://[::ffff:127.0.0.1]"
-                , "http://[fc00::1]"
-                , "http://[fe80::1]"
-                , "http://[2001:db8::1]"
-                , "http://[3fff::1]"
-                ]
+            map (isLeft . validateDestination)
+                ["http://10.0.0.1", "http://172.16.0.1", "http://192.168.0.1", "http://169.254.169.254"
+                ,"http://100.64.0.1", "http://192.0.2.1", "http://198.18.0.1", "http://224.0.0.1"
+                ,"http://127.1", "http://0177.0.0.1", "http://0x7f000001", "http://127.0.0.0x1", "http://[::ffff:127.0.0.1]"
+                ,"http://[fc00::1]", "http://[fe80::1]", "http://[2001:db8::1]", "http://[3fff::1]"]
                 `shouldBe` replicate 17 True
     describe "UTC date range" $ do
         it "includes both endpoints and accepts a leap year" $
@@ -83,7 +64,7 @@ spec = do
         it "does not redirect tombstones or expired URLs" $ do
             let target = ShortURL "code" "https://example.com" epoch Nothing Nothing 1
             isRedirectable epoch target `shouldBe` True
-            isRedirectable epoch (target{deletedAt = Just epoch}) `shouldBe` False
+            isRedirectable epoch (target {deletedAt = Just epoch}) `shouldBe` False
             isRedirectable epoch (ShortURL "code" "https://example.com" epoch (Just epoch) Nothing 1) `shouldBe` False
         it "requires future expiry and a positive edit version" $ do
             isLeft (validateCreateURL epoch (CreateURL "https://example.com" (Just epoch))) `shouldBe` True
@@ -96,47 +77,27 @@ spec = do
 
     describe "public destination boundary contracts" $ do
         it "preserves valid port limits and full IPv6 encodings" $ do
-            let targets =
-                    [ "https://example.com:1"
-                    , "https://example.com:65535"
+            let targets = ["https://example.com:1", "https://example.com:65535"
                     , "https://[2606:4700:4700:0:0:0:0:1111]"
                     , "https://[64:ff9b::8.8.8.8]"
-                    , "https://192.0.0.9"
-                    , "https://192.0.0.10"
-                    , "https://a1-b.example.com"
-                    ]
+                    , "https://192.0.0.9", "https://192.0.0.10"
+                    , "https://a1-b.example.com"]
             map validateDestination targets `shouldBe` map Right targets
         it "rejects malformed ports and noncanonical numeric addresses" $ do
-            let targets =
-                    [ "https://example.com:"
-                    , "https://example.com:000001"
-                    , "https://example.com:-1"
-                    , "https://example.com:abc"
-                    , "http://1.2.3.256"
-                    , "http://1.2.3.0001"
-                    , "http://1.2.3."
-                    , "http://1.2.3.04"
-                    , "http://1.2.3.0x4"
+            let targets = ["https://example.com:", "https://example.com:000001"
+                    , "https://example.com:-1", "https://example.com:abc"
+                    , "http://1.2.3.256", "http://1.2.3.0001", "http://1.2.3."
+                    , "http://1.2.3.04", "http://1.2.3.0x4"
                     , "http://[2606:4700:4700:0:0:0:1111]"
-                    , "http://[2606::4700::1111]"
-                    , "http://[2606:12345::1]"
-                    , "http://[2606:zzzz::1]"
-                    , "http://[2606:1:2:3:4:5:6:7::8]"
-                    ]
+                    , "http://[2606::4700::1111]", "http://[2606:12345::1]"
+                    , "http://[2606:zzzz::1]", "http://[2606:1:2:3:4:5:6:7::8]"]
             map (isLeft . validateDestination) targets `shouldBe` replicate (length targets) True
         it "enforces DNS label syntax and the whole hostname length" $ do
             let longest = T.intercalate "." [T.replicate 63 "a", T.replicate 63 "b", T.replicate 63 "c", T.replicate 61 "d"]
                 valid = "https://" <> longest
-                invalid =
-                    [ "https://-a.example.com"
-                    , "https://a-.example.com"
-                    , "https://a_b.example.com"
-                    , "https://" <> T.replicate 64 "a" <> ".com"
-                    , "https://" <> longest <> "d"
-                    , "https://a.123"
-                    , "https://example.home.arpa"
-                    , "https://example.onion"
-                    ]
+                invalid = ["https://-a.example.com", "https://a-.example.com", "https://a_b.example.com"
+                    , "https://" <> T.replicate 64 "a" <> ".com", "https://" <> longest <> "d"
+                    , "https://a.123", "https://example.home.arpa", "https://example.onion"]
             validateDestination valid `shouldBe` Right valid
             map (isLeft . validateDestination) invalid `shouldBe` replicate (length invalid) True
         it "checks adjacent public and reserved IPv4 network boundaries" $ do
@@ -199,11 +160,9 @@ spec = do
                 `shouldBe` Just ("event", "code", epoch)
 
         it "preserves create and edit payloads on the wire, including absent expiry" $ do
-            wireContract
-                (CreateURL "https://example.com" Nothing)
+            wireContract (CreateURL "https://example.com" Nothing)
                 (object ["destination" .= ("https://example.com" :: T.Text), "expiresAt" .= (Nothing :: Maybe T.Text)])
-            wireContract
-                (EditURL "https://example.com" (Just epoch) 7)
+            wireContract (EditURL "https://example.com" (Just epoch) 7)
                 (object ["destination" .= ("https://example.com" :: T.Text), "expiresAt" .= epoch, "version" .= (7 :: Int)])
             eitherDecode "{\"destination\":\"https://example.com\"}"
                 `shouldBe` Right (CreateURL "https://example.com" Nothing)
@@ -213,49 +172,26 @@ spec = do
             let live = ShortURL "live" "https://example.com" epoch Nothing Nothing 1
                 removed = ShortURL "removed" "https://example.com/old" epoch (Just epoch) (Just epoch) 2
                 event = ClickEvent "click" "live" (addUTCTime 0.125 epoch)
-                urlJSON code target expiry deleted revision =
-                    object
-                        [ "identifier" .= (code :: T.Text)
-                        , "destination" .= (target :: T.Text)
-                        , "createdAt" .= epoch
-                        , "expiresAt" .= (expiry :: Maybe T.Text)
-                        , "deletedAt" .= (deleted :: Maybe T.Text)
-                        , "version" .= (revision :: Int)
-                        ]
+                urlJSON code target expiry deleted revision = object
+                    ["identifier" .= (code :: T.Text), "destination" .= (target :: T.Text), "createdAt" .= epoch
+                    ,"expiresAt" .= (expiry :: Maybe T.Text), "deletedAt" .= (deleted :: Maybe T.Text), "version" .= (revision :: Int)]
             wireContract live (urlJSON "live" "https://example.com" Nothing Nothing 1)
-            wireContract
-                removed
-                ( object
-                    [ "identifier" .= ("removed" :: T.Text)
-                    , "destination" .= ("https://example.com/old" :: T.Text)
-                    , "createdAt" .= epoch
-                    , "expiresAt" .= epoch
-                    , "deletedAt" .= epoch
-                    , "version" .= (2 :: Int)
-                    ]
-                )
+            wireContract removed (object ["identifier" .= ("removed" :: T.Text), "destination" .= ("https://example.com/old" :: T.Text)
+                ,"createdAt" .= epoch, "expiresAt" .= epoch, "deletedAt" .= epoch, "version" .= (2 :: Int)])
             wireContract event (object ["identifier" .= ("click" :: T.Text), "url" .= ("live" :: T.Text), "occurredAt" .= addUTCTime 0.125 epoch])
             eitherDecode (encode [live, removed]) `shouldBe` Right [live, removed]
             eitherDecode (encode [event]) `shouldBe` Right [event]
             eitherDecode (encode [CreateURL "https://example.com" Nothing]) `shouldBe` Right [CreateURL "https://example.com" Nothing]
             eitherDecode (encode [EditURL "https://example.com" Nothing 1]) `shouldBe` Right [EditURL "https://example.com" Nothing 1]
         it "rejects missing required fields and invalid field types before validation" $ do
-            map
-                (\payload -> isLeft (eitherDecode payload :: Either String CreateURL))
-                ["{}", "{\"destination\":1}", "{\"destination\":\"https://example.com\",\"expiresAt\":false}"]
-                `shouldBe` replicate 3 True
-            map
-                (\payload -> isLeft (eitherDecode payload :: Either String EditURL))
-                ["{\"destination\":\"https://example.com\"}", "{\"destination\":\"https://example.com\",\"version\":\"1\"}"]
-                `shouldBe` replicate 2 True
-            map
-                (\payload -> isLeft (eitherDecode payload :: Either String ShortURL))
-                ["{}", "{\"identifier\":\"a\",\"destination\":\"https://example.com\",\"createdAt\":\"bad-date\",\"version\":1}"]
-                `shouldBe` replicate 2 True
-            map
-                (\payload -> isLeft (eitherDecode payload :: Either String ClickEvent))
-                ["{}", "{\"identifier\":\"a\",\"url\":false,\"occurredAt\":\"2024-02-29T00:00:00Z\"}"]
-                `shouldBe` replicate 2 True
+            map (\payload -> isLeft (eitherDecode payload :: Either String CreateURL))
+                ["{}", "{\"destination\":1}", "{\"destination\":\"https://example.com\",\"expiresAt\":false}"] `shouldBe` replicate 3 True
+            map (\payload -> isLeft (eitherDecode payload :: Either String EditURL))
+                ["{\"destination\":\"https://example.com\"}", "{\"destination\":\"https://example.com\",\"version\":\"1\"}"] `shouldBe` replicate 2 True
+            map (\payload -> isLeft (eitherDecode payload :: Either String ShortURL))
+                ["{}", "{\"identifier\":\"a\",\"destination\":\"https://example.com\",\"createdAt\":\"bad-date\",\"version\":1}"] `shouldBe` replicate 2 True
+            map (\payload -> isLeft (eitherDecode payload :: Either String ClickEvent))
+                ["{}", "{\"identifier\":\"a\",\"url\":false,\"occurredAt\":\"2024-02-29T00:00:00Z\"}"] `shouldBe` replicate 2 True
 
 -- Compare both encoding entry points against a consumer-visible schema.
 wireContract :: (Eq a, Show a, FromJSON a, ToJSON a, Generic a) => a -> Value -> IO ()
@@ -271,13 +207,14 @@ wireContract value expected = do
     eitherDecode (encode (Envelope value)) `shouldBe` Right (object ["payload" .= expected])
     decode (encode (object [])) `shouldBe` (Nothing `asTypeOf` Just (Envelope value))
 
+
 -- Test-only downstream envelope: payload is required even when optional fields
 -- elsewhere in the enclosing protocol are omitted.
-newtype Envelope a = Envelope {payload :: a} deriving (Eq, Show, Generic)
-instance (ToJSON a) => ToJSON (Envelope a) where
-    toJSON = genericToJSON defaultOptions{omitNothingFields = True}
-    toEncoding = genericToEncoding defaultOptions{omitNothingFields = True}
-instance (FromJSON a) => FromJSON (Envelope a)
+data Envelope a = Envelope {payload :: a} deriving (Eq, Show, Generic)
+instance ToJSON a => ToJSON (Envelope a) where
+    toJSON = genericToJSON defaultOptions {omitNothingFields = True}
+    toEncoding = genericToEncoding defaultOptions {omitNothingFields = True}
+instance FromJSON a => FromJSON (Envelope a)
 
 -- A diagnostic consumer must preserve identity, delimit lists, and append the
 -- caller's suffix. This is a downstream contract, not a production logging claim.

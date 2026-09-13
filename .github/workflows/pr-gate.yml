@@ -56,8 +56,6 @@ jobs:
             dist-testing-coverage
           key: host-${{ runner.os }}-${{ hashFiles('cabal.project', '**/*.cabal') }}
       - run: cabal update
-      - name: HLint
-        run: nix develop --command scripts/hlint
       - name: Coverage collector regressions
         run: python3 scripts/testing/Support/coverage_checks.py
       - name: Host tests

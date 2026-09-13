@@ -57,7 +57,7 @@ fetchViaFFI timeoutMillis targetURL method workersHeaders maybeRequestBody = do
 fetchStreamingViaFFI :: Int -> Text -> Method -> Headers -> Maybe RequestBody -> (StreamingResponse -> IO a) -> IO (Either (Text, Text) a)
 fetchStreamingViaFFI timeoutMillis targetUrl method workersHeaders maybeRequestBody handleResponse = do
     envelopeJSVal <- dispatchFetchEnveloped timeoutMillis targetUrl method workersHeaders maybeRequestBody
-    decodeFetchEnvelopeWith (`responseFromEnvelopeValueStreaming` handleResponse) envelopeJSVal
+    decodeFetchEnvelopeWith (\response -> responseFromEnvelopeValueStreaming response handleResponse) envelopeJSVal
 
 -- Service Binding transport deliberately calls the public library API; it never
 -- replaces global fetch, so concurrent client runs cannot affect each other.
