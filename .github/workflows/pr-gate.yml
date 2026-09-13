@@ -80,7 +80,7 @@ jobs:
         with:
           version: 12.4.1
       - name: Initialize WASM Cabal configuration
-        run: nix develop --command wasm32-wasi-cabal user-config init
+        run: cabal user-config init
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - id: wasm-cabal-index-cache
@@ -183,7 +183,7 @@ jobs:
         with:
           version: 12.4.1
       - name: Initialize WASM Cabal configuration
-        run: nix develop --command wasm32-wasi-cabal user-config init
+        run: cabal user-config init
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - id: wasm-cabal-index-cache
