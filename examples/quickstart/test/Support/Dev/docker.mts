@@ -10,21 +10,29 @@ async function testFiles(example: string) {
   if (files.length === 0) throw new Error(`No integration tests found: ${directory}`);
   return files.map(name => `${directory}/${name}`);
 }
-for (const [suite, command] of [
+const suites = [
   ["quickstart", ["examples/quickstart/test/Support/Dev/run.mts"]],
   ["static-assets", ["--test", "--test-concurrency=1", ...await testFiles("static-assets")]],
   ["realtime", ["--test", "--test-concurrency=1", ...await testFiles("realtime")]],
   ["workflows", ["--test", "--test-concurrency=1", ...await testFiles("workflows")]],
   ["minimal", ["--test", "--test-concurrency=1", ...await testFiles("minimal")]],
   ["library-examples", ["--test", "--test-concurrency=1", ...await testFiles("library-examples")]],
-] as const) {
+] as const;
+// Separate examples have isolated ports/state; keep files within each suite serial.
+const executions = suites.map(async ([suite, command]) => {
   let output = "";
   const child = spawn(process.execPath, [...command], { stdio: ["ignore", "pipe", "pipe"] });
   child.stdout.on("data", (chunk) => { output += chunk; process.stdout.write(chunk); });
   child.stderr.on("data", (chunk) => { output += chunk; process.stderr.write(chunk); });
   const exitCode = await new Promise<number | null>((resolve, reject) => { child.once("exit", resolve); child.once("error", reject); });
-  results.push({ suite, exitCode, signal: child.signalCode });
   await writeFile(`${evidence}/${suite}.log`, output);
+  return { suite, exitCode, signal: child.signalCode };
+});
+// Drain every child before reporting a launch failure or finishing the container.
+const settled = await Promise.allSettled(executions);
+for (const result of settled) {
+  if (result.status === "rejected") throw result.reason;
+  results.push(result.value);
 }
 const complete = results.every((result) => result.exitCode === 0 && result.signal === null);
 await writeFile(`${evidence}/results.json`, JSON.stringify({ complete, results }, null, 2));
