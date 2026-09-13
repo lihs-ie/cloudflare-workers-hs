@@ -14,7 +14,11 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TextEncoding
 import Data.Text.Encoding.Error qualified as TextEndodingError
 import Network.HTTP.Media (RenderHeader (renderHeader))
+#if MIN_VERSION_servant_client_core(0,21,0)
+import Network.HTTP.Types (renderQueryPartialEscape)
+#else
 import Network.HTTP.Types (urlEncode)
+#endif
 import Servant.Client.Core (
     BaseUrl,
     Request,
@@ -34,14 +38,24 @@ decodeUTF8Lenient = TextEncoding.decodeUtf8With TextEndodingError.lenientDecode
 buildFetchTargetURL :: BaseUrl -> Request -> Text
 buildFetchTargetURL baseURL request =
     Text.pack (showBaseUrl baseURL)
-        <> decodeUTF8Lenient (LazyByteString.toStrict (Builder.toLazyByteString (requestPath request)))
+        <> decodeUTF8Lenient
+            (LazyByteString.toStrict (Builder.toLazyByteString (requestPath request)))
+#if MIN_VERSION_servant_client_core(0,21,0)
+        <> decodeUTF8Lenient
+            (renderQueryPartialEscape True (toList (requestQueryString request)))
+#else
         <> queryStringText (toList (requestQueryString request))
   where
     queryStringText [] = Text.empty
     queryStringText queryItems = "?" <> Text.intercalate "&" (map queryItemText queryItems)
 
     queryItemText (name, maybeValue) =
-        decodeUTF8Lenient (urlEncode True name) <> maybe Text.empty (\value -> "=" <> decodeUTF8Lenient value) maybeValue
+        decodeUTF8Lenient (urlEncode True name)
+            <> maybe
+                Text.empty
+                (\value -> "=" <> decodeUTF8Lenient value)
+                maybeValue
+#endif
 
 requestHeadersToWorkersHeaders :: Request -> Headers
 requestHeadersToWorkersHeaders request =
@@ -56,13 +70,16 @@ requestHeadersToWorkersHeaders request =
     decodeHeaderPair (name, value) = (decodeUTF8Lenient (original name), decodeUTF8Lenient value)
 
     passthroughHeaders =
-        filter (\(name, _) -> name /= "Accept" && name /= "Content-Type") (toList (requestHeaders request))
+        filter
+            (\(name, _) -> name /= "Accept" && name /= "Content-Type")
+            (toList (requestHeaders request))
 
     decodedPassthroughHeaders = headersFromList (map decodeHeaderPair passthroughHeaders)
 
     headerWithContentType = case maybeContentTypeText of
         Nothing -> decodedPassthroughHeaders
-        Just contentTypeText -> headerInsert "Content-Type" contentTypeText decodedPassthroughHeaders
+        Just contentTypeText ->
+            headerInsert "Content-Type" contentTypeText decodedPassthroughHeaders
 
     maybeAcceptText =
         if null acceptMediaTypes

@@ -44,6 +44,7 @@ library
   hs-source-dirs:     src
   default-language:   GHC2024
   default-extensions:
+    CPP
     FlexibleContexts
     FlexibleInstances
     KindSignatures
@@ -71,7 +72,7 @@ library
     , http-media                        >=0.8      && <0.9
     , http-types                        >=0.12     && <0.13
     , servant                           >=0.20     && <0.21
-    , servant-client-core               >=0.20     && <0.21
+    , servant-client-core               >=0.20     && <0.22
     , text                              >=2.0      && <2.2
     , transformers                      >=0.5      && <0.7
 
@@ -89,7 +90,7 @@ test-suite unit
   hs-source-dirs: test/unit, test, src
   main-is: Spec.hs
   default-language: GHC2024
-  default-extensions: MultilineStrings, OverloadedStrings
+  default-extensions: CPP, MultilineStrings, OverloadedStrings
   build-tool-depends: testing-support:sydtest-discover-layer
   build-depends:
     , base

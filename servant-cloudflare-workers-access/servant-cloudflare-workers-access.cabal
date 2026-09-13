@@ -54,7 +54,7 @@ library
     , cloudflare-workers                 ^>=0.1.0.0
     , cloudflare-workers:ghc-wasm-shim
     , servant                            >=0.20     && <0.21
-    , servant-client-core                >=0.20     && <0.21
+    , servant-client-core                >=0.20     && <0.22
     , servant-cloudflare-workers         ^>=0.1.0.0
     , servant-cloudflare-workers-client  ^>=0.1.0.0
     , text                               >=2.0      && <2.2
