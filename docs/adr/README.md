@@ -68,3 +68,4 @@ ADR (Architecture Decision Record) は、プロジェクトにとって重要な
 | [0024](./0024-scope-out-wai-only-combinators.md) | servant の HttpVersion / IsSecure / RemoteHost / Vault を Workers 上ではスコープ外とする | 承認 |
 | [0025](./0025-separate-typescript-runtime-repository.md) | TypeScript runtimeを独立リポジトリへ分離する | 承認 |
 | [0026](./0026-cache-cabal-dependencies-in-ci.md) | CI の Cabal 依存キャッシュをホストと WASM に分離する | 承認 |
+| [0027](./0027-define-consumer-library-boundary.md) | 利用者向けライブラリの責務境界を定義する | 承認 |

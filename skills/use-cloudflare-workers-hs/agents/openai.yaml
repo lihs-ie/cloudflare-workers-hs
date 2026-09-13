@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use cloudflare-workers-hs"
+  short_description: "Build and review applications using cloudflare-workers-hs"
+  default_prompt: "Use $use-cloudflare-workers-hs to build or review this application against the library’s supported public API."
