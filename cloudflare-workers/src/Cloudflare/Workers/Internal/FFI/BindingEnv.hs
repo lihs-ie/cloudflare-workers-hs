@@ -7,13 +7,14 @@ module Cloudflare.Workers.Internal.FFI.BindingEnv (
 import Cloudflare.Workers.Binding.Assets (Assets (Assets))
 import Cloudflare.Workers.Binding.D1 (D1 (D1))
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace (DurableObjectNamespace), DurableObjectStorage (DurableObjectStorage))
+import Cloudflare.Workers.Binding.Images (Images (Images))
 import Cloudflare.Workers.Binding.KV (KV (KV))
 import Cloudflare.Workers.Binding.Queue (QueueProducer (QueueProducer))
 import Cloudflare.Workers.Binding.R2 (R2Bucket (R2Bucket))
 import Cloudflare.Workers.Binding.Secret (Secret (Secret))
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding (ServiceBinding))
-import Cloudflare.Workers.Binding.Workflow (Workflow (Workflow))
 import Cloudflare.Workers.Binding.Var (Var (Var))
+import Cloudflare.Workers.Binding.Workflow (Workflow (Workflow))
 import Cloudflare.Workers.Env (BindingMissingError (BindingMissingError))
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
 import Control.Exception (throwIO)
@@ -64,6 +65,9 @@ instance FromBindingJSVal QueueProducer where
 
 instance FromBindingJSVal ServiceBinding where
     fromBindingJSVal = pure . ServiceBinding
+
+instance FromBindingJSVal Images where
+    fromBindingJSVal = pure . Images
 
 instance FromBindingJSVal (Maybe Var) where
     fromBindingJSVal rawJSValue = do
