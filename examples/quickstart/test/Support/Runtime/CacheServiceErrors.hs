@@ -110,6 +110,7 @@ summarizeResponse response = pure $ object
     , "body" .= case responseBody response of
         ResponseBodyBytes bytes -> object ["kind" .= ("bytes" :: Text.Text), "length" .= Bytes.length bytes]
         ResponseBodyStream _ -> object ["kind" .= ("stream" :: Text.Text)]
+        ResponseBodyPassthrough _ -> object ["kind" .= ("passthrough" :: Text.Text)]
         _ -> object ["kind" .= ("other" :: Text.Text)]
     ]
 

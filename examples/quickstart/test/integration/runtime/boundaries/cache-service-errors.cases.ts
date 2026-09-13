@@ -88,29 +88,53 @@ export function registerCacheServiceErrorsCases(): void {
       .toMatchObject({ ok: true, value: { status: 200, body: { kind: "stream" } } });
   });
 
-  for (const [command, kind] of [["assets", "AssetsFetchFailed"], ["service", "ServiceFetchFailed"]]) {
-    it(`converts ${command} native failures and invalid response decoding to ${kind}`, async () => {
-      const failures = [
-        { fetch() { throw new Error("native failed"); } },
-        { get fetch() { throw new Error("fetch getter"); } },
-        { fetch: () => ({ get status() { throw new Error("status getter"); } }) },
-        { fetch: () => ({ status: 200, get headers() { throw new Error("headers getter"); } }) },
-        { fetch: () => ({ status: 200, headers: new Headers(), get body() { throw new Error("body getter"); } }) },
-        ...[-1, 0.25, Infinity, 2147483648].map((status) => ({ fetch: () => ({ status }) })),
-      ];
-      for (const binding of failures) {
-        expect(await probe(binding, command)).toMatchObject({ ok: false, kind });
-        expect(await probe({ fetch(request: Request) {
-          expect(request.headers.get("x-fixture")).toBe("request");
-          return emptyResponse();
-        } }, command)).toEqual({ ok: true, value: {
-          status: 204, headers: [["x-fixture", "response"]], body: { kind: "bytes", length: 0 },
-        } });
-      }
-      expect(await probe({ fetch: () => new Response("stream") }, command))
-        .toMatchObject({ ok: true, value: { body: { kind: "stream" } } });
-    });
-  }
+  it("converts Assets native and metadata failures without touching its request-scoped body", async () => {
+    const failures = [
+      { fetch() { throw new Error("native failed"); } },
+      { get fetch() { throw new Error("fetch getter"); } },
+      { fetch: () => ({ get status() { throw new Error("status getter"); } }) },
+      { fetch: () => ({ status: 200, get headers() { throw new Error("headers getter"); } }) },
+      ...[-1, 0.25, Infinity, 2147483648].map((status) => ({ fetch: () => ({ status }) })),
+    ];
+    for (const binding of failures) {
+      expect(await probe(binding, "assets")).toMatchObject({ ok: false, kind: "AssetsFetchFailed" });
+    }
+    expect(await probe({ fetch(request: Request) {
+      expect(request.headers.get("x-fixture")).toBe("request");
+      return emptyResponse();
+    } }, "assets")).toEqual({ ok: true, value: {
+      status: 204, headers: [["x-fixture", "response"]], body: { kind: "passthrough" },
+    } });
+    expect(await probe({ fetch: () => ({
+      status: 200,
+      headers: new Headers(),
+      get body() { throw new Error("body getter"); },
+    }) }, "assets")).toMatchObject({ ok: true, value: { body: { kind: "passthrough" } } });
+    expect(await probe({ fetch: () => new Response("stream") }, "assets"))
+      .toMatchObject({ ok: true, value: { body: { kind: "passthrough" } } });
+  });
+
+  it("converts Service Binding native failures and invalid response decoding to ServiceFetchFailed", async () => {
+    const failures = [
+      { fetch() { throw new Error("native failed"); } },
+      { get fetch() { throw new Error("fetch getter"); } },
+      { fetch: () => ({ get status() { throw new Error("status getter"); } }) },
+      { fetch: () => ({ status: 200, get headers() { throw new Error("headers getter"); } }) },
+      { fetch: () => ({ status: 200, headers: new Headers(), get body() { throw new Error("body getter"); } }) },
+      ...[-1, 0.25, Infinity, 2147483648].map((status) => ({ fetch: () => ({ status }) })),
+    ];
+    for (const binding of failures) {
+      expect(await probe(binding, "service")).toMatchObject({ ok: false, kind: "ServiceFetchFailed" });
+    }
+    expect(await probe({ fetch(request: Request) {
+      expect(request.headers.get("x-fixture")).toBe("request");
+      return emptyResponse();
+    } }, "service")).toEqual({ ok: true, value: {
+      status: 204, headers: [["x-fixture", "response"]], body: { kind: "bytes", length: 0 },
+    } });
+    expect(await probe({ fetch: () => new Response("stream") }, "service"))
+      .toMatchObject({ ok: true, value: { body: { kind: "stream" } } });
+  });
 
   it("classifies invalid service request construction before invoking the binding", async () => {
     let calls = 0;
@@ -284,8 +308,11 @@ export function registerCacheServiceErrorsCases(): void {
         batch: `[${constructor} "Error: fetch failed"]`,
         nested: `(${constructor} "Error: fetch failed")`,
       });
+      const expectedBody = command === "assets-contract"
+        ? { kind: "passthrough" }
+        : { kind: "bytes", length: 0 };
       expect(await probe({ fetch: emptyResponse }, command))
-        .toMatchObject({ ok: true, value: { status: 204, body: { kind: "bytes", length: 0 } } });
+        .toMatchObject({ ok: true, value: { status: 204, body: expectedBody } });
     }
   });
 
