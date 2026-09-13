@@ -10,7 +10,6 @@ import Cloudflare.Workers.Streaming
 import Servant.API hiding (GET, POST, DELETE, HEAD)
 import Servant.API qualified as API
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Support.HTTP.Fixtures
 spec :: Spec
 spec = do

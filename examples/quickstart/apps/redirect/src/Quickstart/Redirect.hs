@@ -19,7 +19,6 @@ import Servant.API.Generic ((:-))
 import Servant.Cloudflare.Workers.Error (err404)
 import Servant.Cloudflare.Workers.Handler (Handler, askExecutionContext)
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 import URLShortener.Domain (ClickEvent (..))
 
 data Routes mode = Routes

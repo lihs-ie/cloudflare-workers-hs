@@ -23,9 +23,7 @@ import Support.Runtime.MiddlewareExtra qualified as MiddlewareExtra
 import Support.Runtime.SQLBoundaries qualified as SQLBoundaries
 import Support.Runtime.TypedQueueBoundaries qualified as TypedQueueBoundaries
 import Support.Runtime.QuickstartBoundaries qualified as QuickstartBoundaries
-import Support.Runtime.JWKSCache qualified as JWKSCache
 import Support.Runtime.Client qualified as Client
-import Data.ByteString.Lazy qualified as LazyBytes
 import Envelope qualified
 import Support.Runtime.SocketStream qualified as SocketStream
 import Support.Runtime.StorageBoundaries qualified as StorageBoundaries
@@ -34,17 +32,15 @@ import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler)
 import Cloudflare.Workers.Env (BindingEnv)
 import Cloudflare.Workers.HTTP
 import Cloudflare.Workers.Headers (headersFromList)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArrayToByteString)
+import ExampleSupport.Interop (byteStringToJSByteArray, decodeEnveloped, jsByteArrayToByteString, jsValToText, textToJSVal)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext(..), passThroughOnException, waitUntil)
 import Data.Text qualified as Text
 import Control.Exception (throwIO, try, SomeException, displayException)
-import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (parseEither, (.:), (.:?), (.!=))
+import Data.ByteString (ByteString)
 import Data.Text.Encoding qualified as TextEncoding
-import Servant.Cloudflare.Workers.Access (AccessConfig (..), AccessClaims (..), AccessError(..), AccessVerifierOptions(..), verifyAccessJWT, verifyAccessJWTWithOptions, verifyAccessServiceJWTWithOptions, AccessServiceClaims(..))
-import Servant.Cloudflare.Workers.Access.Internal.JWKSCache (resetJWKSCacheForTesting)
+import Servant.Cloudflare.Workers.Access (AccessConfig (..), AccessClaims (..), AccessVerifierOptions(..), defaultAccessVerifierOptions, verifyAccessJWTWithOptions, verifyAccessServiceJWTWithOptions, AccessServiceClaims(..))
 import Servant.Cloudflare.Workers.Access.SubtleCrypto (subtleImportKey, subtleVerify)
 import GHC.Wasm.Prim (JSVal)
 import Trace.Hpc.Reflect (examineTix)
@@ -103,8 +99,10 @@ foreign export javascript "cryptoVerify" cryptoVerify :: JSVal -> JSVal -> JSVal
 jwtVerify :: JSVal -> IO JSVal
 jwtVerify tokenValue = do
   token <- jsValToText tokenValue
-  resetJWKSCacheForTesting
-  result <- verifyAccessJWT (AccessConfig "runtime-audience" "runtime-team" "https://runtime-team.cloudflareaccess.com/cdn-cgi/access/certs") token
+  result <- verifyAccessJWTWithOptions
+    defaultAccessVerifierOptions{accessVerifierOptionsJWKSCacheTtlSeconds = 0}
+    (AccessConfig "runtime-audience" "runtime-team" "https://runtime-team.cloudflareaccess.com/cdn-cgi/access/certs")
+    token
   textToJSVal (either (const "rejected") accessClaimsEmail result)
 foreign export javascript "jwtVerify" jwtVerify :: JSVal -> IO JSVal
 
@@ -114,12 +112,11 @@ jwtVerifyConfigured :: JSVal -> IO JSVal
 jwtVerifyConfigured inputValue = do
   input <- jsValToText inputValue
   value <- either fail pure (Aeson.eitherDecodeStrict (TextEncoding.encodeUtf8 input))
-  (token, audience, team, url, skew, ttl, issuer, reset) <- either fail pure $ parseEither
+  (token, audience, team, url, skew, ttl, issuer) <- either fail pure $ parseEither
     (Aeson.withObject "Access verification fixture" $ \object ->
-      (,,,,,,,) <$> object .: "token" <*> object .: "audience" <*> object .: "team"
+      (,,,,,,) <$> object .: "token" <*> object .: "audience" <*> object .: "team"
         <*> object .: "url" <*> object .: "skew" <*> object .: "ttl"
-        <*> object .:? "issuer" <*> (object .:? "reset" .!= False)) value
-  if reset then resetJWKSCacheForTesting else pure ()
+        <*> object .:? "issuer") value
   kind <- either fail pure $ parseEither (Aeson.withObject "Identity kind" (\o -> o .:? "identityKind" .!= ("user" :: Text.Text))) value
   if skew < 0 || ttl <= 0
     then textToJSVal "rejected"
@@ -188,21 +185,12 @@ foreign export javascript "d1DecoderBoundaries" d1DecoderBoundaries :: IO JSVal
 socketProbe :: JSVal -> JSVal -> IO JSVal
 socketProbe = SocketStream.socketProbe
 foreign export javascript "socketProbe" socketProbe :: JSVal -> JSVal -> IO JSVal
-streamProbe :: JSVal -> JSVal -> JSVal -> IO JSVal
-streamProbe = SocketStream.streamProbe
-foreign export javascript "streamProbe" streamProbe :: JSVal -> JSVal -> JSVal -> IO JSVal
-producerProbe :: JSVal -> IO JSVal
-producerProbe = SocketStream.producerProbe
-foreign export javascript "producerProbe" producerProbe :: JSVal -> IO JSVal
 routingProbe :: JSVal -> JSVal -> JSVal -> IO JSVal
 routingProbe modeValue requestValue contextValue = do
     mode <- jsValToText modeValue
     createFetchHandler (\request (_ :: BindingEnv '[] '[] '[]) context -> Routing.routingFixture mode request context) requestValue contextValue contextValue
 foreign export javascript "routingProbe" routingProbe :: JSVal -> JSVal -> JSVal -> IO JSVal
 
-jwksCacheProbe :: IO JSVal
-jwksCacheProbe = textToJSVal . TextEncoding.decodeUtf8 . LazyBytes.toStrict . Aeson.encode =<< JWKSCache.runJWKSCacheScenarios
-foreign export javascript "jwksCacheProbe" jwksCacheProbe :: IO JSVal
 clientServiceProbe :: JSVal -> JSVal -> IO JSVal
 clientServiceProbe = Client.runClientService
 foreign export javascript "clientServiceProbe" clientServiceProbe :: JSVal -> JSVal -> IO JSVal
@@ -263,23 +251,25 @@ transportExtraProbe :: JSVal -> JSVal -> IO JSVal
 transportExtraProbe = TransportExtra.transportExtraProbe
 foreign export javascript "transportExtraProbe" transportExtraProbe :: JSVal -> JSVal -> IO JSVal
 
-transportRequestExtra :: JSVal -> JSVal -> IO JSVal
-transportRequestExtra = TransportExtra.transportRequestExtra
-foreign export javascript "transportRequestExtra" transportRequestExtra :: JSVal -> JSVal -> IO JSVal
-
-transportResponseExtra :: JSVal -> JSVal -> IO JSVal
-transportResponseExtra = TransportExtra.transportResponseExtra
-foreign export javascript "transportResponseExtra" transportResponseExtra :: JSVal -> JSVal -> IO JSVal
-
 clientRetryExtraProbe :: JSVal -> JSVal -> IO JSVal
 clientRetryExtraProbe = ClientRetryExtra.runClientRetryExtra
 foreign export javascript "clientRetryExtraProbe" clientRetryExtraProbe :: JSVal -> JSVal -> IO JSVal
 
 routingCoverageProbe :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
-routingCoverageProbe modeValue requestValue contextValue streamValue = do
+routingCoverageProbe modeValue requestValue contextValue _streamValue = do
     mode <- jsValToText modeValue
-    createFetchHandler (\request (_ :: BindingEnv '[] '[] '[]) context -> RoutingCoverage.routingCoverageFixture mode request context (Streaming.ReadableStream streamValue)) requestValue contextValue contextValue
+    source <- Streaming.readableStreamFromProducer $ \emit -> do
+      _ <- emit (routingCoverageStreamBody mode)
+      pure Streaming.StreamProducerCompleted
+    createFetchHandler (\request (_ :: BindingEnv '[] '[] '[]) context -> RoutingCoverage.routingCoverageFixture mode request context source) requestValue contextValue contextValue
 foreign export javascript "routingCoverageProbe" routingCoverageProbe :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
+
+routingCoverageStreamBody :: Text.Text -> ByteString
+routingCoverageStreamBody mode = case mode of
+  "custom-typeclass-stream" -> "custom-stream"
+  "stream-context" -> "stream-body"
+  "stream-headers" -> "download"
+  _ -> ""
 
 entrypointLifecycleErrorsProbe :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
 entrypointLifecycleErrorsProbe = EntrypointLifecycleErrors.entrypointLifecycleErrorsProbe

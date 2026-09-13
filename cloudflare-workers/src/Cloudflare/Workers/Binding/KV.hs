@@ -44,7 +44,8 @@ import Cloudflare.Workers.Internal.FFI.KV (
     kvListViaFFI,
     kvPutViaFFI,
  )
-import Cloudflare.Workers.Streaming (ReadableStream, readableStreamFromJSVal, readableStreamToJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal, readableStreamToJSVal)
+import Cloudflare.Workers.Streaming (ReadableStream)
 
 data KVError
     = KVGetFailed Text

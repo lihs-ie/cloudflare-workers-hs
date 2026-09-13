@@ -9,7 +9,7 @@ import Cloudflare.Workers.Binding.DurableObject
 import Cloudflare.Workers.Binding.DurableObject.SQL
 import Cloudflare.Workers.Binding.Queue
 import Cloudflare.Workers.Binding.ServiceBinding
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal, jsValToText)
+import ExampleSupport.Interop (textToJSVal, jsValToText)
 import Control.Exception (Exception, throwIO)
 import Control.Monad (unless, void)
 import Data.Aeson

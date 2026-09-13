@@ -2,7 +2,7 @@ module Support.Runtime.GenerationAsync (generationAsyncProbe) where
 
 import Control.Concurrent (forkFinally, forkIO, newEmptyMVar, putMVar, takeMVar, throwTo, yield, threadDelay)
 import Control.Exception (AsyncException(ThreadKilled), SomeAsyncException, SomeException, fromException)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (textToJSVal)
 import GHC.Wasm.Prim (JSVal)
 import Quickstart.Runtime (generationQueue)
 import System.Timeout (timeout)

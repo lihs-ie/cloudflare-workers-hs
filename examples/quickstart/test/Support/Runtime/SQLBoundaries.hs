@@ -2,7 +2,7 @@ module Support.Runtime.SQLBoundaries (sqlProbe) where
 
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage(..))
 import Cloudflare.Workers.Binding.DurableObject.SQL
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, try)
 import Data.Aeson (eitherDecodeStrict')
 import Data.Text qualified as Text

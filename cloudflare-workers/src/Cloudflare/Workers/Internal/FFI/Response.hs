@@ -10,7 +10,7 @@ import Cloudflare.Workers.HTTP (
  )
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray)
 import Cloudflare.Workers.Internal.FFI.Headers (headersToJSVal)
-import Cloudflare.Workers.Streaming (readableStreamToJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamToJSVal)
 import Control.Exception (throwIO)
 import Data.ByteString.Lazy qualified as LazyByteString
 import GHC.Wasm.Prim (JSVal)

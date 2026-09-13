@@ -1,12 +1,9 @@
 module Support.Runtime.ClientRetryExtra (runClientRetryExtra) where
 
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding (..))
-import Cloudflare.Workers.Headers (headersFromList, headersToList, headerLookup)
-import Cloudflare.Workers.HTTP qualified as Workers
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Headers (headerLookup)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, try, throwIO, backtraceDesired)
-import Control.Applicative (liftA2)
-import Cloudflare.Workers.Streaming (readableStreamToLazyByteString)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as LBS
@@ -18,7 +15,6 @@ import Network.HTTP.Types (http11, mkStatus, statusCode, statusMessage)
 import Servant.Client.Core
 import Servant.Cloudflare.Workers.Client.Fetch
 import Servant.Cloudflare.Workers.Client.Fetch.Request (buildFetchTargetURL, requestHeadersToWorkersHeaders)
-import Servant.Cloudflare.Workers.Client.Internal.FFI.Fetch (workersResponseToStreamingResponse, buildServiceRequest)
 import Servant.Types.SourceT qualified as SourceT
 import Data.Sequence qualified as Seq
 
@@ -40,20 +36,6 @@ runClientRetryExtra rawBinding rawMode = do
         pure $ Aeson.object
             [ "url" Aeson..= buildFetchTargetURL baseURL request
             , "header" Aeson..= headerLookup "x-malformed" (requestHeadersToWorkersHeaders request)
-            ]
-    action "request-fields" = do
-        result <- buildServiceRequest "https://service.example/source" "POST" (headersFromList [])
-            (Just (RequestBodySource (SourceT.source ["first", "second"])))
-        request <- either (throwIO . userError . Text.unpack) pure result
-        body <- case Workers.requestBody request of
-            Nothing -> throwIO (userError "Source request lost stream")
-            Just stream -> readableStreamToLazyByteString 64 stream >>= either (throwIO . userError . show) pure
-        pure $ Aeson.object
-            [ "method" Aeson..= show (Workers.requestMethod request)
-            , "headers" Aeson..= headersToList (Workers.requestHeaders request)
-            , "readerAbsent" Aeson..= (case Workers.requestBodyReader request of Nothing -> True; Just _ -> False)
-            , "dataCenter" Aeson..= Workers.requestDataCenter request
-            , "body" Aeson..= Encoding.decodeUtf8 (LBS.toStrict body)
             ]
     action "instances" = do
         let dispatch = responseBody <$> runRequestAcceptStatus Nothing defaultRequest
@@ -106,8 +88,6 @@ runClientRetryExtra rawBinding rawMode = do
             , "reason" Aeson..= Encoding.decodeUtf8 (statusMessage (responseStatusCode response))
             , "body" Aeson..= Encoding.decodeUtf8 (LBS.toStrict (responseBody response))
             ]
-    action "passthrough" = workersResponseToStreamingResponse
-        (Workers.createResponse (Workers.Status 200) (headersFromList []) (Workers.ResponseBodyPassthrough (Workers.PassthroughResponse rawBinding))) consume
     action mode = do
         let global = Text.isPrefixOf "global-" mode
             body = if Text.isSuffixOf "lazy" mode then RequestBodyLBS (LBS.fromChunks ["lazy-", "stream"]) else RequestBodyBS "strict-stream"

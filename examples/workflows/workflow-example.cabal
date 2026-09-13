@@ -22,9 +22,9 @@ executable workflow-example
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example
-  hs-source-dirs: app, src
+  hs-source-dirs: app, src, ../support/src
   main-is: Main.hs
-  other-modules: WorkflowExample.API, WorkflowExample.Domain, WorkflowExample.Application
+  other-modules: ExampleSupport.Interop, WorkflowExample.API, WorkflowExample.Domain, WorkflowExample.Application
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
@@ -45,9 +45,9 @@ executable workflow-example-fixture
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example-fixture
-  hs-source-dirs: test/Support, src, test
+  hs-source-dirs: test/Support, src, test, ../support/src
   main-is: Main.hs
-  other-modules: WorkflowExample.Domain, Support.WorkflowFixture, Support.D1QueryFixture
+  other-modules: ExampleSupport.Interop, WorkflowExample.Domain, Support.WorkflowFixture, Support.D1QueryFixture
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall

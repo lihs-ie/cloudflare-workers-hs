@@ -21,7 +21,7 @@ common warnings
 
 library
   import:             warnings
-  hs-source-dirs:     src
+  hs-source-dirs:     src, internal-src
   default-language:   GHC2024
   default-extensions:
     FlexibleContexts
@@ -36,14 +36,15 @@ library
   exposed-modules:
     Servant.Cloudflare.Workers.Access
     Servant.Cloudflare.Workers.Access.Combinator
+    Servant.Cloudflare.Workers.Access.SubtleCrypto
+
+  other-modules:
     Servant.Cloudflare.Workers.Access.Internal.Base64URL
     Servant.Cloudflare.Workers.Access.Internal.Claims
     Servant.Cloudflare.Workers.Access.Internal.Clock
-    Servant.Cloudflare.Workers.Access.Internal.FFI.SubtleCrypto
     Servant.Cloudflare.Workers.Access.Internal.Header
     Servant.Cloudflare.Workers.Access.Internal.JWKS
     Servant.Cloudflare.Workers.Access.Internal.JWKSCache
-    Servant.Cloudflare.Workers.Access.SubtleCrypto
 
   build-depends:
     , aeson                              >=2.1      && <2.3
@@ -70,7 +71,7 @@ test-suite unit
   import: warnings
   ghc-options: -threaded -rtsopts -with-rtsopts=-N2
   type: exitcode-stdio-1.0
-  hs-source-dirs: test/unit, test
+  hs-source-dirs: test/unit, test, internal-src
   main-is: Spec.hs
   default-language: GHC2024
   default-extensions: OverloadedStrings
@@ -95,9 +96,15 @@ test-suite unit
     , servant-cloudflare-workers
     , transformers
   other-modules:
+    Servant.Cloudflare.Workers.Access.Internal.Base64URL
     Servant.Cloudflare.Workers.Access.Internal.ClockSpec
     Servant.Cloudflare.Workers.Access.Internal.Base64URLSpec
+    Servant.Cloudflare.Workers.Access.Internal.Claims
     Servant.Cloudflare.Workers.Access.Internal.ClaimsSpec
+    Servant.Cloudflare.Workers.Access.Internal.Clock
+    Servant.Cloudflare.Workers.Access.Internal.Header
+    Servant.Cloudflare.Workers.Access.Internal.JWKS
+    Servant.Cloudflare.Workers.Access.Internal.JWKSCache
     Servant.Cloudflare.Workers.Access.Internal.JWKSCacheSpec
     Servant.Cloudflare.Workers.Access.Internal.JWKSSpec
     Support.Fixtures.Claims

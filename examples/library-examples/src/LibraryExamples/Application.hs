@@ -41,7 +41,6 @@ import Network.HTTP.Types.Status qualified as HTTPStatus
 import Servant.Cloudflare.Workers.Client.Fetch (FetchClient, runFetchClientWithServiceBinding)
 import Servant.Cloudflare.Workers.Server (Server)
 import Servant.Cloudflare.Workers.Error (ServerError(..))
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 server :: D1 -> ServiceBinding -> QueueProducer -> DurableObjectNamespace -> Maybe Secret -> BaseUrl -> KV -> ServiceBinding -> SocketConnector -> R2Bucket -> SocketEndpoints -> Configuration.Settings -> Server API env
 server database validator producer jobNamespace attachmentSecret clientBase kv service connector bucket endpoints configurationSettings = Routes

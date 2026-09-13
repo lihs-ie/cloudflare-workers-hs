@@ -7,10 +7,7 @@ import Cloudflare.Workers.Binding.R2
 import Cloudflare.Workers.Binding.DurableObject
 import Cloudflare.Workers.Binding.DurableObject.SQL
 import Cloudflare.Workers.Binding.Workflow
-import Cloudflare.Workers.Internal.FFI.D1 qualified as FFI
-import Cloudflare.Workers.Internal.FFI.KV qualified as FFI
-import Cloudflare.Workers.Internal.FFI.R2 qualified as FFI
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (Exception, displayException, throwIO, try)
 import Data.Aeson (Value, object, (.=), encode, eitherDecode, ToJSON (..), FromJSON (..), defaultOptions, Options (..), genericToJSON, genericToEncoding, genericParseJSON)
 import GHC.Generics (Generic)
@@ -73,14 +70,7 @@ storagePublicContractsProbe raw = do
 
 snapshots :: [Value]
 snapshots =
-    [ contract "D1ValueViaFFI" [FFI.D1NullViaFFI,FFI.D1IntegerViaFFI 7,FFI.D1RealViaFFI 1.25,FFI.D1TextViaFFI "row",FFI.D1BlobViaFFI "blob"]
-    , contract "KVReadFormViaFFI" [FFI.KVReadTextViaFFI,FFI.KVReadJSONViaFFI,FFI.KVReadArrayBufferViaFFI,FFI.KVReadStreamViaFFI]
-    , contract "KVBulkReadFormViaFFI" [FFI.KVBulkReadTextViaFFI,FFI.KVBulkReadJSONViaFFI]
-    , contract "R2HttpMetadataViaFFI" [ffiHttp,ffiHttp {FFI.r2HttpContentTypeViaFFI=Just "text/plain"}]
-    , contract "R2ChecksumsViaFFI" [ffiChecksums,ffiChecksums {FFI.r2ChecksumSha256ViaFFI=Just "digest"}]
-    , contract "R2ObjectMetaViaFFI" [ffiObject,ffiObject {FFI.r2ObjectVersionViaFFI="v2"}]
-    , contract "R2RangeViaFFI" [FFI.R2RangeOffsetLengthViaFFI 0 4,FFI.R2RangeOffsetViaFFI 4,FFI.R2RangeLengthViaFFI 4,FFI.R2RangeSuffixViaFFI 4]
-    , contract "D1Value" [D1Null,D1Integer 7,D1Real 1.25,D1Text "row",D1Blob "blob"]
+    [ contract "D1Value" [D1Null,D1Integer 7,D1Real 1.25,D1Text "row",D1Blob "blob"]
     , contract "D1Meta" [meta, meta {d1MetaChanges=Just 2}]
     , contract "D1Result" [D1Result [[("name",D1Text "Ada")]] True meta,D1Result [] False meta]
     , contract "D1RunResult" [D1RunResult True meta,D1RunResult False meta]
@@ -126,9 +116,6 @@ snapshots =
     , contract "WorkflowReceivedEvent" [WorkflowReceivedEvent (7 :: Int) "ready" "2026-09-12T00:00:00Z",WorkflowReceivedEvent 8 "ready" "2026-09-12T00:00:00Z"]
     ]
   where
-    ffiHttp = FFI.R2HttpMetadataViaFFI Nothing Nothing Nothing Nothing Nothing Nothing
-    ffiChecksums = FFI.R2ChecksumsViaFFI Nothing Nothing Nothing Nothing Nothing
-    ffiObject = FFI.R2ObjectMetaViaFFI "report" "v1" 4 "etag" "etag" ffiChecksums 1 ffiHttp [] Nothing "Standard" Nothing
     meta = D1Meta 0.5 (Just 1) (Just 7) (Just 1) (Just 1)
     key = KVListKey "profile" Nothing Nothing
     http = r2HttpMetadataDefault {r2HttpMetadataContentType=Just "text/plain"}

@@ -1,7 +1,6 @@
 module Envelope (envelopeProbe) where
 
-import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (decodeEnveloped, textToJSVal)
 import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as LazyBytes
 import Data.IORef (newIORef, modifyIORef', readIORef)

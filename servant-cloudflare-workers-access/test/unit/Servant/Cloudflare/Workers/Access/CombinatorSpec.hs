@@ -13,7 +13,6 @@ import Servant.API
 import Servant.Cloudflare.Workers.Access
 import Servant.Cloudflare.Workers.Access.Combinator
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Support.Runtime.AccessRoutes (runAccessRouteScenarios)
 import Support.Fixtures.Combinator
 import Test.Syd

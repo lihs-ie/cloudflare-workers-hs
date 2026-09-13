@@ -22,13 +22,13 @@ executable static-assets-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-static-assets-worker
-  hs-source-dirs: app, src
+  hs-source-dirs: app, src, ../support/src
   main-is: Main.hs
-  other-modules: StaticAssets.API, StaticAssets.Application
+  other-modules: ExampleSupport.Interop, StaticAssets.API, StaticAssets.Application
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
-  build-depends: base, aeson, cloudflare-workers, servant, servant-cloudflare-workers, text
+  build-depends: base, aeson, bytestring, cloudflare-workers, servant, servant-cloudflare-workers, text
   if os(wasi)
     build-depends: ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI

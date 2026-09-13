@@ -1,5 +1,5 @@
 module Cloudflare.Workers.Internal.FFI.BytesSpec (spec) where
-import Cloudflare.Workers.Internal.FFI.Bytes
+import Cloudflare.Workers.Internal.ByteArray
 import Data.Text qualified as Text
 import Test.Syd
 spec :: Spec

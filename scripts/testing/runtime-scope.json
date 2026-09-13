@@ -662,14 +662,6 @@
       "evidence": "examples/library-examples/library-examples.cabal"
     },
     {
-      "path": "examples/library-examples/test/Support/R2ArchiveFixtures.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
-    },
-    {
       "path": "examples/library-examples/test/Support/SocketFailures.hs",
       "required": [
         "wasm"
@@ -1191,61 +1183,53 @@
       "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs",
       "required": [
         "host"
       ],
       "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs",
       "required": [
         "host"
       ],
       "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs",
       "required": [
         "host",
         "wasm"
       ],
       "reason": "Source has an explicit WASI/wasm CPP implementation split. Both the native alternative and deployed branch require execution evidence.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Clock.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/FFI/SubtleCrypto.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/FFI/SubtleCrypto.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Header.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Header.hs",
       "required": [
         "host"
       ],
       "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/Header.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Header.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKS.hs"
     },
     {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs",
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs"
+      "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs"
     },
     {
       "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/SubtleCrypto.hs",
@@ -1265,7 +1249,7 @@
       "evidence": "examples/quickstart/quickstart.cabal"
     },
     {
-      "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessVerification.hs",
+      "path": "examples/quickstart/test/Support/Runtime/AccessVerification.hs",
       "required": [
         "wasm"
       ],
@@ -1305,7 +1289,7 @@
       "evidence": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Internal/FFI/Fetch.hs"
     },
     {
-      "path": "servant-cloudflare-workers-client/test/Support/Runtime/Client.hs",
+      "path": "examples/quickstart/test/Support/Runtime/Client.hs",
       "required": [
         "wasm"
       ],
@@ -1313,7 +1297,7 @@
       "evidence": "examples/quickstart/quickstart.cabal"
     },
     {
-      "path": "servant-cloudflare-workers-client/test/Support/Runtime/ClientRetryExtra.hs",
+      "path": "examples/quickstart/test/Support/Runtime/ClientRetryExtra.hs",
       "required": [
         "wasm"
       ],
@@ -1393,44 +1377,44 @@
       "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server.hs"
     },
     {
-      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal.hs",
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal.hs"
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs"
     },
     {
-      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs",
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs"
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs"
     },
     {
-      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs",
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs"
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs"
     },
     {
-      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs",
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs"
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs"
     },
     {
-      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Internal/Router.hs"
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs"
     },
     {
       "path": "servant-cloudflare-workers/test/Support/Runtime/RouterInternals.hs",

@@ -8,7 +8,6 @@ import Data.Proxy (Proxy(..))
 import Data.Text.Encoding qualified as Text
 import Servant.API ((:<|>)(..))
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Support.Conformance.Oracle
 import Support.HTTP.Fixtures (request, context, bodyBytes)
 evaluateWorker :: RequestCase -> IO Observation

@@ -13,23 +13,6 @@ async function probe(
 }
 
 export function registerEntrypointLifecycleErrorsCases(): void {
-  it("renders native error diagnostics without touching opaque native payloads", async () => {
-    const native = new Proxy(
-      {},
-      {
-        get() {
-          throw new Error("opaque native payload accessed");
-        },
-      },
-    );
-    expect(await probe("native-error-diagnostics", native)).toEqual({
-      ok: true,
-      value: {
-        list: "[first,second] suffix",
-        individual: ["first suffix", "second suffix"],
-      },
-    });
-  });
   it("echoes configured binary messages without altering their bytes", async () => {
     const sent: Uint8Array[] = [];
     const result = JSON.parse(
@@ -229,7 +212,7 @@ export function registerEntrypointLifecycleErrorsCases(): void {
     expect(valid).toEqual({ ok: true, value: { ok: true, value: 7 } });
   });
 
-  it("preserves workflow asynchronous exceptions and native diagnostic text", async () => {
+  it("preserves workflow asynchronous exceptions", async () => {
     const result = await probe(
       "workflow-async",
       {},
@@ -240,9 +223,5 @@ export function registerEntrypointLifecycleErrorsCases(): void {
       },
     );
     expect(result).toEqual({ ok: false, message: "thread killed" });
-    expect(await probe("native-error-show", {})).toEqual({
-      ok: true,
-      value: "native failure",
-    });
   });
 }

@@ -1,10 +1,9 @@
 module Support.Coverage (withCoverage) where
 
 import Control.Exception (finally, throwIO)
-import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
+import ExampleSupport.Interop (decodeEnveloped, textToJSVal)
 import Trace.Hpc.Reflect (examineTix)
 import Data.Text qualified as Text
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
 import GHC.Wasm.Prim (JSVal)
 
 -- Only linked by the explicit instrumentation flag. Each invocation is observed

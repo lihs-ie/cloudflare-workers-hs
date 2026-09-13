@@ -11,7 +11,6 @@ import Data.List (isPrefixOf)
 import Data.Proxy (Proxy)
 import Data.Text (Text)
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Servant.Cloudflare.Workers.Server.Internal.Router (splitPathSegments)
 
 -- | Prefixes are decoded path segments, e.g. @[["api"], ["admin"]]@.

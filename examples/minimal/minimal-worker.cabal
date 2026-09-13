@@ -22,13 +22,13 @@ executable minimal-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-minimal-worker
-  hs-source-dirs: app, src
+  hs-source-dirs: app, src, ../support/src
   main-is: Main.hs
-  other-modules: Minimal.API, Minimal.Application
+  other-modules: ExampleSupport.Interop, Minimal.API, Minimal.Application
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
-  build-depends: base, aeson, cloudflare-workers, servant, servant-cloudflare-workers, text
+  build-depends: base, aeson, bytestring, cloudflare-workers, servant, servant-cloudflare-workers, text
   if os(wasi)
     build-depends: ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI

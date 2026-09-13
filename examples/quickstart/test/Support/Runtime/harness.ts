@@ -20,8 +20,6 @@ const exports = await createReactor(wasmModule, makeImports, (table) => ({
   entrypointLifecycleErrorsProbe: bindExport<[string, unknown, unknown, unknown], string>(table, "entrypointLifecycleErrorsProbe", decodeString),
   routingCoverageProbe: bindExport<[string, Request, ExecutionContext, ReadableStream<Uint8Array>], Response>(table, "routingCoverageProbe", decodeResponse),
   clientRetryExtraProbe: bindExport<[unknown, string], string>(table, "clientRetryExtraProbe", decodeString),
-  transportResponseExtra: bindExport<[unknown, string], Response>(table, "transportResponseExtra", decodeResponse),
-  transportRequestExtra: bindExport<[unknown, string], Request>(table, "transportRequestExtra", decodeNativeRequest),
   transportExtraProbe: bindExport<[unknown, string], string>(table, "transportExtraProbe", decodeString),
   workflowBoundaryExtraProbe: bindExport<[unknown, unknown, string], string>(table, "workflowBoundaryExtraProbe", decodeString),
   entrypointErrorsProbe: bindExport<[string, unknown, unknown, unknown], string>(table, "entrypointErrorsProbe", decodeString),
@@ -36,14 +34,8 @@ const exports = await createReactor(wasmModule, makeImports, (table) => ({
   bindingEnvProbe: bindExport<[unknown, string], string>(table, "bindingEnvProbe", decodeString),
   quickstartManagementProbe: bindExport<[D1Database, number, Request, ExecutionContext], Response>(table, "quickstartManagementProbe", decodeResponse),
   quickstartLeaseProbe: bindExport<[unknown, number], string>(table, "quickstartLeaseProbe", decodeString),
-  jwksCacheProbe: bindExport<[], string>(table, "jwksCacheProbe", decodeString),
   clientServiceProbe: bindExport<[unknown, string], string>(table, "clientServiceProbe", decodeString),
   socketProbe: bindExport<[unknown, string], string>(table, "socketProbe", decodeString),
-  streamProbe: bindExport<[unknown, string, string], string>(table, "streamProbe", decodeString),
-  producerProbe: bindExport<[unknown], ReadableStream<Uint8Array>>(table, "producerProbe", value => {
-    if (!(value instanceof ReadableStream)) { throw new TypeError("Expected stream"); }
-    return value;
-  }),
   routingProbe: bindExport<[string, Request, ExecutionContext], Response>(table, "routingProbe", decodeResponse),
   envelopeProbe: bindExport<[unknown], string>(table, "envelopeProbe", decodeString),
   storageNativeProbe: bindExport<[unknown, string], string>(table, "storageNativeProbe", decodeString),
@@ -175,15 +167,10 @@ function decodeProbeList(value: string): string[] {
 export async function socketProbe(socket: unknown, command: string): Promise<string[]> {
   return decodeProbeList(await exports.socketProbe(socket, command));
 }
-export async function streamProbe(stream: unknown, command: string, length: string): Promise<string[]> {
-  return decodeProbeList(await exports.streamProbe(stream, command, length));
-}
-export const producerProbe = exports.producerProbe;
 export const routingProbe = exports.routingProbe;
 export const queueOutcome = exports.queueOutcome;
 export const d1DecoderBoundaries = exports.d1DecoderBoundaries;
 
-export const jwksCacheProbe = exports.jwksCacheProbe;
 export const clientServiceProbe = exports.clientServiceProbe;
 
 export const storageNativeProbe = exports.storageNativeProbe;
@@ -202,13 +189,6 @@ export const sqlProbe = exports.sqlProbe;
 
 export const typedQueueProbe = exports.typedQueueProbe;
 
-function decodeNativeRequest(value: unknown): Request {
-  if (!(value instanceof Request)) {
-    throw new TypeError("Expected native Request");
-  }
-  return value;
-}
-
 export const storageErrorProbe = exports.storageErrorProbe;
 
 export const storageObjectErrors = exports.storageObjectErrors;
@@ -222,10 +202,6 @@ export const workflowBoundaryExtraProbe = exports.workflowBoundaryExtraProbe;
 export async function transportExtraProbe(source: unknown, command: string): Promise<string[]> {
   return decodeProbeList(await exports.transportExtraProbe(source, command));
 }
-
-export const transportRequestExtra = exports.transportRequestExtra;
-
-export const transportResponseExtra = exports.transportResponseExtra;
 
 export const clientRetryExtraProbe = exports.clientRetryExtraProbe;
 

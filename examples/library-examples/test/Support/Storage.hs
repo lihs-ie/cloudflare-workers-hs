@@ -5,7 +5,7 @@ import Cloudflare.Workers.Cache
 import Cloudflare.Workers.Headers (headersFromList)
 import Cloudflare.Workers.HTTP
 import Cloudflare.Workers.URL (parseURL)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal, jsValToText)
+import ExampleSupport.Interop (textToJSVal, jsValToText)
 import Control.Exception (try)
 import Data.Either (isLeft)
 import Data.Aeson (Value, encode, object, (.=))

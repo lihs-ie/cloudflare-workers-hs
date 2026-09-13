@@ -18,7 +18,7 @@ module Cloudflare.Workers.Internal.Images (
     fromErrorViaFFI,
 ) where
 
-import Cloudflare.Workers.Internal.FFI.Images (
+import Cloudflare.Workers.Internal.Images.FFITypes (
     ImageInfoViaFFI (..),
     ImageTransformationViaFFI (..),
     ImagesErrorViaFFI (..),

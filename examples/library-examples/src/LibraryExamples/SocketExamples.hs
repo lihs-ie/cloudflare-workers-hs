@@ -2,7 +2,7 @@ module LibraryExamples.SocketExamples (SocketEndpoints(..), socketEndpoints, soc
 
 import Cloudflare.Workers.Socket
 import Cloudflare.Workers.Streaming (readableStreamToLazyByteString)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import ExampleSupport.Interop (jsValToText)
 import Control.Exception (bracket, throwIO)
 import Control.Monad (void, when)
 import Data.Aeson (Value, object, (.=))

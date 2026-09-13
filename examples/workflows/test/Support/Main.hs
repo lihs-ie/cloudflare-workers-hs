@@ -5,14 +5,13 @@ import Support.Coverage (withCoverage)
 #endif
 import Cloudflare.Workers.Binding.Workflow
 import Control.Exception (try)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Data.Aeson (Value, object, (.=))
 import Cloudflare.Workers.Binding.D1 (D1 (..))
 import Cloudflare.Workers.Entrypoint.Workflow (createWorkflowHandler)
 import Cloudflare.Workers.Env (BindingEnv, getBinding)
 import Data.Proxy (Proxy (..))
 import GHC.Wasm.Prim (JSVal)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
 import Data.Aeson (encode)
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding (decodeUtf8)

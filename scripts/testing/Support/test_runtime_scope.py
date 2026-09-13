@@ -16,7 +16,7 @@ class RuntimeScopeTests(unittest.TestCase):
             'examples/quickstart/test/Support/Runtime/StorageBoundaries.hs',
             'servant-cloudflare-workers/test/Support/Runtime/Routing.hs',
             'servant-cloudflare-workers-access/test/Support/Runtime/JWKSCache.hs',
-            'servant-cloudflare-workers-client/test/Support/Runtime/Client.hs',
+            'examples/quickstart/test/Support/Runtime/Client.hs',
         ]
         selected = [entry for entry in manifest['runtimes'] if entry['path'] in paths]
         self.assertEqual({entry['path'] for entry in selected}, set(paths))
@@ -32,7 +32,7 @@ class RuntimeScopeTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[3]
         manifest = json.loads((root / 'scripts/testing/runtime-scope.json').read_text())
         entries = {entry['path']: entry for entry in manifest['runtimes']}
-        fixtures = ['examples/library-examples/test/Support/' + name + '.hs' for name in ['ClientStream', 'Database', 'LibraryExamples/R2Failures', 'QueueContracts', 'R2ArchiveFixtures', 'SocketFailures', 'Storage']]
+        fixtures = ['examples/library-examples/test/Support/' + name + '.hs' for name in ['ClientStream', 'Database', 'LibraryExamples/R2Failures', 'QueueContracts', 'SocketFailures', 'Storage']]
         fixtures += ['examples/quickstart/test/Support/Coverage.hs', 'examples/realtime/test/Support/SQLFixture.hs', 'examples/workflows/test/Support/D1QueryFixture.hs', 'examples/workflows/test/Support/WorkflowFixture.hs']
         for path in fixtures:
             self.assertEqual(entries[path]['required'], ['wasm'])

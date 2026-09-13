@@ -21,7 +21,7 @@ common warnings
 
 library
   import:             warnings
-  hs-source-dirs:     src
+  hs-source-dirs:     src, internal-src
   default-language:   GHC2024
   default-extensions:
     FlexibleContexts
@@ -45,7 +45,11 @@ library
     Servant.Cloudflare.Workers.Generic
     Servant.Cloudflare.Workers.Handler
     Servant.Cloudflare.Workers.Server
+    Servant.Cloudflare.Workers.Server.Extension
+
+  other-modules:
     Servant.Cloudflare.Workers.Server.Internal
+    Servant.Cloudflare.Workers.Server.Internal.Core
     Servant.Cloudflare.Workers.Server.Internal.Delayed
     Servant.Cloudflare.Workers.Server.Internal.DelayedIO
     Servant.Cloudflare.Workers.Server.Internal.Router
@@ -70,6 +74,22 @@ test-suite unit
   ghc-options: -threaded -rtsopts -with-rtsopts=-N2
   build-tool-depends: testing-support:sydtest-discover-layer
   other-modules:
+    Servant.Cloudflare.Workers.Assets
+    Servant.Cloudflare.Workers.CacheControl
+    Servant.Cloudflare.Workers.ContentType
+    Servant.Cloudflare.Workers.EdgeDataCenter
+    Servant.Cloudflare.Workers.Error
+    Servant.Cloudflare.Workers.ErrorMapping
+    Servant.Cloudflare.Workers.Generic
+    Servant.Cloudflare.Workers.Handler
+    Servant.Cloudflare.Workers.Server
+    Servant.Cloudflare.Workers.Server.Extension
+    Servant.Cloudflare.Workers.Server.Internal
+    Servant.Cloudflare.Workers.Server.Internal.Core
+    Servant.Cloudflare.Workers.Server.Internal.Delayed
+    Servant.Cloudflare.Workers.Server.Internal.DelayedIO
+    Servant.Cloudflare.Workers.Server.Internal.Router
+    Servant.Cloudflare.Workers.Server.Internal.RouteResult
     Support.Runtime.Routing
     Support.Runtime.RouterInternals
     Servant.Cloudflare.Workers.Server.Internal.RuntimeRoutingCases
@@ -97,7 +117,7 @@ test-suite unit
     Servant.Cloudflare.Workers.Server.Internal.RouterSpec
     Support.HTTP.Fixtures
   type:               exitcode-stdio-1.0
-  hs-source-dirs:     test/unit test
+  hs-source-dirs:     test/unit test src internal-src
   main-is:            Spec.hs
   default-language:   GHC2024
   default-extensions:
@@ -114,7 +134,10 @@ test-suite unit
     , bytestring
     , cloudflare-workers
     , containers
+    , case-insensitive
     , ghc
+    , http-api-data
+    , http-media
     , mtl
     , servant                     ^>=0.20.3.0
     , servant-cloudflare-workers

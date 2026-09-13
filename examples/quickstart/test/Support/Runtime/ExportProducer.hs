@@ -1,6 +1,6 @@
 module Support.Runtime.ExportProducer (exportProducerProbe) where
 
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Cloudflare.Workers.Streaming (StreamEmitOutcome(..), StreamProducerOutcome(..))
 import Control.Exception (IOException, displayException, throwIO, try)
 import Data.Aeson (encode, object, (.=))

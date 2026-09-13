@@ -56,6 +56,8 @@ library
   exposed-modules:
     Servant.Cloudflare.Workers.Client.Fetch
     Servant.Cloudflare.Workers.Client.Fetch.Request
+
+  other-modules:
     Servant.Cloudflare.Workers.Client.Internal.FFI.Fetch
 
   build-depends:
@@ -82,19 +84,21 @@ library
 
 test-suite unit
   import: warnings
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N2
+  ghc-options: -fplugin GHC.Wasm.FFI.Plugin -threaded -rtsopts -with-rtsopts=-N2
   type: exitcode-stdio-1.0
-  hs-source-dirs: test/unit, test
+  hs-source-dirs: test/unit, test, src
   main-is: Spec.hs
   default-language: GHC2024
-  default-extensions: OverloadedStrings
+  default-extensions: MultilineStrings, OverloadedStrings
   build-tool-depends: testing-support:sydtest-discover-layer
   build-depends:
     , base
     , aeson
     , base64-bytestring
     , bytestring
+    , case-insensitive
     , cloudflare-workers
+    , cloudflare-workers:ghc-wasm-shim
     , containers
     , hedgehog >=1.7 && <1.8
     , http-media
@@ -105,8 +109,10 @@ test-suite unit
     , sydtest >=0.28 && <0.29
     , sydtest-hedgehog >=0.4 && <0.5
     , text
-    , servant-cloudflare-workers-client
   other-modules:
+    Servant.Cloudflare.Workers.Client.Fetch
+    Servant.Cloudflare.Workers.Client.Fetch.Request
     Servant.Cloudflare.Workers.Client.Fetch.RequestSpec
     Servant.Cloudflare.Workers.Client.FetchSpec
+    Servant.Cloudflare.Workers.Client.Internal.FFI.Fetch
     Servant.Cloudflare.Workers.Client.ServiceBindingSpec

@@ -3,7 +3,7 @@
 module LibraryExamples.CachePurge (runCachePurge) where
 
 import Cloudflare.Workers.Cache
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext(..))
 import Control.Exception (try)
 import Data.Aeson (Value, encode, object, (.=))

@@ -4,7 +4,7 @@
 module Support.Runtime.EntrypointErrors (entrypointErrorsProbe) where
 
 import Cloudflare.Workers.Binding.Queue
-import Cloudflare.Workers.Internal.FFI.Reactor (tailLogViaFFI, emitLogViaFFI)
+import Cloudflare.Workers.Observability (LogLevel (LogInfo), LogRecord (..), defaultLoggerConfig, emitLog, tailLog)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext(..), initializeRTS, passThroughOnException, waitUntil)
 import Cloudflare.Workers.Entrypoint.DurableObject (WebSocketMessagePayload(..), WebSocketError(..))
 import Cloudflare.Workers.Entrypoint.Workflow (WorkflowEvent(..))
@@ -20,7 +20,7 @@ import Cloudflare.Workers.Binding.Var (Var, unVar)
 import Data.Proxy (Proxy(..))
 import Cloudflare.Workers.Entrypoint.Scheduled
 import Cloudflare.Workers.Entrypoint.Tail
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, try, fromException, toException)
 import Data.Aeson (Value, encode, object, (.=), omittedField)
 import Data.ByteString qualified as Bytes
@@ -96,8 +96,8 @@ entrypointErrorsProbe modeValue event environment context = do
             | mode == "queue-batch-invalid" = queueSendBatchWithOptions (QueueProducer event) [] queueBatchDefaultOptions >>= sendResult
             | mode == "queue-send-receipt" = queueSendValue (QueueProducer event) (QueueTextBody "receipt") queueSendDefaultOptions >>= sendResult
             | mode == "queue-entry-delay" = queueSendBatchWithOptions (QueueProducer event) [(QueueTextBody "first", QueueSendOptions Nothing (Just 7)), (QueueTextBody "second", queueSendDefaultOptions)] queueBatchDefaultOptions >>= sendResult
-            | mode == "tail-log" = tailLogViaFFI "entrypoint-log-test"
-            | mode == "structured-log" = emitLogViaFFI "{\"message\":\"entrypoint-log-test\"}"
+            | mode == "tail-log" = tailLog "entrypoint-log-test"
+            | mode == "structured-log" = emitLog defaultLoggerConfig structuredLogRecord
             | mode == "fetch" = do
                 response <- createFetchHandler @'[] @'[] @'[] fetchHandler event environment context
                 status <- responseStatus response
@@ -125,6 +125,19 @@ entrypointErrorsProbe modeValue event environment context = do
     values <- readIORef observed
     textToJSVal $ Text.decodeUtf8 $ Lazy.toStrict $ encode $ object
         ["ok" .= either (const False) (const True) result, "message" .= either displayException (const "") result, "observed" .= values]
+  where
+    structuredLogRecord =
+        LogRecord
+            { logRecordLevel = LogInfo
+            , logRecordRequestId = "runtime-fixture"
+            , logRecordRayId = Nothing
+            , logRecordMethod = Nothing
+            , logRecordPath = Nothing
+            , logRecordStatus = Nothing
+            , logRecordDurationMs = Nothing
+            , logRecordErrorKind = Nothing
+            , logRecordMessage = "entrypoint-log-test"
+            }
 
 foreign import javascript unsafe "$1.status"
     responseStatus :: JSVal -> IO Int

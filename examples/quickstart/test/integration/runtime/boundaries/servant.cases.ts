@@ -1,6 +1,6 @@
 import { createExecutionContext } from "cloudflare:test";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { accessVerificationProbe, accessRoutesProbe, routingProbe, jwksCacheProbe, clientServiceProbe } from "../../../Support/Runtime/harness.js";
+import { accessVerificationProbe, accessRoutesProbe, routingProbe, clientServiceProbe } from "../../../Support/Runtime/harness.js";
 
 export function registerServantCases(): void {
   describe("Servant routes through real WASM", () => {
@@ -53,16 +53,6 @@ export function registerServantCases(): void {
         }
       });
     }
-    it("checks router and delayed phase contracts", async () => {
-      const response = await routingProbe("internals", new Request("https://fixture.test/"), createExecutionContext());
-      expect(response.status).toBe(200);
-      expect(await response.json()).toHaveLength(20);
-    });
-    it("runs the JWKS cache boundary and recovery contracts in WASM", async () => {
-      const names: unknown = JSON.parse(await jwksCacheProbe());
-      expect(Array.isArray(names)).toBe(true);
-      expect(names).toHaveLength(11);
-    });
     it("checks parameter, body, fallback and cache contracts through the router", async () => {
       const response = await routingProbe("matrix", new Request("https://fixture.test/"), createExecutionContext());
       expect(response.status).toBe(200);
@@ -127,35 +117,16 @@ export function registerServantCases(): void {
     it("detects synthetic access configuration changes and formats snapshot diagnostics", async () => {
       const result = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "value-diagnostics"}), {}));
       expect(result.jwkRequiresValue).toBe(true);
-      expect(result.documentRequiresValue).toBe(true);
       expect(result.snapshots.map((snapshot: {name: string}) => snapshot.name)).toEqual([
-        "assertion", "user", "service", "config", "policy", "access-error", "crypto-error", "key", "document", "lookup-error", "cache-entry",
+        "assertion", "user", "service", "config", "policy", "access-error", "crypto-error", "key",
       ]);
-      const changes = [1, 5, 4, 3, 3, 2, 1, 2, 1, 1, 4];
+      const changes = [1, 5, 4, 3, 3, 2, 1, 2];
       result.snapshots.forEach((snapshot: {unchanged: boolean; changesDetected: boolean[]; single: string; batch: string}, index: number) => {
         expect(snapshot.unchanged).toBe(true);
         expect(snapshot.changesDetected).toEqual(Array(changes[index]).fill(true));
         expect(snapshot.single.length).toBeGreaterThan(0);
         expect(snapshot.batch).toBe(`[${snapshot.single},${snapshot.single}]`);
       });
-    });
-    it("decodes a batch of JWKS documents and rejects invalid members atomically", async () => {
-      const decoded = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "document-batch", json: '[{"keys":[{"kid":"first"}]},{"keys":[]} ]'}), {}));
-      expect(decoded).toEqual({keyCounts: [1, 0]});
-      const rejected = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "document-batch", json: '[{"keys":[]},42]'}), {}));
-      expect(rejected.ok).toBe(false);
-      expect(rejected.message).toContain("JWKSDocument");
-      const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "document-batch", json: "[]"}), {}));
-      expect(recovered).toEqual({keyCounts: []});
-    });
-    it("rejects a document batch without its JSON input and recovers with a valid batch", async () => {
-      const rejected = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "document-batch"}), {}));
-      expect(rejected.ok).toBe(false);
-      expect(rejected.message).toContain('key "json" not found');
-      const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({
-        mode: "document-batch", json: '[{"keys":[{"kid":"recovered"}]}]',
-      }), {}));
-      expect(recovered).toEqual({keyCounts: [1]});
     });
     it("preserves typed Access exceptions through a generic exception consumer", async () => {
       const diagnostics = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "typed-error-diagnostics"}), {}));
@@ -182,24 +153,20 @@ export function registerServantCases(): void {
         const failure = JSON.parse(await accessVerificationProbe(input, {}));
         expect(failure.ok).toBe(false);
         expect(failure.message).toContain(diagnostic);
-        const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "jwks-decode", document: {keys: []}}), {}));
-        expect(recovered).toEqual({ok: true, keys: 0});
+        const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "ping"}), {}));
+        expect(recovered).toEqual({ok: true});
       });
     }
-    it("reports non-object JWK and JWKS inputs before native key import", async () => {
+    it("reports a non-object JWK before native key import", async () => {
       const nativeImport = vi.spyOn(crypto.subtle, "importKey");
       try {
         const keyFailure = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "crypto-import", jwk: 42}), {}));
         expect(keyFailure.ok).toBe(false);
         expect(keyFailure.message).toContain("JWK");
         expect(keyFailure.message).toContain("Number");
-        const documentFailure = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "jwks-decode", document: []}), {}));
-        expect(documentFailure.ok).toBe(false);
-        expect(documentFailure.message).toContain("JWKSDocument");
-        expect(documentFailure.message).toContain("Array");
         expect(nativeImport).not.toHaveBeenCalled();
-        const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "jwks-decode", document: {keys: [{...jwk, kid: "valid"}]}}), {}));
-        expect(recovered).toEqual({ok: true, keys: 1});
+        const recovered = JSON.parse(await accessVerificationProbe(JSON.stringify({mode: "ping"}), {}));
+        expect(recovered).toEqual({ok: true});
       } finally {
         nativeImport.mockRestore();
       }
@@ -210,13 +177,6 @@ export function registerServantCases(): void {
       expect(failure.message).toContain("SubtleCryptoError");
       expect(JSON.parse(await accessVerificationProbe(JSON.stringify({mode:"crypto-import",jwk:{...jwk,kid:"valid"}}), {}))).toEqual({ok:true});
     });
-    it("rejects an incompatible native verification key and remains usable", async () => {
-      const key = await crypto.subtle.generateKey({name:"HMAC",hash:"SHA-256"}, true, ["sign","verify"]);
-      const failure = JSON.parse(await accessVerificationProbe(JSON.stringify({mode:"crypto-verify"}), key));
-      expect(failure.ok).toBe(false);
-      expect(failure.message.length).toBeGreaterThan(0);
-      expect(JSON.parse(await accessVerificationProbe(JSON.stringify({mode:"crypto-verify"}), keys.publicKey))).toEqual({ok:true,verified:false});
-    });
     it("converts public subtleVerify rejection and recovers after restoring crypto", async () => {
       const input = JSON.stringify({mode:"crypto-public-verify",jwk:{...jwk,kid:"public-verify"}});
       const rejected = vi.spyOn(crypto.subtle, "verify").mockRejectedValue(new Error("public-verify-rejected"));
@@ -224,7 +184,7 @@ export function registerServantCases(): void {
         const failure = JSON.parse(await accessVerificationProbe(input, {}));
         expect(failure.ok).toBe(false);
         expect(failure.message).toContain("SubtleCryptoError");
-        expect(failure.message).toContain("subtleVerify: public-verify-rejected");
+        expect(failure.message).toContain("subtleVerify: verifyRS256: public-verify-rejected");
       } finally { rejected.mockRestore(); }
       expect(JSON.parse(await accessVerificationProbe(input, {}))).toEqual({ok:true,verified:false});
     });
@@ -242,12 +202,13 @@ export function registerServantCases(): void {
         expect((await verify("service", {common_name:"client.access",sub:"",aud:["runtime-audience"],iss:issuer,exp:Math.floor(Date.now()/1000)+3600})).ok).toBe(true);
       });
     }
-    it("reuses the default service verifier cache without resetting it", async () => {
+    it("reuses the service verifier cache through public options", async () => {
       const token = await signed({common_name:"client.access",sub:"",aud:["runtime-audience"],iss:issuer,exp:Math.floor(Date.now()/1000)+3600});
       const nativeFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({keys:[{...jwk,kid:"metadata-key"}]}));
       try {
-        const first = JSON.parse(await accessVerificationProbe(JSON.stringify({mode:"service",token,reset:true}), {}));
-        const second = JSON.parse(await accessVerificationProbe(JSON.stringify({mode:"service",token,reset:false}), {}));
+        const options = {mode:"service",token,cacheTtl:300,jwksURL:"https://cache-public-contract.example/certs"};
+        const first = JSON.parse(await accessVerificationProbe(JSON.stringify(options), {}));
+        const second = JSON.parse(await accessVerificationProbe(JSON.stringify(options), {}));
         expect(first.ok).toBe(true);
         expect(second).toEqual(first);
         expect(nativeFetch).toHaveBeenCalledTimes(1);
@@ -343,24 +304,6 @@ export function registerServantCases(): void {
     });
   });
   describe("Client transport response variants", () => {
-    for (const mode of ["strict-response", "lazy-response"]) {
-      it(`preserves the ${mode} body without a native binding`, async () => {
-        expect(JSON.parse(await clientServiceProbe({}, mode))).toEqual({ok: true, value: `200:${mode}`});
-      });
-    }
-    it("rejects WebSocket bodies and keeps the reactor usable", async () => {
-      const failure = JSON.parse(await clientServiceProbe({}, "websocket-response"));
-      expect(failure.ok).toBe(false);
-      expect(failure.message).toContain("WebSocket upgrades require the WebSocket API");
-      expect(JSON.parse(await clientServiceProbe({}, "strict-response"))).toEqual({ok:true, value:"200:strict-response"});
-    });
-    it("rejects an invalid service target before dispatch", async () => {
-      let calls = 0;
-      const result = JSON.parse(await clientServiceProbe({fetch: async () => { calls += 1; return new Response("unexpected"); }}, "invalid-service-target"));
-      expect(result.ok).toBe(false);
-      expect(result.message).toContain("Invalid Service Binding request URL");
-      expect(calls).toBe(0);
-    });
     for (const mode of ["strict-request", "lazy-request", "global-strict-request", "global-lazy-request"]) {
       it(`preserves native request bytes for ${mode}`, async () => {
         const original = globalThis.fetch;

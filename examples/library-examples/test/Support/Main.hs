@@ -10,12 +10,11 @@ import Data.Text qualified as CoverageText
 #endif
 import Cloudflare.Workers.HTTP (createResponse, Status(..), ResponseBody(..))
 import Cloudflare.Workers.Headers (headersFromList)
-import Cloudflare.Workers.Internal.FFI.Response (responsetoJSVal)
+import ExampleSupport.Interop (jsValToText, readableStreamFromJSVal, responseToJSVal, textToJSVal)
 import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler, FetchHandler)
 import Cloudflare.Workers.Binding.KV
 import Cloudflare.Workers.Socket
-import Cloudflare.Workers.Streaming (readableStreamFromJSVal, readableStreamToLazyByteString)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import Cloudflare.Workers.Streaming (readableStreamToLazyByteString)
 import Control.Exception (SomeException, try, displayException, bracket)
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy
@@ -23,10 +22,8 @@ import Data.Text.Encoding (decodeUtf8)
 import GHC.Wasm.Prim (JSVal)
 import LibraryExamples.Configuration qualified as Configuration
 import Cloudflare.Workers.Binding.R2 (R2Bucket(..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
 import LibraryExamples.CachePurge qualified as CachePurge
 import Support.QueueContracts (queueContract)
-import Support.R2ArchiveFixtures qualified as R2ArchiveFixtures
 import Support.SocketFailures (runSocketFailure)
 import Support.Storage (storageValidation)
 import Support.LibraryExamples.R2Failures (runR2FailureScenario)
@@ -62,7 +59,7 @@ foreign export javascript "socketFailure" socketFailure :: JSVal -> IO JSVal
 
 -- Exercise the production native Response marshaller, including null-body statuses.
 emptyResponse :: Int -> Int -> IO JSVal
-emptyResponse code variant = responsetoJSVal (createResponse (Status code)
+emptyResponse code variant = responseToJSVal (createResponse (Status code)
   (headersFromList [("X-Fixture", "retained")])
   (if variant == 0 then ResponseBodyBytes mempty else ResponseBodyLazyBytes mempty))
 foreign export javascript "emptyResponse" emptyResponse :: Int -> Int -> IO JSVal
@@ -126,10 +123,6 @@ socketBoundary connector rawScenario rawAddress = do
 foreign export javascript "socketBoundary" socketBoundary :: JSVal -> JSVal -> JSVal -> IO JSVal
 
 foreign export javascript "queueContract" queueContract :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
-
-uploadPartKeyContract :: IO JSVal
-uploadPartKeyContract = R2ArchiveFixtures.uploadPartKeyContract >>= textToJSVal . decodeUtf8 . Lazy.toStrict . encode
-foreign export javascript "uploadPartKeyContract" uploadPartKeyContract :: IO JSVal
 
 #ifdef WASM_COVERAGE
 coverage :: IO JSVal

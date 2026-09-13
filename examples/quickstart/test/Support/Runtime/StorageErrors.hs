@@ -5,9 +5,8 @@ import Cloudflare.Workers.Binding.DurableObject.SQL
 import Data.Aeson (eitherDecode)
 import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
-import Cloudflare.Workers.Internal.FFI.KV qualified as KVFFI
 import Cloudflare.Workers.Binding.KV
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Applicative (liftA2)
 import Control.Monad (unless)
 import Control.Exception (SomeException, displayException, evaluate, try)
@@ -65,9 +64,7 @@ storageErrorProbe handle commandValue = do
             "d1-validate" -> case validateD1Statement (D1Statement "SELECT ?" [D1Text "text", D1Null, D1Blob "bytes"]) of
                 Left failure -> fail (show failure)
                 Right _ -> pure "ok"
-            "kv-ffi-json" -> do
-                result <- KVFFI.kvPutViaFFI handle "key" (KVFFI.KVJSONValueViaFFI "{\"version\":2}") Nothing Nothing Nothing
-                either (fail . Text.unpack) (const (pure "ok")) result
+            "kv-put-text" -> kvPut (KV handle) "key" (KVPutText "{\"version\":2}") kvPutDefaultOptions >> pure "ok"
             "kv-default-ttl" -> pure (shown (kvCacheTtlIsValid kvReadDefaultOptions))
             "kv-get" -> maybe "missing" valueText <$> kvGet (KV handle) "key" KVReadText options
             "kv-metadata" -> metadataText <$> kvGetWithMetadata (KV handle) "key" KVReadText options

@@ -37,7 +37,6 @@ import Servant.API (Raw, (:>))
 import Servant.Cloudflare.Workers.Access.Combinator (ZeroTrust, AccessVerifier(..))
 import Servant.Cloudflare.Workers.Error (err500, serverErrorToResponse)
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 -- Each exported entry has its own concrete binding set and API root.
 type RedirectBindings = BindingEnv '[] '[] '[ '("DB", D1), '("CLICKS", QueueProducer)]

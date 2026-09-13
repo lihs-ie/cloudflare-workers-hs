@@ -5,8 +5,7 @@ import Cloudflare.Workers.Entrypoint.Workflow
 import Cloudflare.Workers.Env (BindingEnv, getBinding)
 import Cloudflare.Workers.Binding.Var (Var, unVar)
 import Data.Proxy (Proxy (..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Internal.FFI.Workflow (WorkflowNativeError (..))
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (AsyncException (ThreadKilled), SomeException, displayException, evaluate, throwIO, try)
 import Data.Aeson
 import Data.ByteString qualified as Bytes
@@ -53,10 +52,6 @@ entrypointLifecycleErrorsProbe rawMode native value env = do
             clean <- closeClean value
             unit (createWebSocketCloseHandler closeHandler native code reason clean env)
         "handler-failure" -> unit (createWebSocketMessageHandler messageHandler native value env)
-        "native-error-diagnostics" -> do
-            let errors = [WorkflowNativeError "first" native, WorkflowNativeError "second" native]
-            pure $ object ["list" .= showList errors " suffix", "individual" .= map (\failure -> showsPrec 0 failure " suffix") errors]
-        "native-error-show" -> pure (toJSON (show (WorkflowNativeError "native failure" native)))
         "workflow-invalid" -> workflowResult (createWorkflowHandler normalHandler value native env native)
         "workflow-unsafe-number" -> workflowResult (createWorkflowHandler unsafeNumberHandler value native env native)
         "workflow-async" -> do

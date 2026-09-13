@@ -175,7 +175,7 @@ try {
     if (typeof value !== "object" || value === null || !("identity" in value)) { throw new Error("Missing Access identity"); }
     return value.identity;
   };
-  check(await configuredVerification({ reset: true }) === "admin-one@example.test", "Short TTL fixture accepts signed token using actual HTTP");
+  check(await configuredVerification() === "admin-one@example.test", "Short TTL fixture accepts signed token using actual HTTP");
   const beforeExpiry = jwksRequests;
   await new Promise((resolve) => setTimeout(resolve, 1100));
   check(await configuredVerification() === "admin-one@example.test" && jwksRequests === beforeExpiry + 1, "Expired JWKS TTL causes real HTTP re-fetch");

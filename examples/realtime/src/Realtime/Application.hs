@@ -9,7 +9,6 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Realtime.API
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 server :: DurableObjectNamespace -> Server API ()
 server namespace = Routes
   { health = pure (object ["status" .= ("ok" :: Text)])
@@ -35,4 +34,3 @@ server namespace = Routes
     forward stub remaining request = do
         url <- maybe (fail "Invalid internal room URL") pure (parseURL ("https://room.internal/" <> Text.intercalate "/" remaining))
         doFetch stub request{requestURLField = url}
-

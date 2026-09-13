@@ -40,7 +40,8 @@ import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
 
 import Cloudflare.Workers.Internal.FFI.Socket (socketCloseViaFFI, socketClosedViaFFI, socketConnectViaFFI, socketOpenedViaFFI, socketStartTlsViaFFI, socketWriteViaFFI, socketFinishWriteViaFFI)
-import Cloudflare.Workers.Streaming (ReadableStream, readableStreamFromJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal)
+import Cloudflare.Workers.Streaming (ReadableStream)
 
 newtype SocketConnector = SocketConnector JSVal
 

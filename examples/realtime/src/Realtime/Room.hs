@@ -14,7 +14,6 @@ import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
 import Realtime.API
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 initialize :: DurableObjectStorage -> WebSocketState -> IO ()
 initialize storage state = do
@@ -87,4 +86,3 @@ onClose storage socket _ _ _ = do
   void $ sqlExecute storage sqlDefaultLimits (SQLStatement "INSERT INTO events(kind) VALUES(?)" [SQLText "closed"])
   _ <- try @WebSocketError (webSocketClose socket 1000 "Closed")
   pure ()
-

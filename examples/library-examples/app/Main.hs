@@ -14,7 +14,7 @@ import Cloudflare.Workers.Entrypoint.Queue (QueueRetryOptions(..))
 import Cloudflare.Workers.Entrypoint.Queue.Typed (createJSONQueueHandlerWith, QueueFailureDisposition(..))
 import Cloudflare.Workers.Observability (tailLog)
 import Cloudflare.Workers.Socket
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Proxy (Proxy(..))
 import Data.Text qualified as Text
@@ -23,7 +23,6 @@ import Cloudflare.Workers.Binding.D1 (D1(..))
 import Cloudflare.Workers.Binding.Queue (QueueProducer(..))
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace(..), DurableObjectStorage(..))
 import Cloudflare.Workers.Binding.Secret (Secret(..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
 import LibraryExamples.Jobs qualified as Jobs
 import Data.Aeson (eitherDecodeStrict', toJSON)
 import Data.Text.Encoding (encodeUtf8)

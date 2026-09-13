@@ -1,11 +1,10 @@
 module Support.LibraryExamples.Misc (loggingUnknownRecovery, miscSocketFailure, miscStorageUnknown) where
 
 import Cloudflare.Workers.Socket (SocketConnector(..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Support.SocketFailures (runSocketFailure)
 import Support.Storage (storageValidation)
 import LibraryExamples.Logging (loggingExample)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
 import Control.Exception (try, IOException, SomeException)
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy

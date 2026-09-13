@@ -11,7 +11,6 @@ import Cloudflare.Workers.Headers
 import Servant.API (Raw, Get, PlainText, (:>))
 import Servant.Cloudflare.Workers.CacheControl
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Support.HTTP.Fixtures
 spec :: Spec
 spec = do

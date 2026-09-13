@@ -6,7 +6,7 @@ module Support.Runtime.TypedQueueBoundaries (typedQueueProbe) where
 
 import Cloudflare.Workers.Entrypoint.Queue
 import Cloudflare.Workers.Entrypoint.Queue.Typed
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (AsyncException(..), SomeException, displayException, fromException, throwIO, try)
 import Data.Aeson (FromJSON(..), eitherDecodeStrict', encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy

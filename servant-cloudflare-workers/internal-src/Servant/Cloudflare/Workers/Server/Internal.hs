@@ -78,7 +78,7 @@ import Servant.API.TypeErrors (ErrorIfNoGeneric)
 import Servant.Cloudflare.Workers.ContentType (acceptCheck, getAcceptHeader, getContentTypeHeader)
 import Servant.Cloudflare.Workers.Error (ServerError (serverErrorHeaders), err400, err405, err406, err413, err415, withDetail)
 import Servant.Cloudflare.Workers.Handler (Handler)
-import Servant.Cloudflare.Workers.Server (
+import Servant.Cloudflare.Workers.Server.Internal.Core (
     Context,
     HasContextEntry,
     HasWorkerServer (ServerT, route),

@@ -1,7 +1,7 @@
 module Support.ClientStream (clientStreamLifecycle, clientHTTPStreamLifecycle, clientUploadLifecycle) where
 
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding(..))
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal, jsValToText)
+import ExampleSupport.Interop (textToJSVal, jsValToText)
 import Control.Exception (SomeException, displayException, try, finally, fromException)
 import Control.Concurrent (threadDelay)
 import Data.IORef

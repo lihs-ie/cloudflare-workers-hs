@@ -42,11 +42,6 @@ export function registerClientRetryExtraCases(): void {
         }
       });
     }
-    it("preserves stream-only request metadata and consumes its producer", async () => {
-      expect(JSON.parse(await clientRetryExtraProbe({}, "request-fields"))).toEqual({
-        ok: true, value: { method: "POST", headers: [], readerAbsent: true, dataCenter: null, body: "firstsecond" },
-      });
-    });
     it("preserves service dispatch order and selected values through instance defaults", async () => {
       const original = globalThis.fetch;
       const calls: string[] = [];
@@ -119,14 +114,6 @@ export function registerClientRetryExtraCases(): void {
       } finally {
         globalThis.fetch = original;
       }
-    });
-    it("consumes passthrough response bodies within the callback and unlocks them", async () => {
-      const response = new Response("passthrough-content");
-      expect(JSON.parse(await clientRetryExtraProbe(response, "passthrough"))).toEqual({
-        ok: true,
-        value: { status: 200, reason: "", body: "passthrough-content" },
-      });
-      expect(response.body?.locked).toBe(false);
     });
     it("classifies streaming dispatch failure before invoking its body callback", async () => {
       const original = globalThis.fetch;

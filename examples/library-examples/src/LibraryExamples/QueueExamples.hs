@@ -17,7 +17,6 @@ import Servant.API
 import Servant.API.Generic ((:-))
 import Servant.Cloudflare.Workers.Error qualified as Errors
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 -- Each transport carries the same JSON job schema into the typed consumer.
 data QueueRoutes mode = QueueRoutes

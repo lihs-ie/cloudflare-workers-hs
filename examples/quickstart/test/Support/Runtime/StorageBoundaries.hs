@@ -3,15 +3,13 @@ module Support.Runtime.StorageBoundaries (queueOutcome, d1DecoderBoundaries, sto
 import Cloudflare.Workers.Binding.Queue
 import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (try, SomeException, displayException)
 import Control.Monad (unless, void)
 import Cloudflare.Workers.Binding.R2
-import Cloudflare.Workers.Internal.FFI.DurableObject qualified as DO
-import Cloudflare.Workers.Internal.FFI.Queue qualified as QueueFFI
 import Data.Text qualified as Text
 import Data.ByteString qualified as Bytes
-import Cloudflare.Workers.Binding.DurableObject (DurableObjectValue(..))
+import Cloudflare.Workers.Binding.DurableObject
 import GHC.Wasm.Prim (JSVal)
 
 -- The caller supplies a native producer so synchronous throws, rejected promises,
@@ -30,8 +28,8 @@ queueOutcome producerValue commandValue = do
         "json" -> void $ queueSendValue producer (QueueJSONBody "{\"value\":1}") queueSendDefaultOptions
         "invalid-json" -> void $ queueSendValue producer (QueueJSONBody "{") queueSendDefaultOptions
         "invalid-json-batch" -> void $ queueSendBatchWithOptions producer [(QueueJSONBody "{", queueSendDefaultOptions)] queueBatchDefaultOptions
-        "ffi-send" -> QueueFFI.sendViaFFI producerValue (QueueFFI.QueueTextViaFFI "body") "text" Nothing >>= either (fail . Text.unpack) pure
-        "ffi-batch" -> QueueFFI.sendBatchViaFFI producerValue [(QueueFFI.QueueTextViaFFI "body", "text", Nothing)] >>= either (fail . Text.unpack) pure
+        "public-send" -> void $ queueSendValue producer (QueueTextBody "body") queueSendDefaultOptions
+        "public-batch" -> void $ queueSendBatchWithOptions producer [(QueueTextBody "body", queueSendDefaultOptions)] queueBatchDefaultOptions
         _ -> void $ queueSendValue producer (QueueTextBody "body") queueSendDefaultOptions
     textToJSVal (either (Text.pack . show) (const "ok") result)
 
@@ -63,9 +61,9 @@ storageNativeProbe :: JSVal -> JSVal -> IO JSVal
 storageNativeProbe handle commandValue = do
     command <- jsValToText commandValue
     result <- try @SomeException $ case command of
-        "do-list" -> Text.pack . show <$> DO.doStorageListViaFFI handle Nothing False Nothing
-        "do-put" -> Text.pack . show <$> DO.doStoragePutViaFFI handle "key" "abc"
-        "do-transaction" -> Text.pack . show <$> DO.doStorageTransactionViaFFI handle [("put",Just "key",Just "abc")]
+        "do-list" -> Text.pack . show <$> doStorageList (DurableObjectStorage handle) Nothing False Nothing
+        "do-put" -> doStoragePut (DurableObjectStorage handle) "key" "abc" >> pure "ok"
+        "do-transaction" -> Text.pack . show <$> doStorageTransaction (DurableObjectStorage handle) [DurableObjectStorageOperationPut "key" "abc"]
         "r2-large-batch" -> r2DeleteMany (R2Bucket handle) (R2KeyBatch "key" (replicate 1000 "extra")) >> pure "unexpected"
         "r2-put-other-class" -> Text.pack . show <$> r2Put (R2Bucket handle) "key" (R2PutBytes "abc") r2PutDefaultOptions{r2ExtendedPutStorageClass = Just (R2OtherStorageClass "FutureClass")}
         "r2-list" -> Text.pack . show <$> r2List (R2Bucket handle) r2ListDefaultOptions
@@ -88,20 +86,10 @@ storageNativeProbe handle commandValue = do
             pure (Text.pack (show (either (Left . show) (Right . r2ObjectMetaVersion) first, either (Left . show) (Right . r2ObjectMetaVersion) second, third)))
         "r2-delete" -> r2Delete (R2Bucket handle) "key" >> pure "ok"
         "r2-delete-many" -> r2DeleteMany (R2Bucket handle) (R2KeyBatch "first" ["second"]) >> pure "ok"
-        "alarm-set-negative" -> Text.pack . show <$> DO.doStorageSetAlarmViaFFI handle (-1)
-        "alarm-set-unsafe" -> Text.pack . show <$> DO.doStorageSetAlarmViaFFI handle 9007199254740992
-        "alarm-set" -> Text.pack . show <$> DO.doStorageSetAlarmViaFFI handle 123
-        "alarm-delete" -> Text.pack . show <$> DO.doStorageDeleteAlarmViaFFI handle
-        "unique-eu" -> either id (const "ok") <$> DO.doNewUniqueIdInJurisdictionViaFFI handle "eu"
-        "alarm-info" -> do
-            time <- DO.doAlarmScheduledTimeMillisViaFFI handle
-            retry <- DO.doAlarmIsRetryViaFFI handle
-            count <- DO.doAlarmRetryCountViaFFI handle
-            pure (Text.pack (show (time, retry, count)))
-        "alarm-get" -> Text.pack . show <$> DO.doStorageGetAlarmViaFFI handle
-        "jurisdiction" -> either id (const "ok") <$> DO.doJurisdictionViaFFI handle "eu"
-        "claim" -> Text.pack . show <$> DO.doQueueIdempotencyClaimViaFFI handle "operation" "owner" 100 200
-        "complete" -> Text.pack . show <$> DO.doQueueIdempotencyTransitionViaFFI handle "operation" "owner" 100 "completed"
+        "alarm-set-negative" -> doStorageSetAlarm (DurableObjectStorage handle) (-1) >> pure "ok"
+        "alarm-set-unsafe" -> doStorageSetAlarm (DurableObjectStorage handle) 9007199254740992 >> pure "ok"
+        "alarm-set" -> doStorageSetAlarm (DurableObjectStorage handle) 123 >> pure "ok"
+        "alarm-delete" -> doStorageDeleteAlarm (DurableObjectStorage handle) >> pure "ok"
         "r2-get-body" -> do
             outcome <- r2Get (R2Bucket handle) "key" r2GetDefaultOptions
             case outcome of

@@ -22,7 +22,7 @@ common warnings
 
 library
   import:             warnings
-  hs-source-dirs:     src
+  hs-source-dirs:     src, internal-pure
   default-language:   GHC2024
   default-extensions:
     MultilineStrings
@@ -54,8 +54,19 @@ library
     Cloudflare.Workers.Entrypoint.Tail
     Cloudflare.Workers.Entrypoint.Workflow
     Cloudflare.Workers.Env
+    Cloudflare.Workers.Fetch
     Cloudflare.Workers.Headers
     Cloudflare.Workers.HTTP
+    Cloudflare.Workers.Middleware
+    Cloudflare.Workers.Observability
+    Cloudflare.Workers.Reactor
+    Cloudflare.Workers.Socket
+    Cloudflare.Workers.Streaming
+    Cloudflare.Workers.URL
+    Cloudflare.Workers.WebCrypto
+
+  other-modules:
+    Cloudflare.Workers.Internal.ByteArray
     Cloudflare.Workers.Internal.FFI.BindingEnv
     Cloudflare.Workers.Internal.FFI.Bytes
     Cloudflare.Workers.Internal.FFI.Cache
@@ -63,9 +74,13 @@ library
     Cloudflare.Workers.Internal.FFI.DurableObject
     Cloudflare.Workers.Internal.FFI.Env
     Cloudflare.Workers.Internal.FFI.Envelope
+    Cloudflare.Workers.Internal.FFI.Fetch
     Cloudflare.Workers.Internal.FFI.Headers
     Cloudflare.Workers.Internal.FFI.Images
     Cloudflare.Workers.Internal.Images
+    Cloudflare.Workers.Internal.Images.FFITypes
+    Cloudflare.Workers.Internal.R2Range
+    Cloudflare.Workers.Internal.Streaming
     Cloudflare.Workers.Internal.FFI.KV
     Cloudflare.Workers.Internal.FFI.Queue
     Cloudflare.Workers.Internal.FFI.R2
@@ -79,13 +94,8 @@ library
     Cloudflare.Workers.Internal.FFI.Tail
     Cloudflare.Workers.Internal.FFI.Text
     Cloudflare.Workers.Internal.FFI.URL
+    Cloudflare.Workers.Internal.FFI.WebCrypto
     Cloudflare.Workers.Internal.FFI.Workflow
-    Cloudflare.Workers.Middleware
-    Cloudflare.Workers.Observability
-    Cloudflare.Workers.Reactor
-    Cloudflare.Workers.Socket
-    Cloudflare.Workers.Streaming
-    Cloudflare.Workers.URL
 
   build-depends:
     , aeson                             >=2.1  && <2.3
@@ -125,7 +135,6 @@ library ghc-wasm-shim
     exposed-modules:
       GHC.Wasm.FFI.Plugin
       GHC.Wasm.Prim
-      GHC.Wasm.Prim.Host.Internal
 
 library host-testkit
   import:           warnings
@@ -181,9 +190,13 @@ test-suite unit
   import:             warnings
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N2
   type:               exitcode-stdio-1.0
-  hs-source-dirs:     test/unit test
+  hs-source-dirs:     test/unit test internal-pure
   main-is:            Spec.hs
   other-modules:
+    Cloudflare.Workers.Internal.ByteArray
+    Cloudflare.Workers.Internal.Images
+    Cloudflare.Workers.Internal.Images.FFITypes
+    Cloudflare.Workers.Internal.R2Range
     Cloudflare.Workers.Binding.D1.QuerySpec
     Cloudflare.Workers.Binding.ImagesSpec
     Cloudflare.Workers.Binding.KVSpec

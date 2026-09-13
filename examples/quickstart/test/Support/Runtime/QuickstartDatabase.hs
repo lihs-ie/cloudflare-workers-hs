@@ -1,7 +1,7 @@
 module Support.Runtime.QuickstartDatabase (preparedQueryProbe) where
 
 import Cloudflare.Workers.Binding.D1 (D1(..), D1Value(..), d1All, d1ResultResults)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (textToJSVal)
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding (decodeUtf8)

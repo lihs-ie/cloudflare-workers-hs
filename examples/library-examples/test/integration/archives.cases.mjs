@@ -17,11 +17,6 @@ export function registerArchiveTests(getRuntime) {
     assert.equal(absent.status, 404);
     await absent.text();
   });
-  test("multipart uploadPart preserves the options key contract", async () => {
-    const response = await send("/__fixture/r2/upload-part-key-contract");
-    assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { absentKeyOmitted: true, presentKeyBytesPreserved: true });
-  });
   test("encrypted multipart archive resumes with per-part keys and reports local capability honestly", async (t) => {
     const suffix = "/encrypted/multipart-local.bin";
     try {

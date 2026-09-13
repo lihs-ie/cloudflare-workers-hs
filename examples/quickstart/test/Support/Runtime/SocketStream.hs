@@ -1,12 +1,9 @@
-module Support.Runtime.SocketStream (socketProbe, streamProbe, producerProbe) where
+module Support.Runtime.SocketStream (socketProbe) where
 
 import Cloudflare.Workers.Socket
 import Cloudflare.Workers.Streaming qualified as Stream
-import Cloudflare.Workers.Internal.FFI.Stream qualified as FFI
-import Cloudflare.Workers.Internal.FFI.Bytes qualified as Bytes
-import Data.ByteString qualified as Strict
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Control.Exception (SomeException, displayException, throwIO, try, finally)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
+import Control.Exception (SomeException, displayException, throwIO, try)
 import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text qualified as Text
@@ -82,79 +79,3 @@ socketProbe connector commandValue = observe $ do
       let tlsResult = either shown (shown . socketSecureTransport)
       pure [tlsResult first, firstState, tlsResult second, secondState]
     _ -> throwIO (userError "Unknown socket probe")
-
-streamProbe :: JSVal -> JSVal -> JSVal -> IO JSVal
-streamProbe source commandValue lengthValue = observe $ do
-  command <- jsValToText commandValue
-  lengthText <- jsValToText lengthValue
-  let byteLength = read (Text.unpack lengthText) :: Integer
-  case command of
-    "reader-eof" -> do
-      reader <- FFI.readableStreamGetReaderViaFFI source
-      first <- FFI.readableStreamReaderReadViaFFI reader
-      second <- FFI.readableStreamReaderReadViaFFI reader
-      pure [shown first, shown second]
-    "bytes" -> do
-      outcome <- Bytes.jsByteArrayToByteStringEither source
-      pure [either id (shown . Strict.unpack) outcome]
-    "bytes-throw" -> do
-      value <- Bytes.jsByteArrayToByteString source
-      pure [shown (Strict.unpack value)]
-    "cancel" -> Stream.readableStreamCancel (Stream.readableStreamFromJSVal source) >> pure ["cancelled"]
-    "fixed" -> do
-      stream <- Stream.readableStreamWithLength byteLength (Stream.readableStreamFromJSVal source)
-      outcome <- Stream.readableStreamToLazyByteString 32 stream
-      pure [shown outcome]
-    "fixed-cancel" -> do
-      stream <- Stream.readableStreamWithLength byteLength (Stream.readableStreamFromJSVal source)
-      Stream.readableStreamCancel stream
-      pure ["cancelled"]
-    "lazy" -> do
-      outcome <- FFI.readableStreamToLazyByteString (fromInteger byteLength) source
-      pure [shown outcome]
-    _ -> throwIO (userError "Unknown stream probe")
-
-producerProbe :: JSVal -> IO JSVal
-producerProbe modeValue = do
-  mode <- jsValToText modeValue
-  completion <- jsProducerCompletion
-  stream <- Stream.readableStreamFromProducer $ \emit -> (case mode of
-    "failure" -> pure (Stream.StreamProducerFailed "producer-declared-failure")
-    "throw" -> throwIO (userError "producer-thrown-failure")
-    "cancel-failure" -> do
-      awaitCancellation emit
-      pure (Stream.StreamProducerFailed "producer-after-cancel")
-    "cancel-throw" -> do
-      awaitCancellation emit
-      throwIO (userError "producer-after-cancel")
-    _ -> do
-      accepted <- emit "first"
-      case accepted of
-        Stream.StreamEmitCancelled -> pure Stream.StreamProducerCompleted
-        Stream.StreamEmitAccepted -> do
-          _ <- emit "second"
-          pure Stream.StreamProducerCompleted) `finally` jsCompleteProducer completion
-  let streamValue = Stream.readableStreamToJSVal stream
-  jsAttachProducerCompletion streamValue completion
-  pure streamValue
-
--- Keep producing until the consumer explicitly cancels; failure happens after
--- that observation, independent of the runtime's stream prefetch policy.
-awaitCancellation :: (Strict.ByteString -> IO Stream.StreamEmitOutcome) -> IO ()
-awaitCancellation emit = do
-  outcome <- emit "first"
-  case outcome of
-    Stream.StreamEmitAccepted -> awaitCancellation emit
-    Stream.StreamEmitCancelled -> pure ()
-
--- This notification means the user producer callback returned or threw, rather
--- than merely that native ReadableStream.cancel resolved.
-foreign import javascript unsafe
-  "(() => { let complete; const promise = new Promise(resolve => { complete = resolve; }); return { promise, complete }; })()"
-  jsProducerCompletion :: IO JSVal
-
-foreign import javascript unsafe "$1.complete()"
-  jsCompleteProducer :: JSVal -> IO ()
-
-foreign import javascript unsafe "$1.producerCompletion = $2.promise"
-  jsAttachProducerCompletion :: JSVal -> JSVal -> IO ()

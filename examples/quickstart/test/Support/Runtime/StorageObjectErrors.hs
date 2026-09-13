@@ -6,7 +6,7 @@ import Cloudflare.Workers.Headers (headersFromList)
 import Cloudflare.Workers.HTTP
 import Cloudflare.Workers.Streaming (ReadableStreamReadError (..))
 import Cloudflare.Workers.URL (parseURL)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, evaluate, try)
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)

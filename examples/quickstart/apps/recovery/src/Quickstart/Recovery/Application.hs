@@ -9,7 +9,6 @@ import GHC.Generics (Generic)
 import Servant.API
 import Servant.API.Generic ((:-))
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Servant.Cloudflare.Workers.Error
 import Quickstart.Background.Environment
 import Quickstart.Database

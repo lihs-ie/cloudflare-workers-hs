@@ -10,11 +10,11 @@ import Cloudflare.Workers.Streaming (ReadableStream)
 import Servant.API qualified as API
 import Servant.Cloudflare.Workers.Handler (Handler, askExecutionContext)
 import Servant.Cloudflare.Workers.Server.Internal.Delayed (Delayed, emptyDelayed)
+import Servant.Cloudflare.Workers.Server.Internal.Core qualified as InternalCore
 import Servant.Cloudflare.Workers.Server.Internal.RouteResult (RouteResult(..))
 import Cloudflare.Workers.HTTP
 import Servant.API (Get, PlainText)
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Servant.Cloudflare.Workers.Error
 import Support.HTTP.Fixtures
 type DelayedHandler = Delayed () (Handler () Int)
@@ -36,8 +36,8 @@ spec = do
     responseStatus response `shouldBe` Status 404
   it "returns route errors without invoking the response continuation" $ do
     let respond _ = expectationFailure "unexpected response continuation" >> pure (Fail err500)
-    recoverable <- runHandlerAction context () (emptyDelayed (Fail err400) :: DelayedHandler) () request respond
-    fatal <- runHandlerAction context () (emptyDelayed (FailFatal err401) :: DelayedHandler) () request respond
+    recoverable <- InternalCore.runHandlerAction context () (emptyDelayed (Fail err400) :: DelayedHandler) () request respond
+    fatal <- InternalCore.runHandlerAction context () (emptyDelayed (FailFatal err401) :: DelayedHandler) () request respond
     case recoverable of
       Fail e -> e `shouldBe` err400
       _ -> expectationFailure "expected recoverable failure"

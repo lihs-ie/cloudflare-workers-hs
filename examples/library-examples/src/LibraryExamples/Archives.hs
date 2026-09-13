@@ -16,7 +16,6 @@ import LibraryExamples.R2Archive
 import Servant.API (NamedRoutes, Capture, Raw, (:>))
 import Servant.API.Generic ((:-))
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 data ArchiveRoutes mode = ArchiveRoutes
   { encrypted :: mode :- "encrypted" :> Capture "identifier" Text :> Raw
