@@ -32,10 +32,12 @@ CI はホスト GHC と `wasm32-wasi-ghc` の両方で Cabal を実行する。�
 
 採用する選択肢: **2. ホスト／WASMの専用 `CABAL_DIR` に索引と依存ストアを分離してキャッシュする**
 
-各CIジョブはホスト用とWASM用の `CABAL_DIR` を `runner.temp` 配下に作る。各ディレクトリの
-`packages` と `store` を別々の `actions/cache` エントリとして保存する。キャッシュキーには
-ジョブ名を含め、並列ジョブ間で部分的な依存ストアを競合保存しないようにする。索引キーには
-`index-state`、依存ストアのキーにはOS、アーキテクチャ、ツールチェーン、依存定義を含める。
+各CIジョブはホスト用とWASM用の `CABAL_DIR` を `runner.temp` 配下で分離する。各ディレクトリの
+`packages` と `store` を別々の `actions/cache` エントリとして保存する。WASM用の設定ファイルは
+`wasm32-wasi-cabal` に生成させる。このラッパーが供給するクロスコンパイル用の `shared: True` などの
+設定を、汎用の `cabal user-config init` で置き換えてはならない。キャッシュキーにはジョブ名を含め、
+並列ジョブ間で部分的な依存ストアを競合保存しないようにする。索引キーには `index-state`、依存ストア
+のキーにはOS、アーキテクチャ、ツールチェーン、依存定義を含める。
 
 `haskell-actions/setup` の自動更新は無効化し、索引キャッシュのミス時だけ該当する `cabal update`
 を実行する。`dist-*` などプロジェクトのビルド生成物はキャッシュしない。
