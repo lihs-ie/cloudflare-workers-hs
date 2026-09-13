@@ -1,7 +1,9 @@
 module Cloudflare.Workers.Internal.FFI.Envelope (
     decodeEnveloped,
+    decodeEnvelopedWithError,
     EnvelopeTag (EnvelopeFailureTag, EnvelopeMalformedTag, EnvelopeSuccessTag),
     classifyEnvelopeTagCode,
+    dispatchEnvelopeDecoding,
     readEnvelopeTag,
     describeMalformedEnvelope,
     envelopeFailureMessage,
@@ -59,6 +61,30 @@ describeMalformedEnvelope envelopeJSVal = do
             <> ")"
         )
 
+decodeEnvelopedWithError ::
+    (JSVal -> IO success) ->
+    (JSVal -> IO failure) ->
+    (Text -> failure) ->
+    JSVal ->
+    IO (Either failure success)
+decodeEnvelopedWithError decodeValue decodeFailure malformedFailure envelopeJSVal = do
+    envelopeTag <- readEnvelopeTag envelopeJSVal
+    dispatchEnvelopeDecoding
+        envelopeTag
+        (decodeValue =<< jsEnvelopeValueField envelopeJSVal)
+        (decodeFailure =<< jsEnvelopeErrorField envelopeJSVal)
+        (malformedFailure <$> describeMalformedEnvelope envelopeJSVal)
+
+dispatchEnvelopeDecoding ::
+    EnvelopeTag ->
+    IO success ->
+    IO failure ->
+    IO failure ->
+    IO (Either failure success)
+dispatchEnvelopeDecoding EnvelopeSuccessTag decodeSuccess _ _ = Right <$> decodeSuccess
+dispatchEnvelopeDecoding EnvelopeFailureTag _ decodeFailure _ = Left <$> decodeFailure
+dispatchEnvelopeDecoding EnvelopeMalformedTag _ _ decodeMalformed = Left <$> decodeMalformed
+
 foreign import javascript unsafe "($1 !== null && typeof $1 === 'object' && typeof $1.ok === 'boolean') ? ($1.ok ? 1 : 2) : 0"
     jsEnvelopeOkTagCode :: JSVal -> IO Int
 
@@ -70,3 +96,6 @@ foreign import javascript unsafe "$1.value"
 
 foreign import javascript unsafe "$1.message"
     jsEnvelopeMessageField :: JSVal -> IO JSVal
+
+foreign import javascript unsafe "$1.error"
+    jsEnvelopeErrorField :: JSVal -> IO JSVal
