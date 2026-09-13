@@ -44,37 +44,88 @@ jobs:
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
+          cabal-update: false
+      - id: cabal-cache-key
+        name: Read pinned Cabal package index
+        shell: bash
+        run: |
+          host_index_state="$(sed -nE 's/^index-state:[[:space:]]*(.+)$/\1/p' cabal.project)"
+          wasm_index_state="$(sed -nE 's/^index-state:[[:space:]]*(.+)$/\1/p' cabal-wasm.project)"
+          test -n "$host_index_state"
+          test "$host_index_state" = "$wasm_index_state"
+          printf 'index-state=%s\n' "$host_index_state" >> "$GITHUB_OUTPUT"
+      - name: Initialize host Cabal configuration
+        run: cabal user-config init
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
+      - id: host-cabal-index-cache
+        name: Restore host Cabal package index
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-host/packages
+          key: cabal-index-host-${{ github.job }}-${{ runner.os }}-cabal-3.16.1.0-${{ steps.cabal-cache-key.outputs.index-state }}
+      - id: host-cabal-store-cache
+        name: Restore host Cabal dependency store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-host/store
+          key: cabal-store-host-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-ghc-9.14.1-cabal-3.16.1.0-${{ hashFiles('cabal.project', '**/*.cabal') }}
+      - name: Update host Cabal package index
+        if: steps.host-cabal-index-cache.outputs.cache-hit != 'true'
+        run: cabal update
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.4.1
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Initialize WASM Cabal configuration
+        run: nix develop --command wasm32-wasi-cabal user-config init
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
+      - id: wasm-cabal-index-cache
+        name: Restore WASM Cabal package index
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cabal/store
-            dist-testing
-            dist-testing-coverage
-          key: host-${{ runner.os }}-${{ hashFiles('cabal.project', '**/*.cabal') }}
-      - run: cabal update
+          path: ${{ runner.temp }}/cabal-wasm/packages
+          key: cabal-index-wasm-${{ github.job }}-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ steps.cabal-cache-key.outputs.index-state }}
+      - id: wasm-cabal-store-cache
+        name: Restore WASM Cabal dependency store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-wasm/store
+          key: cabal-store-wasm-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'cabal-wasm.project', '**/*.cabal') }}
+      - name: Update WASM Cabal package index
+        if: steps.wasm-cabal-index-cache.outputs.cache-hit != 'true'
+        run: nix develop --command wasm32-wasi-cabal update
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Coverage collector regressions
         run: python3 scripts/testing/Support/coverage_checks.py
       - name: Host tests
         run: python3 scripts/testing/run.py host
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Servant differential tests
         if: success() || failure()
         run: python3 scripts/testing/run.py conformance
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Coverage evidence report
         if: success() || failure()
         run: |
           pnpm install --frozen-lockfile
-          nix develop --command wasm32-wasi-cabal update
           nix develop --command pnpm run --dir examples/quickstart build:runtime
           python3 scripts/testing/run.py coverage --skip-runtime-build --report-only
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Broader generated input exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: |
           python3 scripts/testing/run.py host --seed "$GITHUB_RUN_NUMBER" --examples 1000
           python3 scripts/testing/run.py conformance --seed "$GITHUB_RUN_NUMBER" --examples 1000
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Representative mutation checks
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
@@ -96,31 +147,90 @@ jobs:
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
+          cabal-update: false
+      - id: cabal-cache-key
+        name: Read pinned Cabal package index
+        shell: bash
+        run: |
+          host_index_state="$(sed -nE 's/^index-state:[[:space:]]*(.+)$/\1/p' cabal.project)"
+          wasm_index_state="$(sed -nE 's/^index-state:[[:space:]]*(.+)$/\1/p' cabal-wasm.project)"
+          test -n "$host_index_state"
+          test "$host_index_state" = "$wasm_index_state"
+          printf 'index-state=%s\n' "$host_index_state" >> "$GITHUB_OUTPUT"
+      - name: Initialize host Cabal configuration
+        run: cabal user-config init
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
+      - id: host-cabal-index-cache
+        name: Restore host Cabal package index
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-host/packages
+          key: cabal-index-host-${{ github.job }}-${{ runner.os }}-cabal-3.16.1.0-${{ steps.cabal-cache-key.outputs.index-state }}
+      - id: host-cabal-store-cache
+        name: Restore host Cabal dependency store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-host/store
+          key: cabal-store-host-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-ghc-9.14.1-cabal-3.16.1.0-${{ hashFiles('cabal.project', '**/*.cabal') }}
+      - name: Update host Cabal package index
+        if: steps.host-cabal-index-cache.outputs.cache-hit != 'true'
+        run: cabal update
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.4.1
+      - name: Initialize WASM Cabal configuration
+        run: nix develop --command wasm32-wasi-cabal user-config init
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
+      - id: wasm-cabal-index-cache
+        name: Restore WASM Cabal package index
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-wasm/packages
+          key: cabal-index-wasm-${{ github.job }}-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ steps.cabal-cache-key.outputs.index-state }}
+      - id: wasm-cabal-store-cache
+        name: Restore WASM Cabal dependency store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/cabal-wasm/store
+          key: cabal-store-wasm-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'cabal-wasm.project', '**/*.cabal') }}
       - name: Install locked JS dependencies
         run: pnpm install --frozen-lockfile
       - name: Update WASM Cabal package index
+        if: steps.wasm-cabal-index-cache.outputs.cache-hit != 'true'
         run: nix develop --command wasm32-wasi-cabal update
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Pinned Git runtime consumer
         run: nix develop --command pnpm test:package
-      - run: cabal update
       - name: Real WASM integration including production entrypoint
         run: nix develop --command python3 scripts/testing/run.py integration
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Production APIs through wrangler dev
         if: success() || failure()
         run: nix develop --command python3 scripts/testing/run.py dev
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Production APIs through Docker and wrangler dev
         if: success() || failure()
         run: nix develop --command python3 scripts/testing/run.py docker
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Generated state model against real WASM
         if: success() || failure()
         run: python3 scripts/testing/run.py model --examples 10 --skip-runtime-build
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Broader state exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
+        env:
+          CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
