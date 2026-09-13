@@ -87,6 +87,29 @@ During the trial stage, consume the Haskell packages from a checked-out source t
 
 Start with the [minimal example's extraction notes](examples/minimal/README.md#独立したプロジェクトにする場合). Versioning and distribution decisions are in [ADR-0018](docs/adr/0018-versioning-release-distribution.md), and the runtime repository split is in [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md).
 
+## Scope
+
+The library family provides typed Haskell interfaces to the Cloudflare bindings and Workers runtime APIs implemented by the pinned revision, Servant server/client integration, Cloudflare Access authentication, and WASM integration with the separately distributed TypeScript runtime.
+
+A Cloudflare binding is configured by Cloudflare or Wrangler and supplied through the Worker's `env` as a platform resource or capability. Request, Response, `fetch`, Cache, streams, sockets, and Web Crypto are Workers runtime APIs, not bindings.
+
+External npm packages and SDKs, application domain models, schemas, authorization, retries, and compositions of multiple operations are outside the library's scope. For example, `aws4fetch` is documented by Cloudflare for R2 but remains an application-owned npm dependency rather than a binding. R2 read -> Images transform -> R2 write is also an application workflow. See [ADR-0027](docs/adr/0027-define-consumer-library-boundary.md) for the decision boundary.
+
+## Consumer Agent Skill
+
+The repository includes the `use-cloudflare-workers-hs` Skill for agents that build, change, or review consumer applications. Install it with GitHub CLI's preview `gh skill` command and pin it to the same tag or commit as the Haskell packages used by the application.
+
+```sh
+gh skill preview lihs-ie/cloudflare-workers-hs use-cloudflare-workers-hs
+
+gh skill install lihs-ie/cloudflare-workers-hs use-cloudflare-workers-hs \
+  --agent codex \
+  --scope project \
+  --pin 0123456789abcdef
+```
+
+Replace `0123456789abcdef` with the same tag or commit selected by the application's Cabal project. The skill source is [`skills/use-cloudflare-workers-hs`](skills/use-cloudflare-workers-hs).
+
 ## Architecture
 
 The [ADR index](docs/adr/README.md) covers the WASM backend, reactor integration, JSFFI boundaries, Servant execution, Cloudflare bindings, authentication, WebSockets, Workflows, testing, and distribution. The [glossary](GLOSSARY.md) defines repository-specific terms.
