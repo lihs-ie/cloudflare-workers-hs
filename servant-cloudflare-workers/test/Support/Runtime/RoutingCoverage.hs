@@ -35,6 +35,7 @@ import Servant.API
 import Servant.API.ContentTypes (AllCTRender (..), AllCTUnrender (..), AllMime (..))
 import Network.HTTP.Media qualified as Media
 import Data.ByteString qualified as BS
+import Data.Maybe (fromMaybe)
 import Servant.Cloudflare.Workers.Server
 
 routingCoverageFixture :: Text -> Request -> WorkersExecutionContext -> ReadableStream -> IO Response
@@ -45,7 +46,7 @@ routingCoverageFixture mode request context source = case mode of
   "custom-typeclass-response" -> serveWithContext
     (Proxy @(ReqBody '[ContractMime] Text :> Verb ContractMethod 207 '[ContractMime] (Headers '[Header "X-Contract" Text] Text))) EmptyContext
     (\body -> pure (addHeader ("custom" :: Text) (body <> "-response")))
-    request{HTTP.requestHeaders=Headers.headersFromList [("Content-Type",maybe "application/x-contract" id (Headers.headerLookup "Content-Type" (HTTP.requestHeaders request))),("Accept","application/x-contract")],HTTP.requestBodyReaderField=Just (\_ -> pure (Right "input"))} context ()
+    request{HTTP.requestHeaders=Headers.headersFromList [("Content-Type",fromMaybe "application/x-contract" (Headers.headerLookup "Content-Type" (HTTP.requestHeaders request))),("Accept","application/x-contract")],HTTP.requestBodyReaderField=Just (\_ -> pure (Right "input"))} context ()
   "custom-typeclass-stream" -> serveWithContext
     (Proxy @(Stream ContractMethod 206 NoFraming ContractMime ReadableStream)) EmptyContext
     (pure source) request context ()
@@ -139,7 +140,7 @@ type ContextMatrix = ("missing" :> ContextValue) :<|>
     :> Header "X-Value" Int :> ReqBody '[JSON] Int :> EdgeDataCenter
     :> CacheControlled '[Public] :> ContextValue)
 
-data ContextRoutes mode = ContextRoutes { named :: mode :- ContextValue }
+newtype ContextRoutes mode = ContextRoutes { named :: mode :- ContextValue }
   deriving stock Generic
 
 -- Downstream header serialization may supply raw bytes outside UTF-8.

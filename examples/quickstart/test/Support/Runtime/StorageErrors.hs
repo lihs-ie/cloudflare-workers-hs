@@ -11,6 +11,7 @@ import Control.Applicative (liftA2)
 import Control.Monad (unless)
 import Control.Exception (SomeException, displayException, evaluate, try)
 import Data.Text qualified as Text
+import Data.Maybe (fromMaybe)
 import GHC.Wasm.Prim (JSVal)
 
 -- Observe public results inside the exception boundary, including lazy metadata.
@@ -51,7 +52,7 @@ storageErrorProbe handle commandValue = do
                 case caught of
                     Left failure -> pure (Text.pack (displayException failure))
                     Right _ -> fail "Expected typed decoder exception"
-            "kv-cache-status" -> maybe "missing" id . kvListResultCacheStatus <$> kvList (KV handle) Nothing Nothing Nothing
+            "kv-cache-status" -> fromMaybe "missing" . kvListResultCacheStatus <$> kvList (KV handle) Nothing Nothing Nothing
             "d1-prepare" -> d1Prepare (D1 handle) "SELECT 1.25 AS value" >>= fmap shown . d1First
             "d1-all" -> shown <$> d1All (D1PreparedStatement handle)
             "d1-first" -> shown <$> d1First (D1PreparedStatement handle)

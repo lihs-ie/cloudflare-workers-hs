@@ -55,7 +55,7 @@ runAccessRouteScenarios baseRequest executionContext = do
     identity = AccessServiceClaims "client.access" ["audience"] "issuer" 9999999999
     request assertion = baseRequest
         { requestMethodField = GET
-        , requestHeaders = headersFromList (if assertion then [("cF-aCcEsS-jWt-AsSeRtIoN", "service-token")] else [])
+        , requestHeaders = headersFromList [("cF-aCcEsS-jWt-AsSeRtIoN", "service-token") | assertion]
         }
     runDenied (label, hasAssertion, verification) = do
         verifierCalls <- newIORef (0 :: Int)

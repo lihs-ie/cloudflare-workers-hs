@@ -4,6 +4,7 @@ import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding(..))
 import ExampleSupport.Interop (textToJSVal, jsValToText)
 import Control.Exception (SomeException, displayException, try, finally, fromException)
 import Control.Concurrent (threadDelay)
+import Control.Monad (when)
 import Data.IORef
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson (encode, object, (.=))
@@ -24,7 +25,7 @@ clientStreamLifecycle :: JSVal -> Int -> IO JSVal
 clientStreamLifecycle binding mode = do
     outcome <- try @SomeException $ runFetchClientWithServiceBinding
         (withStreamingRequest defaultRequest $ \response -> do
-            if mode == 2 then fail "consumer failed before reading" else pure ()
+            when (mode == 2) $ fail "consumer failed before reading"
             chunks <- if mode == 1 || mode == 3
                 then firstChunk (responseBody response)
                 else either fail pure =<< runExceptT (SourceT.runSourceT (responseBody response))
@@ -69,7 +70,7 @@ clientUploadLifecycle origin = do
     generated <- newIORef (0 :: Int)
     let step 10 = SourceT.Stop
         step index = SourceT.Effect $ do
-            if index > 0 then threadDelay 100000 else pure ()
+            when (index > 0) $ threadDelay 100000
             modifyIORef' generated (+ 1)
             pure (SourceT.Yield (Lazy.pack [0, 128, 255]) (step (index + 1)))
         source = SourceT.SourceT $ \consume -> consume (step (0 :: Int)) `finally` writeIORef stopped True

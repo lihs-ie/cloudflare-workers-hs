@@ -62,7 +62,7 @@ diagnosticContract name samples = Text.decodeUtf8 . Lazy.toStrict . Aeson.encode
         , "diagnostics" Aeson..= map show observations
         , "collection" Aeson..= show observations
         , "showListConsistent" Aeson..= (showList observations "tail" == show observations <> "tail")
-        , "showsPrecConsistent" Aeson..= all (\value -> showsPrec 0 value "tail" == show value <> "tail") observations
+        , "showsPrecConsistent" Aeson..= all (\value -> shows value "tail" == show value <> "tail") observations
         , "equality" Aeson..= [[left == right | right <- observations] | left <- observations]
         , "inequality" Aeson..= [[left /= right | right <- observations] | left <- observations]
         ]

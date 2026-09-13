@@ -13,7 +13,7 @@ import Data.ByteString.Lazy qualified as Lazy
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import GHC.Wasm.Prim (JSVal)
 
 storageValidation :: JSVal -> JSVal -> IO JSVal
@@ -44,9 +44,9 @@ kvValidation kv = do
   recovered <- kvGet kv "validation:json" KVReadText (KVReadOptions (Just 30))
   mapM_ (kvDelete kv) ["validation:ttl", "validation:json", "validation:far-future"]
   pure $ object ["farFutureRejected" .= case future of { Left (KVPutFailed _) -> True; _ -> False }
-    , "farFutureAbsent" .= not (isJust futureAbsent)
+    , "farFutureAbsent" .= isNothing futureAbsent
     , "ttlRejected" .= case ttl of { Left (KVPutFailed _) -> True; _ -> False }
-    , "ttlAbsent" .= not (isJust absent)
+    , "ttlAbsent" .= isNothing absent
     , "jsonRejected" .= case malformed of { Left (KVGetFailed _) -> True; _ -> False }
     , "cacheTtlRejected" .= case invalidCache of { Left (KVInvalidCacheTtl 29) -> True; _ -> False }
     , "batchRejected" .= case excessive of { Left (KVTooManyKeys 101) -> True; _ -> False }
@@ -72,7 +72,7 @@ cacheValidation = do
   deletedAgain <- cacheDelete cache key cacheQueryDefaultOptions
   pure $ object ["partialRejected" .= isLeft partial, "varyRejected" .= isLeft vary
     , "partialClassification" .= cacheFailure partial, "varyClassification" .= cacheFailure vary
-    , "absent" .= not (isJust absent), "recovered" .= isJust recovered
+    , "absent" .= isNothing absent, "recovered" .= isJust recovered
     , "deleted" .= deleted, "deletedAgain" .= deletedAgain]
 
 cacheMethod :: IO Value
@@ -90,9 +90,9 @@ cacheMethod = do
   strictDelete <- cacheDelete cache postKey cacheQueryDefaultOptions
   ignoredDelete <- cacheDelete cache postKey (CacheQueryOptions True)
   absent <- cacheMatch cache getKey cacheQueryDefaultOptions
-  pure $ object ["putRejected" .= isLeft rejected, "classification" .= cacheFailure rejected, "message" .= case rejected of { Left (CachePutRejected _ message) -> message; _ -> "" }, "strictMiss" .= not (isJust strict)
+  pure $ object ["putRejected" .= isLeft rejected, "classification" .= cacheFailure rejected, "message" .= case rejected of { Left (CachePutRejected _ message) -> message; _ -> "" }, "strictMiss" .= isNothing strict
     , "ignoredHit" .= isJust ignored, "strictDelete" .= strictDelete
-    , "ignoredDelete" .= ignoredDelete, "absent" .= not (isJust absent)]
+    , "ignoredDelete" .= ignoredDelete, "absent" .= isNothing absent]
 
 textValue :: Maybe KVValue -> Maybe Text
 textValue (Just (KVTextValue value)) = Just value

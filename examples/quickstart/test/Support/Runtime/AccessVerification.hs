@@ -9,6 +9,7 @@ import Data.Aeson.Types (parseEither, (.:), (.:?), (.!=))
 import Data.ByteString.Lazy qualified as LBS
 import Data.Text (Text)
 import Data.Text qualified as Text
+import Data.Maybe (isNothing)
 import Data.Text.Encoding qualified as Encoding
 import ExampleSupport.Interop (jsValToText, textToJSVal)
 import GHC.Wasm.Prim (JSVal)
@@ -137,7 +138,7 @@ valueDiagnostics = Aeson.object
           [SubtleCryptoError "synthetic-b"]
       , snapshot "key" key [key{jwkKid = "other"}, key{jwkValue = Aeson.Null}]
       ]
-  , "jwkRequiresValue" Aeson..= ((Aeson.omittedField :: Maybe JWK) == Nothing)
+  , "jwkRequiresValue" Aeson..= isNothing (Aeson.omittedField :: Maybe JWK)
   ]
   where
     user = AccessClaims "synthetic@example.test" "subject" ["audience"] "issuer" 1

@@ -5,6 +5,7 @@ import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.R2
 import Cloudflare.Workers.Streaming (ReadableStream)
 import Control.Monad.Except (throwError)
+import Control.Monad (when)
 import Control.Exception (SomeException, try)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON,ToJSON,Value,object,(.=))
@@ -43,8 +44,8 @@ exportHandler env = ExportRoutes {createExport = create, getExport = status, dow
  where
   create request = do
     let days = diffDays (endDay request) (startDay request) + 1
-    if days < 1 || days > 366 then throwError (withDetail "Date range must contain 1 to 366 UTC days" err400) else pure ()
-    result <- liftIO $ do
+    when (days < 1 || days > 366) $ throwError (withDetail "Date range must contain 1 to 366 UTC days" err400)
+    liftIO $ do
       identifier <- newIdentifier env
       now <- currentTime env
       _ <- execute (database env) "INSERT INTO exports(identifier,start_day,end_day,status,requested_by,created_at,object_key) VALUES(?,?,?,'pending',?,?,?)"
@@ -57,12 +58,11 @@ exportHandler env = ExportRoutes {createExport = create, getExport = status, dow
           _ <- execute (database env) "UPDATE exports SET last_error='Initial queue delivery failed; pending retry' WHERE identifier=?" [D1Text identifier]
           pure ()
       pure (object ["identifier" .= identifier,"status" .= ("pending" :: Text)])
-    pure result
   status identifier = do
     row <- lookupExport identifier
     liftIO $ do
       state <- textColumn "status" row
-      snapshot <- pure (lookup "snapshot_at" row)
+      let snapshot = lookup "snapshot_at" row
       pure (object ["identifier" .= identifier,"status" .= state,"snapshotAt" .= nullableText snapshot])
   lookupExport identifier = do
     now <- liftIO (currentTime env)
@@ -71,7 +71,7 @@ exportHandler env = ExportRoutes {createExport = create, getExport = status, dow
   download identifier = do
     row <- lookupExport identifier
     state <- liftIO (textColumn "status" row)
-    if state /= "complete" then throwError (ServerError 409 "Export is not complete" [] Nothing) else pure ()
+    when (state /= "complete") $ throwError (ServerError 409 "Export is not complete" [] Nothing)
     key <- liftIO (textColumn "object_key" row)
     result <- liftIO (r2Get (bucket env) key r2GetDefaultOptions)
     case result of

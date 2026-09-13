@@ -10,7 +10,7 @@ import Cloudflare.Workers.HTTP (Request, Response)
 import Cloudflare.Workers.Internal.FFI.Fetch (fetchViaFFI)
 import Data.Text (Text)
 
-data FetchOptions = FetchOptions
+newtype FetchOptions = FetchOptions
     { fetchOptionsTimeoutMilliseconds :: Int
     }
     deriving stock (Show, Eq)

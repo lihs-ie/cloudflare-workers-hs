@@ -24,24 +24,25 @@ import Cloudflare.Workers.HTTP (
     requestMethod,
     requestURL,
  )
-import Cloudflare.Workers.Streaming (ReadableStream, readableStreamCancel)
-import Network.HTTP.Media qualified as HTTPMedia
 import Cloudflare.Workers.Headers (headerLookup, headersFromList)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext)
+import Cloudflare.Workers.Streaming (ReadableStream, readableStreamCancel)
 import Cloudflare.Workers.URL (percentDecode, urlQueryStringVerbatim)
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Data.CaseInsensitive qualified as CI
-import Data.Text.Encoding.Error (lenientDecode)
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Lazy qualified as LazyByteString
+import Data.CaseInsensitive qualified as CI
 import Data.Either (partitionEithers)
 import Data.Kind (Constraint, Type)
 import Data.Maybe qualified as Maybe
 import Data.Proxy (Proxy (Proxy))
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TextEncoding
+import Data.Text.Encoding.Error (lenientDecode)
 import Data.Typeable (Typeable, typeRep)
 import GHC.TypeLits (KnownNat, KnownSymbol, natVal, symbolVal)
+import Network.HTTP.Media qualified as HTTPMedia
 import Servant.API (
     Capture,
     CaptureAll,
@@ -52,7 +53,6 @@ import Servant.API (
     NamedRoutes,
     NoContent,
     NoContentVerb,
-    Stream,
     NoFraming,
     QueryFlag,
     QueryParam,
@@ -60,6 +60,7 @@ import Servant.API (
     Raw,
     ReflectMethod (reflectMethod),
     ReqBody,
+    Stream,
     Verb,
     WithNamedContext,
     (:<|>) (..),
@@ -69,11 +70,11 @@ import Servant.API.ContentTypes (
     Accept (contentType),
     AcceptHeader (..),
     AllCTRender (handleAcceptH),
-    AllMime,
     AllCTUnrender (canHandleCTypeH),
+    AllMime,
  )
-import Servant.API.ResponseHeaders (Headers, GetHeaders (getHeaders), getResponse)
 import Servant.API.Generic (GServantProduct, Generic (Rep), GenericMode (type (:-)), ToServant, ToServantApi, toServant)
+import Servant.API.ResponseHeaders (GetHeaders (getHeaders), Headers, getResponse)
 import Servant.API.TypeErrors (ErrorIfNoGeneric)
 import Servant.Cloudflare.Workers.ContentType (acceptCheck, getAcceptHeader, getContentTypeHeader)
 import Servant.Cloudflare.Workers.Error (ServerError (serverErrorHeaders), err400, err405, err406, err413, err415, withDetail)
@@ -148,7 +149,7 @@ methodCheck reflectedMethod request
 
 -- Response wrappers describe HTTP metadata rather than a serializable body.
 -- Peel them before content negotiation, preserving every supplied header.
-class AllMime ctypes => WorkerRender ctypes a where
+class (AllMime ctypes) => WorkerRender ctypes a where
     renderWorker :: Proxy ctypes -> AcceptHeader -> a -> Maybe ([(Text.Text, Text.Text)], LazyByteString.ByteString)
 
 instance {-# OVERLAPPABLE #-} (AllMime ctypes, AllCTRender ctypes a) => WorkerRender ctypes a where
@@ -156,7 +157,7 @@ instance {-# OVERLAPPABLE #-} (AllMime ctypes, AllCTRender ctypes a) => WorkerRe
         (contentTypeBytes, body) <- handleAcceptH proxy accept value
         pure ([("Content-Type", TextEncoding.decodeUtf8 (LazyByteString.toStrict contentTypeBytes))], body)
 
-instance {-# OVERLAPPING #-} AllMime ctypes => WorkerRender ctypes NoContent where
+instance {-# OVERLAPPING #-} (AllMime ctypes) => WorkerRender ctypes NoContent where
     renderWorker _ _ _ = Just ([], LazyByteString.empty)
 
 instance {-# OVERLAPPING #-} (WorkerRender ctypes a, GetHeaders (Headers hs a)) => WorkerRender ctypes (Headers hs a) where
@@ -164,9 +165,13 @@ instance {-# OVERLAPPING #-} (WorkerRender ctypes a, GetHeaders (Headers hs a)) 
         (headers, body) <- renderWorker proxy accept (getResponse value)
         pure (headers <> workerResponseHeaders value, body)
 
-workerResponseHeaders :: GetHeaders a => a -> [(Text.Text, Text.Text)]
-workerResponseHeaders = map (\(name, value) ->
-    (TextEncoding.decodeUtf8With lenientDecode (CI.original name), TextEncoding.decodeUtf8With lenientDecode value)) . getHeaders
+workerResponseHeaders :: (GetHeaders a) => a -> [(Text.Text, Text.Text)]
+workerResponseHeaders =
+    map
+        ( \(name, value) ->
+            (TextEncoding.decodeUtf8With lenientDecode (CI.original name), TextEncoding.decodeUtf8With lenientDecode value)
+        )
+        . getHeaders
 
 class WorkerStream a where
     workerStream :: a -> (ReadableStream, [(Text.Text, Text.Text)])
@@ -175,8 +180,9 @@ instance WorkerStream ReadableStream where
     workerStream stream = (stream, [])
 
 instance (WorkerStream a, GetHeaders (Headers hs a)) => WorkerStream (Headers hs a) where
-    workerStream value = let (stream, headers) = workerStream (getResponse value)
-                         in (stream, headers <> workerResponseHeaders value)
+    workerStream value =
+        let (stream, headers) = workerStream (getResponse value)
+         in (stream, headers <> workerResponseHeaders value)
 
 renderVerbResult ::
     (WorkerRender ctypes a) =>
@@ -236,19 +242,32 @@ instance
 
 -- Native Workers streams pass through unchanged; NoFraming avoids buffering or
 -- pretending an arbitrary framing encoder can operate on an opaque JS stream.
-instance (KnownNat statusCode, Accept ct, ReflectMethod method, WorkerStream a) =>
-    HasWorkerServer (Stream method statusCode NoFraming ct a) context where
+instance
+    (KnownNat statusCode, Accept ct, ReflectMethod method, WorkerStream a) =>
+    HasWorkerServer (Stream method statusCode NoFraming ct a) context
+    where
     type ServerT (Stream method statusCode NoFraming ct a) m = m a
     route Proxy _context action = leafRouter $ \captureEnv _ request cloudflareContext bindingEnv ->
-        runHandlerAction cloudflareContext bindingEnv
-            (action `addMethodCheck` methodCheck reflectedMethod request
-                    `addMethodCheck` acceptCheck (Proxy :: Proxy '[ct]) (getAcceptHeader request))
-            captureEnv request $ \value -> do
+        runHandlerAction
+            cloudflareContext
+            bindingEnv
+            ( action
+                `addMethodCheck` methodCheck reflectedMethod request
+                `addMethodCheck` acceptCheck (Proxy :: Proxy '[ct]) (getAcceptHeader request)
+            )
+            captureEnv
+            request
+            $ \value -> do
                 let (stream, extraHeaders) = workerStream value
-                if allowedMethodHead reflectedMethod request then readableStreamCancel stream else pure ()
-                pure (Route (createResponse status
-                    (headersFromList ([("Content-Type", TextEncoding.decodeUtf8 (HTTPMedia.renderHeader (contentType (Proxy :: Proxy ct))))] <> extraHeaders))
-                    (if allowedMethodHead reflectedMethod request then ResponseBodyBytes ByteString.empty else ResponseBodyStream stream)))
+                when (allowedMethodHead reflectedMethod request) $ readableStreamCancel stream
+                pure
+                    ( Route
+                        ( createResponse
+                            status
+                            (headersFromList ([("Content-Type", TextEncoding.decodeUtf8 (HTTPMedia.renderHeader (contentType (Proxy :: Proxy ct))))] <> extraHeaders))
+                            (if allowedMethodHead reflectedMethod request then ResponseBodyBytes ByteString.empty else ResponseBodyStream stream)
+                        )
+                    )
       where
         reflectedMethod = reflectMethod (Proxy :: Proxy method)
         status = Status (fromInteger (natVal (Proxy :: Proxy statusCode)))

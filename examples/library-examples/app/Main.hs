@@ -15,7 +15,8 @@ import Cloudflare.Workers.Entrypoint.Queue.Typed (createJSONQueueHandlerWith, Qu
 import Cloudflare.Workers.Observability (tailLog)
 import Cloudflare.Workers.Socket
 import ExampleSupport.Interop (jsValToText, textToJSVal)
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(..))
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
@@ -25,7 +26,6 @@ import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace(..), Dur
 import Cloudflare.Workers.Binding.Secret (Secret(..))
 import LibraryExamples.Jobs qualified as Jobs
 import Data.Aeson (eitherDecodeStrict', toJSON)
-import Data.Text.Encoding (encodeUtf8)
 import Control.Exception (throwIO)
 import Servant.Client.Core (parseBaseUrl)
 import LibraryExamples.Configuration qualified as Configuration
@@ -63,7 +63,7 @@ foreign import javascript unsafe "$1.SOCKET_CONNECT" socketConnector :: JSVal ->
 
 tailEvents :: JSVal -> JSVal -> JSVal -> IO ()
 tailEvents = createTailHandler (\events (_ :: BindingEnv '[] '[] '[]) _ ->
-  mapM_ (\event -> tailLog ("tail outcome=" <> tailEventOutcome event <> " script=" <> maybe "unknown" id (tailEventScriptName event) <> " timestamp=" <> Text.pack (show (tailEventEventTimestamp event)))) events)
+  mapM_ (\event -> tailLog ("tail outcome=" <> tailEventOutcome event <> " script=" <> fromMaybe "unknown" (tailEventScriptName event) <> " timestamp=" <> Text.pack (show (tailEventEventTimestamp event)))) events)
 foreign export javascript "tail" tailEvents :: JSVal -> JSVal -> JSVal -> IO ()
 
 

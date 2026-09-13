@@ -5,6 +5,7 @@ import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (Value,object,(.=))
 import Data.Text (Text)
+import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import Servant.API
 import Servant.API.Generic ((:-))
@@ -28,7 +29,7 @@ recoveryHandler env = RecoveryRoutes {getEvents = listEvents, replayEvent = repl
   listEvents cursor = liftIO $ do
     now <- currentTime env
     rows <- query (database env) "SELECT identifier,url,occurred_at,status,last_error FROM failed_events WHERE identifier>? AND expires_at>? ORDER BY identifier LIMIT 100"
-      [D1Text (maybe "" id cursor),timeValue now]
+      [D1Text (fromMaybe "" cursor),timeValue now]
     traverse (\row -> do
       identifier <- textColumn "identifier" row
       url <- textColumn "url" row

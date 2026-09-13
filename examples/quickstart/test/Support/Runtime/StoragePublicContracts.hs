@@ -14,6 +14,7 @@ import GHC.Generics (Generic)
 import Data.ByteString qualified as Bytes
 import Data.ByteString.Lazy qualified as Lazy
 import Data.List (intercalate, nub)
+import Data.Either (fromLeft)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import GHC.Wasm.Prim (JSVal)
@@ -26,7 +27,7 @@ contract name values = object
     , "same" .= and [a == a && not (a /= a) | a <- values]
     , "changed" .= and [a /= b && not (a == b) | (a,b) <- zip values (drop 1 values)]
     , "batch" .= (showList values ";end" == "[" <> intercalate "," (map show values) <> "];end")
-    , "embedded" .= and [showsPrec 0 a ";end" == show a <> ";end" | a <- values]
+    , "embedded" .= and [shows a ";end" == show a <> ";end" | a <- values]
     , "diagnostic" .= showList values ""
     ]
 
@@ -127,7 +128,7 @@ snapshots =
 -- Required payloads cannot silently disappear when generic omission is enabled.
 -- This models a persisted job envelope, rather than calling default methods and
 -- discarding their answers.
-data Required a = Required { required :: a } deriving stock (Generic)
+newtype Required a = Required { required :: a } deriving stock (Generic)
 instance ToJSON a => ToJSON (Required a) where
     toJSON = genericToJSON defaultOptions {omitNothingFields = True}
     toEncoding = genericToEncoding defaultOptions {omitNothingFields = True}
@@ -139,7 +140,7 @@ requiredFieldContract name expected encoded = object
     [ "name" .= name
     , "present" .= either (const False) (\envelope -> required envelope == expected)
         (eitherDecode (encode (object ["required" .= encoded])))
-    , "missingDiagnostic" .= either id (const "unexpected accepted omission")
+    , "missingDiagnostic" .= fromLeft "unexpected accepted omission"
         (eitherDecode "{}" :: Either String (Required a))
     ]
 
@@ -147,7 +148,7 @@ bulkContract :: forall a. (FromJSON a, Eq a) => String -> [a] -> [Value] -> Valu
 bulkContract name expected encoded = object
     [ "name" .= name
     , "matches" .= (eitherDecode (encode encoded) == Right expected)
-    , "malformedDiagnostic" .= either id (const "unexpected accepted member")
+    , "malformedDiagnostic" .= fromLeft "unexpected accepted member"
         (eitherDecode "[false]" :: Either String [a])
     ]
 
@@ -159,7 +160,7 @@ jsonContracts = object
     , "nestedEncoding" .= (eitherDecode (encode (Required (Required statement))) == Right (object ["required" .= object ["required" .= toJSON statement]]))
     , "envelopeListDecode" .= either (const False) (\decoded -> map required decoded == [SQLText "row"])
         (eitherDecode (encode [object ["required" .= toJSON (SQLText "row")]]))
-    , "nestedMissingDiagnostic" .= either id (const "unexpected accepted nested omission")
+    , "nestedMissingDiagnostic" .= fromLeft "unexpected accepted nested omission"
         (eitherDecode "{}" :: Either String (Required (Required SQLValue)))
     , "rowsRead" .= rowsRead sqlResult
     , "scalar" .= (eitherDecode (encode (SQLText "row")) == Right (toJSON (SQLText "row")))

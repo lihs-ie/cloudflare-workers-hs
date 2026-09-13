@@ -16,6 +16,7 @@ import Cloudflare.Workers.Binding.KV
 import Cloudflare.Workers.Socket
 import Cloudflare.Workers.Streaming (readableStreamToLazyByteString)
 import Control.Exception (SomeException, try, displayException, bracket)
+import Control.Monad (void)
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding (decodeUtf8)
@@ -47,7 +48,7 @@ foreign export javascript "drainStream" drainStream :: JSVal -> Int -> IO JSVal
 socketFailure :: JSVal -> IO JSVal
 socketFailure connector = bracket
   (socketConnect (SocketConnector connector) (SocketAddressText "127.0.0.1:1") socketDefaultOptions)
-  (\socket -> socketClose socket >> pure ())
+  (void . socketClose)
   (\socket -> do
     opened <- socketOpened socket
     closed <- socketClosed socket
@@ -74,7 +75,7 @@ failureHandler _ _ _ = fail "fixture-sensitive-exception-marker"
 -- Native KV JSON parsing must classify rejection without poisoning later reads.
 kvMalformedJSONRecovery :: JSVal -> IO JSVal
 kvMalformedJSONRecovery namespace = bracket (pure (KV namespace))
-  (\kv -> kvDelete kv "fixture:malformed-json-recovery")
+  (`kvDelete` "fixture:malformed-json-recovery")
   (\kv -> do
     let key = "fixture:malformed-json-recovery"
     kvPut kv key (KVPutText "{invalid-json") kvPutDefaultOptions

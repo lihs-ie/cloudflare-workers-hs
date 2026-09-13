@@ -22,11 +22,13 @@ import Cloudflare.Workers.Entrypoint.Scheduled
 import Cloudflare.Workers.Entrypoint.Tail
 import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, try, fromException, toException)
+import Control.Monad (when)
 import Data.Aeson (Value, encode, object, (.=), omittedField)
 import Data.ByteString qualified as Bytes
 import Data.ByteString.Lazy qualified as Lazy
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Data.IORef
+import Data.Maybe (isJust)
 import Data.Text.Encoding qualified as Text
 import GHC.Wasm.Prim (JSVal)
 
@@ -46,14 +48,14 @@ entrypointErrorsProbe modeValue event environment context = do
                     "queue-negative" -> queueMessageRetry message (QueueRetryOptions (Just (-1)))
                     "queue-excess" -> queueMessageRetry message (QueueRetryOptions (Just 86401))
                     _ -> queueMessageAck message) (queueBatchMessages batch)
-            if mode == "queue-throw" then fail "consumer failed" else pure ()
+            when (mode == "queue-throw") $ fail "consumer failed"
         scheduledHandler controller _ _ = do
             record $ object ["cron" .= scheduledControllerCron controller, "time" .= scheduledControllerScheduledTime controller]
             scheduledControllerNoRetry controller
-            if mode == "scheduled-throw" then fail "scheduled handler failed" else pure ()
+            when (mode == "scheduled-throw") $ fail "scheduled handler failed"
         tailHandler events _ _ = do
             record $ object ["events" .= map (\e -> (tailEventScriptName e, tailEventOutcome e, tailEventEventTimestamp e)) events]
-            if mode == "tail-throw" then fail "tail handler failed" else pure ()
+            when (mode == "tail-throw") $ fail "tail handler failed"
         typedAction :: QueueMessage -> Int -> BindingEnv '[] '[] '[] -> WorkersExecutionContext -> IO ()
         typedAction message value _ executionContext = do
             passThroughOnException executionContext
@@ -79,7 +81,7 @@ entrypointErrorsProbe modeValue event environment context = do
             record $ object ["config" .= unVar (getBinding (Proxy @"CONFIG") env), "identifier" .= queueMessageID message, "failure" .= show failure]
             pure AcknowledgeMessage
         sendResult result = record $ object
-            ["source" .= show (queueSendResultSource result), "hasMetrics" .= maybe False (const True) (queueSendResultMetrics result)
+            ["source" .= show (queueSendResultSource result), "hasMetrics" .= isJust (queueSendResultMetrics result)
             , "receipt" .= show result
             , "matchesBatchReceipt" .= (result == QueueSendResult QueueSendBatchMetricsSource Nothing)
             , "differsFromSendReceipt" .= (result /= QueueSendResult QueueSendMetricsSource Nothing)]
@@ -150,7 +152,7 @@ instanceContract name values = object
     ["name" .= name
     ,"reflexive" .= all (\value -> value == value && not (value /= value)) values
     ,"distinct" .= and [left /= right && not (left == right) | (i,left) <- zip [0 :: Int ..] values, (j,right) <- zip [0 :: Int ..] values, i /= j]
-    ,"showCoherent" .= all (\value -> showsPrec 0 value " suffix" == show value <> " suffix") values
+    ,"showCoherent" .= all (\value -> shows value " suffix" == show value <> " suffix") values
     ,"listCoherent" .= (showList values " suffix" == "[" <> intercalate "," (map show values) <> "] suffix")
     ,"diagnosticsDistinct" .= (length (nub (map show values)) == length values)
     ,"diagnostics" .= showList values ""]
@@ -181,6 +183,6 @@ failureDiagnosticContract :: Value
 failureDiagnosticContract =
     let failures = [QueueDecodeFailure "bad JSON", QueueDecodeException (toException (userError "decode failed")), QueueProcessingFailure (toException (userError "handler failed"))]
     in object ["name" .= ("message-failures" :: String)
-        ,"showCoherent" .= all (\value -> showsPrec 0 value " suffix" == show value <> " suffix") failures
+        ,"showCoherent" .= all (\value -> shows value " suffix" == show value <> " suffix") failures
         ,"listCoherent" .= (showList failures " suffix" == "[" <> intercalate "," (map show failures) <> "] suffix")
         ,"diagnostics" .= showList failures ""]

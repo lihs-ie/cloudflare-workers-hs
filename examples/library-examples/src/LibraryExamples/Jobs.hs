@@ -119,7 +119,7 @@ saveSettings storage raw = do
       key = "settings:history:" <> Text.justifyRight 12 '0' (Text.pack (show revision))
   doStorageTransaction storage [DurableObjectStorageOperationPut "settings:current" bytes, DurableObjectStorageOperationPut key bytes] >>= either throwIO pure
   history <- doStorageList storage (Just "settings:history:") True Nothing
-  mapM_ (void . doStorageDelete storage . fst) (drop 3 history)
+  mapM_ (doStorageDelete storage . fst) (drop 3 history)
   pure (jsonText record)
 
 settingsHistory :: DurableObjectStorage -> IO Text

@@ -69,10 +69,10 @@ server database validator producer jobNamespace attachmentSecret clientBase kv s
   , edgeInfo = \colo -> pure (object ["colo" .= colo])
   , attachments = \segments request _ -> liftIO (attachmentHandler bucket attachmentSecret segments request)
   , queueExamples = queueExampleServer producer kv
-  , submitJobs = \input -> mapped (Jobs.submitJobs database validator producer input)
-  , jobSettings = \input -> mapped (Jobs.updateJobSettings jobNamespace input)
+  , submitJobs = mapped . Jobs.submitJobs database validator producer
+  , jobSettings = mapped . Jobs.updateJobSettings jobNamespace
   , jobHistory = mapped (Jobs.readSettingsHistory jobNamespace)
-  , jobStatus = \identifier -> mapped (Jobs.readJobState jobNamespace identifier)
+  , jobStatus = mapped . Jobs.readJobState jobNamespace
   , clientStream = liftIO (Client.clientStreamingExample clientBase{baseUrlPath = "/stream-echo"})
   , clientOptions = \timeout retries delay mode -> do
       options <- either (const (throwError Errors.err400)) pure (Client.mkExampleClientOptions (fromMaybe 10000 timeout) (fromMaybe 2 retries) (fromMaybe 250 delay))

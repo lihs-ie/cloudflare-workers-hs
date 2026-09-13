@@ -8,6 +8,7 @@ import Cloudflare.Workers.Entrypoint.Queue
 import Cloudflare.Workers.Entrypoint.Queue.Typed
 import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (AsyncException(..), SomeException, displayException, fromException, throwIO, try)
+import Control.Monad (when)
 import Data.Aeson (FromJSON(..), eitherDecodeStrict', encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy
 import Data.IORef
@@ -28,10 +29,10 @@ typedQueueProbe commandValue = do
     events <- newIORef ([] :: [String])
     let record event = modifyIORef' events (<> [event])
         message index body = QueueMessage (Text.pack (show index)) 0 1 body
-            (record ("ack:" <> show index) >> if command == "ack-throws" then fail "ack failed" else pure ())
+            (record ("ack:" <> show index) >> when (command == "ack-throws") (fail "ack failed"))
             (\options -> do
                 record ("retry:" <> show index <> ":" <> show (queueRetryOptionsDelaySeconds options))
-                if command == "retry-throws" then fail "retry failed" else pure ())
+                when (command == "retry-throws") $ fail "retry failed")
         malformed = command `elem` ["malformed", "policy-throws", "policy-lazy", "options-lazy", "delay-lazy", "seconds-lazy", "policy-async", "retry-throws", "policy-ack", "delayed-retry"]
         firstBody = if malformed then "bad" else "1"
         batch = QueueBatch "typed-fixture" [message (1 :: Int) firstBody, message 2 "2"] Nothing
@@ -44,7 +45,7 @@ typedQueueProbe commandValue = do
                 "action-async" -> throwIO ThreadKilled
                 _ -> pure ()
         policy _ failure = do
-            if command == "decode-diagnostic" then record ("diagnostic:" <> show failure) else pure ()
+            when (command == "decode-diagnostic") $ record ("diagnostic:" <> show failure)
             record $ case failure of
                 QueueDecodeFailure _ -> "failure:decode"
                 QueueDecodeException _ -> "failure:decode-exception"

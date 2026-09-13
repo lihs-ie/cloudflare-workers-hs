@@ -9,6 +9,7 @@ import Control.Monad (unless, void)
 import Cloudflare.Workers.Binding.R2
 import Data.Text qualified as Text
 import Data.ByteString qualified as Bytes
+import Data.Functor ((<&>))
 import Cloudflare.Workers.Binding.DurableObject
 import GHC.Wasm.Prim (JSVal)
 
@@ -46,7 +47,7 @@ d1DecoderBoundaries = do
     check (mismatch == Left (D1ColumnTypeMismatch "value" D1IntegerType D1TextType))
     mapM_ (\value -> check (decodeD1Row integer [("value", D1Integer value)] == Right value)) [-9007199254740991, 9007199254740991]
     mapM_ (\value -> check (decodeD1Row integer [("value", D1Integer value)] == Left (D1InvalidColumnValue "value" "integer exceeds exact JavaScript numeric range"))) [-9007199254740992,9007199254740992]
-    mapM_ (\value -> check (decodeD1Row number [("value", D1Real value)] == Left (D1InvalidColumnValue "value" "non-finite numeric value"))) [0/0,1/0,-1/0]
+    mapM_ (\value -> check (decodeD1Row number [("value", D1Real value)] == Left (D1InvalidColumnValue "value" "non-finite numeric value"))) [0/0,1/0,-(1/0)]
     check (decodeD1Rows integer [[("value", D1Integer 1)], [("value", D1Null)]] == Left (D1RowDecodeFailed 2 (D1UnexpectedNull "value")))
     -- Int is 32-bit in WASM: these branches cannot be reached with safe D1
     -- integers on a 64-bit host and must run at this boundary.
@@ -75,7 +76,7 @@ storageNativeProbe handle commandValue = do
         "queue-validation" -> queueValidationProbe handle
         "d1-combinators" -> d1CombinatorProbe handle
         "r2-range-invalid" -> do
-            outcomes <- mapM (\range -> try @R2Error (r2Get (R2Bucket handle) "key" r2GetDefaultOptions{r2GetOptionsRange = Just range}) >>= pure . either (Text.pack . show) (const "unexpected success"))
+            outcomes <- mapM (\range -> try @R2Error (r2Get (R2Bucket handle) "key" r2GetDefaultOptions{r2GetOptionsRange = Just range}) <&> either (Text.pack . show) (const "unexpected success"))
                 [R2RangeOffsetLength (-1) 1, R2RangeOffsetLength 0 9007199254740992, R2RangeOffset (-1), R2RangeLength (-1), R2RangeSuffix (-1)]
             pure (Text.intercalate ";" outcomes)
         "r2-complete-retry" -> do

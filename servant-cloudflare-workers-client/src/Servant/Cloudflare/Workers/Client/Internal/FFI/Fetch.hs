@@ -117,8 +117,8 @@ buildServiceRequest target method headers body = case parseURL target of
 
 -- The SourceT belongs to the callback scope and must not escape it.
 workersResponseToStreamingResponse :: Workers.Response -> (StreamingResponse -> IO a) -> IO a
-workersResponseToStreamingResponse response handleResponse =
-    workersResponseToStreamingResponseWithStatusText "" response handleResponse
+workersResponseToStreamingResponse =
+    workersResponseToStreamingResponseWithStatusText ""
 
 workersFetchResponseToStreamingResponse :: WorkersFetch.FetchResponse -> (StreamingResponse -> IO a) -> IO a
 workersFetchResponseToStreamingResponse response =

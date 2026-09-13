@@ -72,3 +72,4 @@ test-mutations:
     python3 scripts/testing/mutations.py
 
 lint: test-registration test-internal-boundary-manifest
+    scripts/hlint
