@@ -10,6 +10,86 @@ const configuration = async (env: unknown) =>
   JSON.parse(await bindingEnvProbe(env, "configuration"));
 
 export function registerBindingEnvCases(): void {
+  it("loads required and optional typed custom JavaScript bindings", async () => {
+    const custom = {
+      sign(value: string) {
+        return `signed:${value}`;
+      },
+    };
+    expect(
+      JSON.parse(await bindingEnvProbe({ CUSTOM: custom }, "custom")),
+    ).toEqual({
+      ok: true,
+      value: {
+        required: "signed:required",
+        optional: null,
+      },
+    });
+    expect(
+      JSON.parse(
+        await bindingEnvProbe(
+          { CUSTOM: custom, OPTIONAL_CUSTOM: custom },
+          "custom",
+        ),
+      ),
+    ).toEqual({
+      ok: true,
+      value: {
+        required: "signed:required",
+        optional: "signed:optional",
+      },
+    });
+    for (const optional of [null, undefined]) {
+      expect(
+        JSON.parse(
+          await bindingEnvProbe(
+            { CUSTOM: custom, OPTIONAL_CUSTOM: optional },
+            "custom",
+          ),
+        ),
+      ).toEqual({
+        ok: true,
+        value: {
+          required: "signed:required",
+          optional: null,
+        },
+      });
+    }
+    const customFunction = Object.assign(
+      () => undefined,
+      {
+        sign(value: string) {
+          return `function:${value}`;
+        },
+      },
+    );
+    expect(
+      JSON.parse(
+        await bindingEnvProbe({ CUSTOM: customFunction }, "custom"),
+      ),
+    ).toEqual({
+      ok: true,
+      value: {
+        required: "function:required",
+        optional: null,
+      },
+    });
+  });
+  it("rejects missing or malformed required custom bindings", async () => {
+    const missing = JSON.parse(await bindingEnvProbe({}, "custom"));
+    expect(missing.ok).toBe(false);
+    expect(missing.message).toContain("CUSTOM");
+
+    for (const malformed of [null, undefined, "string", 42]) {
+      const result = JSON.parse(
+        await bindingEnvProbe({ CUSTOM: malformed }, "custom"),
+      );
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain(
+        "Expected a JavaScript object or function custom binding",
+      );
+    }
+  });
   it("reports invalid consumer output and rejected RPC without poisoning typed bindings", async () => {
     const healthy = {
       KV: { async get() { return "restored"; } },

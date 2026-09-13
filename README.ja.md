@@ -87,6 +87,40 @@ just test-coverage-report   # 計測済み・未計測を明示したcoverageを
 
 [minimal exampleの切り出し手順](examples/minimal/README.md#独立したプロジェクトにする場合)から始めてください。バージョンと配布方針は [ADR-0018](docs/adr/0018-versioning-release-distribution.md)、runtimeを別リポジトリに分離した判断は [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md) に記録しています。
 
+### アプリケーション固有の JavaScript binding
+
+専用のライブラリbindingがない、アプリケーション固有のJavaScript
+オブジェクトや関数には`CustomBinding`を使用します。
+機能ごとに固有のマーカー型を定義し、Infrastructure層のJSFFI
+adapter内だけでJavaScript値を取り出します。
+
+```haskell
+import Cloudflare.Workers.Binding.Custom (CustomBinding, withCustomBinding)
+import Cloudflare.Workers.Env (BindingEnv, getBinding)
+import Data.Proxy (Proxy (Proxy))
+import GHC.Wasm.Prim (JSVal)
+
+data Aws4Fetch
+
+type ApiBindings =
+    BindingEnv '[] '[] '[ '("AWS4FETCH", CustomBinding Aws4Fetch)]
+
+presign :: ApiBindings -> JSVal -> IO JSVal
+presign bindings request =
+    withCustomBinding
+        (getBinding (Proxy @"AWS4FETCH") bindings)
+        (\binding -> jsPresign binding request)
+
+foreign import javascript safe "$1.sign($2)"
+    jsPresign :: JSVal -> JSVal -> IO JSVal
+```
+
+コンストラクタは非公開で、マーカー型のroleは`nominal`です。
+このため、異なる機能のcustom bindingへ型を付け替えることはできません。
+任意のbindingには`Maybe (CustomBinding tag)`を使用します。bindingが
+存在しない場合、または値が`null`か`undefined`の場合は`Nothing`へ
+変換されます。
+
 ## アーキテクチャ
 
 [ADR一覧](docs/adr/README.md)では、WASM backend、reactor統合、JSFFI境界、Servant実行、Cloudflare Binding、認証、WebSocket、Workflows、テスト、配布を説明しています。リポジトリ固有の用語は[用語集](GLOSSARY.md)を参照してください。

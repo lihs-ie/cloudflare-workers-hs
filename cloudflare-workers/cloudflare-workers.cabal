@@ -31,6 +31,7 @@ library
 
   exposed-modules:
     Cloudflare.Workers.Binding.Assets
+    Cloudflare.Workers.Binding.Custom
     Cloudflare.Workers.Binding.D1
     Cloudflare.Workers.Binding.D1.Query
     Cloudflare.Workers.Binding.DurableObject
@@ -86,6 +87,9 @@ library
     Cloudflare.Workers.Socket
     Cloudflare.Workers.Streaming
     Cloudflare.Workers.URL
+
+  other-modules:
+    Cloudflare.Workers.Internal.Binding.Custom
 
   build-depends:
     , aeson                             >=2.1  && <2.3
@@ -184,6 +188,7 @@ test-suite unit
   hs-source-dirs:     test/unit test
   main-is:            Spec.hs
   other-modules:
+    Cloudflare.Workers.Binding.CustomSpec
     Cloudflare.Workers.Binding.D1.QuerySpec
     Cloudflare.Workers.Binding.ImagesSpec
     Cloudflare.Workers.Binding.KVSpec

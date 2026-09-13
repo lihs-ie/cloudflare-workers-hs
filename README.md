@@ -87,6 +87,39 @@ During the trial stage, consume the Haskell packages from a checked-out source t
 
 Start with the [minimal example's extraction notes](examples/minimal/README.md#独立したプロジェクトにする場合). Versioning and distribution decisions are in [ADR-0018](docs/adr/0018-versioning-release-distribution.md), and the runtime repository split is in [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md).
 
+### Application-defined JavaScript bindings
+
+Use `CustomBinding` when a Worker environment contains an application-defined
+JavaScript object or function that does not have a dedicated library binding.
+Give each capability its own marker type and unwrap it only in the
+infrastructure JSFFI adapter:
+
+```haskell
+import Cloudflare.Workers.Binding.Custom (CustomBinding, withCustomBinding)
+import Cloudflare.Workers.Env (BindingEnv, getBinding)
+import Data.Proxy (Proxy (Proxy))
+import GHC.Wasm.Prim (JSVal)
+
+data Aws4Fetch
+
+type ApiBindings =
+    BindingEnv '[] '[] '[ '("AWS4FETCH", CustomBinding Aws4Fetch)]
+
+presign :: ApiBindings -> JSVal -> IO JSVal
+presign bindings request =
+    withCustomBinding
+        (getBinding (Proxy @"AWS4FETCH") bindings)
+        (\binding -> jsPresign binding request)
+
+foreign import javascript safe "$1.sign($2)"
+    jsPresign :: JSVal -> JSVal -> IO JSVal
+```
+
+The constructor is private and the marker has a nominal role, preventing one
+custom capability from being retagged as another. Use
+`Maybe (CustomBinding tag)` for an optional environment binding. A missing,
+`null`, or `undefined` optional binding decodes to `Nothing`.
+
 ## Architecture
 
 The [ADR index](docs/adr/README.md) covers the WASM backend, reactor integration, JSFFI boundaries, Servant execution, Cloudflare bindings, authentication, WebSockets, Workflows, testing, and distribution. The [glossary](GLOSSARY.md) defines repository-specific terms.

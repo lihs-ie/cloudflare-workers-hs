@@ -1,12 +1,13 @@
 module Support.Runtime.BindingEnv (bindingEnvProbe) where
 
-import Cloudflare.Workers.Binding.Secret (Secret, revealSecret)
 import Cloudflare.Workers.Binding.Assets (Assets)
+import Cloudflare.Workers.Binding.Custom (CustomBinding, withCustomBinding)
 import Cloudflare.Workers.Binding.D1 (D1)
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace, DurableObjectStorage, DurableObjectValue(..), doGetByName, doCall)
 import Cloudflare.Workers.Binding.KV (KV, KVValue (KVTextValue), KVReadType (KVReadText), kvGet, kvReadDefaultOptions)
 import Cloudflare.Workers.Binding.Queue (QueueProducer)
 import Cloudflare.Workers.Binding.R2 (R2Bucket)
+import Cloudflare.Workers.Binding.Secret (Secret, revealSecret)
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding, serviceCall)
 import Cloudflare.Workers.Binding.Workflow (Workflow)
 import Cloudflare.Workers.Binding.Var (Var, unVar)
@@ -22,6 +23,8 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Encoding
 import GHC.Wasm.Prim (JSVal)
+
+data CustomProbe
 
 type Configuration =
     '[ '("REQUIRED_VAR", Var), '("REQUIRED_SECRET", Secret)
@@ -68,6 +71,32 @@ bindingEnvProbe raw modeValue = do
                 , "optionalVar" .= fmap unVar (getBinding (Proxy @"OPTIONAL_VAR") env)
                 , "optionalSecretLength" .= fmap (Text.length . revealSecret) (getBinding (Proxy @"OPTIONAL_SECRET") env)
                 ]
+        "custom" -> do
+            env <-
+                bindingEnvFromJSVal
+                    @'[]
+                    @'[]
+                    @'[ '("CUSTOM", CustomBinding CustomProbe)
+                      , '("OPTIONAL_CUSTOM", Maybe (CustomBinding CustomProbe))
+                      ]
+                    raw
+            requiredValue <-
+                withCustomBinding
+                    (getBinding (Proxy @"CUSTOM") env)
+                    (`invokeCustomBinding` "required")
+            optionalValue <-
+                traverse
+                    (\binding ->
+                        withCustomBinding
+                            binding
+                            (`invokeCustomBinding` "optional")
+                    )
+                    (getBinding (Proxy @"OPTIONAL_CUSTOM") env)
+            pure $
+                object
+                    [ "required" .= requiredValue
+                    , "optional" .= optionalValue
+                    ]
         "missing-map" -> do
             let env = BindingEnv Map.empty Map.empty :: BindingEnv '[] '[] '[ '("VALUE", Var)]
             value <- evaluate (unVar (getBinding (Proxy @"VALUE") env))
@@ -110,3 +139,11 @@ bindingEnvProbe raw modeValue = do
 
 foreign import javascript unsafe "[]" emptyArray :: IO JSVal
 foreign import javascript safe "JSON.stringify($1)" stringify :: JSVal -> IO JSVal
+
+invokeCustomBinding :: JSVal -> Text.Text -> IO Text.Text
+invokeCustomBinding binding input = do
+    inputJSVal <- textToJSVal input
+    jsInvokeCustomBinding binding inputJSVal >>= jsValToText
+
+foreign import javascript safe "$1.sign($2)"
+    jsInvokeCustomBinding :: JSVal -> JSVal -> IO JSVal

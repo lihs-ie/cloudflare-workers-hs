@@ -17,6 +17,7 @@ import Cloudflare.Workers.Binding.Var (Var (Var))
 import Cloudflare.Workers.Binding.Workflow (Workflow (Workflow))
 import Cloudflare.Workers.Env (BindingMissingError (BindingMissingError))
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import Cloudflare.Workers.Internal.Binding.Custom (CustomBinding (CustomBinding))
 import Control.Exception (throwIO)
 import Data.Dynamic (Dynamic, Typeable, toDyn)
 import Data.Kind (Type)
@@ -69,6 +70,15 @@ instance FromBindingJSVal ServiceBinding where
 instance FromBindingJSVal Images where
     fromBindingJSVal = pure . Images
 
+instance FromBindingJSVal (CustomBinding tag) where
+    fromBindingJSVal rawJSValue = do
+        isCustomBinding <- jsIsCustomBinding rawJSValue
+        if isCustomBinding
+            then pure (CustomBinding rawJSValue)
+            else
+                throwIO
+                    (userError "Expected a JavaScript object or function custom binding")
+
 instance FromBindingJSVal (Maybe Var) where
     fromBindingJSVal rawJSValue = do
         isNullish <- jsIsNullish rawJSValue
@@ -87,6 +97,15 @@ instance FromBindingJSVal (Maybe Secret) where
 
     bindingAbsent = Just Nothing
 
+instance FromBindingJSVal (Maybe (CustomBinding tag)) where
+    fromBindingJSVal rawJSValue = do
+        isNullish <- jsIsNullish rawJSValue
+        if isNullish
+            then pure Nothing
+            else Just <$> (fromBindingJSVal rawJSValue :: IO (CustomBinding tag))
+
+    bindingAbsent = Just Nothing
+
 -- Reject malformed configuration without coercing (or logging) secret values.
 requiredStringBinding :: JSVal -> IO Text
 requiredStringBinding value = do
@@ -98,6 +117,10 @@ foreign import javascript unsafe "typeof $1 === 'string'"
 
 foreign import javascript unsafe "$1 === undefined || $1 === null"
     jsIsNullish :: JSVal -> IO Bool
+
+foreign import javascript unsafe
+    "$1 !== null && (typeof $1 === 'object' || typeof $1 === 'function')"
+    jsIsCustomBinding :: JSVal -> IO Bool
 
 class BuildBindingEnv (bindings :: [(Symbol, Type)]) where
     buildBindingEnv :: Proxy bindings -> Map Text JSVal -> IO (Map Text Dynamic)
