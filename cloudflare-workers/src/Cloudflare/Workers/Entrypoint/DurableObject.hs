@@ -9,7 +9,6 @@ module Cloudflare.Workers.Entrypoint.DurableObject (
     webSocketGetAttachment,
     webSocketClose,
     webSocketSetAutoResponse,
-
     WebSocketMessagePayload (..),
     WebSocketError (..),
     WebSocketMessageHandler,
@@ -22,20 +21,20 @@ module Cloudflare.Workers.Entrypoint.DurableObject (
 
 import Cloudflare.Workers.Entrypoint.Env (bindingEnvFromJSVal)
 import Cloudflare.Workers.Env (BindingEnv)
+import Cloudflare.Workers.HTTP (PassthroughResponse (..), Response, ResponseBody (..), Status (..), createResponse)
+import Cloudflare.Workers.Headers (headersFromList)
 import Cloudflare.Workers.Internal.FFI.BindingEnv (BuildBindingEnv, BuildDOSEnv)
 import Cloudflare.Workers.Internal.FFI.DurableObject (webSocketCloseCodeViaFFI, webSocketCloseWasCleanViaFFI, webSocketMessageBytesViaFFI, webSocketMessageIsTextViaFFI, webSocketMessageTextViaFFI, webSocketSendBytesViaFFI, webSocketSendTextViaFFI)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
-import Cloudflare.Workers.HTTP (Response, ResponseBody(..), PassthroughResponse(..), Status(..), createResponse)
-import Cloudflare.Workers.Headers (headersFromList)
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
-import Data.Aeson (ToJSON, FromJSON, encode, eitherDecodeStrict')
-import Data.ByteString.Lazy qualified as Lazy
-import Data.Text qualified as Text
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
 import Control.Exception (Exception, throwIO)
+import Control.Monad (when)
+import Data.Aeson (FromJSON, ToJSON, eitherDecodeStrict', encode)
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy qualified as Lazy
 import Data.Text (Text)
+import Data.Text qualified as Text
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import GHC.Wasm.Prim (JSVal)
 
 newtype WebSocketConnection = WebSocketConnection JSVal
@@ -74,21 +73,26 @@ createWebSocketMessageHandler handler webSocketJSVal messageJSVal envJSVal = do
     bindings <- bindingEnvFromJSVal envJSVal
     handler (WebSocketConnection webSocketJSVal) message bindings
 
--- | Reject oversized native frames before copying bytes/text into WASM.
--- Applications can catch 'WebSocketMessageTooLarge' and close with code 1009.
+{- | Reject oversized native frames before copying bytes/text into WASM.
+Applications can catch 'WebSocketMessageTooLarge' and close with code 1009.
+-}
 createWebSocketMessageHandlerWithLimit ::
     forall kvs dos bindings.
     (BuildBindingEnv bindings, BuildDOSEnv dos) =>
-    Int -> WebSocketMessageHandler (BindingEnv kvs dos bindings) ->
-    JSVal -> JSVal -> JSVal -> IO ()
+    Int ->
+    WebSocketMessageHandler (BindingEnv kvs dos bindings) ->
+    JSVal ->
+    JSVal ->
+    JSVal ->
+    IO ()
 createWebSocketMessageHandlerWithLimit limit handler socket message env = do
-    if limit < 0 then throwIO (WebSocketSendFailed "Invalid WebSocket message byte limit") else pure ()
+    when (limit < 0) $ throwIO (WebSocketSendFailed "Invalid WebSocket message byte limit")
     oversized <- jsMessageExceeds message limit
-    if oversized then throwIO (WebSocketMessageTooLarge limit)
-    else createWebSocketMessageHandler handler socket message env
+    if oversized
+        then throwIO (WebSocketMessageTooLarge limit)
+        else createWebSocketMessageHandler handler socket message env
 
-foreign import javascript unsafe
-    "typeof $1 === 'string' ? ($1.length > $2 || new TextEncoder().encode($1).byteLength > $2) : $1.byteLength > $2"
+foreign import javascript unsafe "typeof $1 === 'string' ? ($1.length > $2 || new TextEncoder().encode($1).byteLength > $2) : $1.byteLength > $2"
     jsMessageExceeds :: JSVal -> Int -> IO Bool
 
 createWebSocketCloseHandler ::
@@ -115,14 +119,15 @@ webSocketMessagePayloadFromJSVal messageJSVal = do
         then WebSocketTextMessage <$> webSocketMessageTextViaFFI messageJSVal
         else WebSocketBinaryMessage <$> webSocketMessageBytesViaFFI messageJSVal
 
--- | DurableObjectState, not a global connection registry. Hibernation state
--- remains in the platform and attachments, so reconstructed instances recover.
+{- | DurableObjectState, not a global connection registry. Hibernation state
+remains in the platform and attachments, so reconstructed instances recover.
+-}
 newtype WebSocketState = WebSocketState JSVal
 
 webSocketPair :: IO (WebSocketConnection, WebSocketConnection)
 webSocketPair = do
     pair <- jsPair
-    (,) <$> (WebSocketConnection <$> jsFirst pair) <*> (WebSocketConnection <$> jsSecond pair)
+    ((,) . WebSocketConnection <$> jsFirst pair) <*> (WebSocketConnection <$> jsSecond pair)
 
 webSocketUpgradeResponse :: WebSocketConnection -> IO Response
 webSocketUpgradeResponse (WebSocketConnection client) = do
@@ -139,14 +144,14 @@ webSocketConnections (WebSocketState state) tag = do
     rawTag <- textToJSVal (decodeUtf8 (Lazy.toStrict (encode tag)))
     result <- either (throwIO . WebSocketSendFailed) pure =<< (decodeEnveloped pure =<< jsConnections state rawTag)
     count <- jsCount result
-    traverse (fmap WebSocketConnection . jsAt result) [0..count-1]
+    traverse (fmap WebSocketConnection . jsAt result) [0 .. count - 1]
 
-webSocketSetAttachment :: ToJSON a => WebSocketConnection -> a -> IO ()
+webSocketSetAttachment :: (ToJSON a) => WebSocketConnection -> a -> IO ()
 webSocketSetAttachment (WebSocketConnection socket) value = do
     raw <- textToJSVal (decodeUtf8 (Lazy.toStrict (encode value)))
     webSocketOutcome =<< jsSetAttachment socket raw
 
-webSocketGetAttachment :: FromJSON a => WebSocketConnection -> IO (Maybe a)
+webSocketGetAttachment :: (FromJSON a) => WebSocketConnection -> IO (Maybe a)
 webSocketGetAttachment (WebSocketConnection socket) = do
     outcome <- decodeEnveloped jsValToText =<< jsGetAttachment socket
     raw <- either (throwIO . WebSocketSendFailed) pure outcome
