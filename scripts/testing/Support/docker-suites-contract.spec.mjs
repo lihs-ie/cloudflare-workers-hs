@@ -9,6 +9,8 @@ for (const scenario of ["success", "failure", "signal", "empty", "spawn-error"])
   test(`Docker suite orchestration: ${scenario}`, async () => {
     const records = new Map();
     const launches = [];
+    let active = 0;
+    let maximumActive = 0;
     const exitCode = process.exitCode;
     const boundaries = [
       moduleBoundary("node:fs/promises", { namedExports: {
@@ -20,7 +22,11 @@ for (const scenario of ["success", "failure", "signal", "empty", "spawn-error"])
         assert.equal(command, process.execPath);
         launches.push(args);
         const code = launches.length === 2 && scenario === "failure" ? "process.exit(7)" : launches.length === 2 && scenario === "signal" ? "process.kill(process.pid,'SIGTERM')" : "process.stdout.write('out');process.stderr.write('err')";
-        return realSpawn(scenario === "spawn-error" ? "/nonexistent/docker-contract-command" : process.execPath, ["-e", code], options);
+        const child = realSpawn(scenario === "spawn-error" ? "/nonexistent/docker-contract-command" : process.execPath, ["-e", code], options);
+        active += 1;
+        maximumActive = Math.max(maximumActive, active);
+        child.once("close", () => { active -= 1; });
+        return child;
       } } }),
     ];
     try {
@@ -33,6 +39,7 @@ for (const scenario of ["success", "failure", "signal", "empty", "spawn-error"])
         await execution;
         const result = JSON.parse(records.get("results.json"));
         assert.equal(launches.length, 6, "one suite failure does not skip remaining suites");
+        assert.equal(maximumActive, 6, "independent suites start before waiting for completion");
         assert.equal(result.results.length, 6);
         assert.equal(result.complete, scenario === "success");
         assert.equal(process.exitCode, scenario === "success" ? 0 : 1);

@@ -87,6 +87,29 @@ just test-coverage-report   # 計測済み・未計測を明示したcoverageを
 
 [minimal exampleの切り出し手順](examples/minimal/README.md#独立したプロジェクトにする場合)から始めてください。バージョンと配布方針は [ADR-0018](docs/adr/0018-versioning-release-distribution.md)、runtimeを別リポジトリに分離した判断は [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md) に記録しています。
 
+## 提供範囲
+
+このライブラリ群は、実装済みのCloudflare BindingとWorkers Runtime APIへの型付きHaskell interface、Servant Server/Client、Cloudflare Access認証、および別配布のTypeScript runtimeとのWASM接続を提供します。
+
+Cloudflare Bindingは、CloudflareまたはWranglerが設定し、platform resourceまたはcapabilityとしてWorkerの`env`へ供給するものです。Request、Response、fetch、Cache、stream、socket、Web CryptoなどはWorkers Runtime APIであり、Bindingとは区別します。
+
+外部npm packageやSDK、アプリ固有のdomain model・schema・認可・retry、および複数operationの組み合わせは提供範囲外です。例えば`aws4fetch`はCloudflareのR2 docsで紹介されていますがBindingではなく、利用アプリが所有するnpm依存です。R2取得→Images変換→R2保存も利用アプリのworkflowです。詳細な判断は[ADR-0027](docs/adr/0027-define-consumer-library-boundary.md)を参照してください。
+
+## 利用者向けAgent Skill
+
+利用アプリを作成・変更・レビューするエージェント向けに、`use-cloudflare-workers-hs` Skillを同梱しています。GitHub CLIの`gh skill`（preview）で、利用するライブラリと同じtagまたはcommitへ固定して導入してください。
+
+```sh
+gh skill preview lihs-ie/cloudflare-workers-hs use-cloudflare-workers-hs
+
+gh skill install lihs-ie/cloudflare-workers-hs use-cloudflare-workers-hs \
+  --agent codex \
+  --scope project \
+  --pin 0123456789abcdef
+```
+
+`0123456789abcdef`は、アプリのCabal projectが参照する`cloudflare-workers-hs`と同じtagまたはcommitに置き換えます。Skillの正本は[`skills/use-cloudflare-workers-hs`](skills/use-cloudflare-workers-hs)です。
+
 ## アーキテクチャ
 
 [ADR一覧](docs/adr/README.md)では、WASM backend、reactor統合、JSFFI境界、Servant実行、Cloudflare Binding、認証、WebSocket、Workflows、テスト、配布を説明しています。リポジトリ固有の用語は[用語集](GLOSSARY.md)を参照してください。
