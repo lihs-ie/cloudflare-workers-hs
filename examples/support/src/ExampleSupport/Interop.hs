@@ -92,7 +92,7 @@ responseToJSVal response = do
             byteStringToJSByteArray (LazyByteString.toStrict body) >>= \bodyJSVal ->
                 jsNewResponse bodyJSVal responseStatusCode headersJSVal
         ResponseBodyPassthrough (PassthroughResponse rawResponse) ->
-            jsNewPassthroughResponse rawResponse responseStatusCode headersJSVal
+            pure rawResponse
         ResponseBodyWebSocket (PassthroughResponse rawResponse)
             | responseStatusCode == 101 -> jsNewWebSocketResponse rawResponse headersJSVal
             | otherwise -> throwIO (userError "WebSocket response status must remain 101")
@@ -160,9 +160,6 @@ foreign import javascript unsafe "$1.append($2, $3)"
 foreign import javascript unsafe
     "new Response(([204, 205, 304].includes($2) && $1.byteLength === 0) ? null : $1, { status: $2, headers: $3 })"
     jsNewResponse :: JSVal -> Int -> JSVal -> IO JSVal
-
-foreign import javascript unsafe "new Response($1.body, { status: $2, headers: $3 })"
-    jsNewPassthroughResponse :: JSVal -> Int -> JSVal -> IO JSVal
 
 foreign import javascript unsafe "new Response(null, { status: 101, webSocket: $1.webSocket, headers: $2 })"
     jsNewWebSocketResponse :: JSVal -> JSVal -> IO JSVal
