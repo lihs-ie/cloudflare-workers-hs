@@ -4,6 +4,7 @@ import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
 import Cloudflare.Workers.HostTestKit (phantomJSVal)
 import Control.Exception (try)
+import Control.Monad (void)
 import Data.Text qualified as Text
 import Hedgehog (forAll, property, (===))
 import Hedgehog.Gen qualified as Gen
@@ -34,8 +35,8 @@ spec = describe "typed D1 rows and parameters" $ do
         decodeD1Row decoder [("number", D1Integer 1)] `shouldBe` Right 1
         decodeD1Row decoder [("number", D1Real 1.25)] `shouldBe` Right 1.25
         decodeD1Row decoder [("number", D1Integer 9007199254740992)] `shouldBe` Left (D1InvalidColumnValue "number" "integer exceeds exact JavaScript numeric range")
-        decodeD1Row decoder [("number", D1Real (1/0))] `shouldBe` Left (D1InvalidColumnValue "number" "non-finite numeric value")
-        decodeD1Row decoder [("number", D1Real (0/0))] `shouldBe` Left (D1InvalidColumnValue "number" "non-finite numeric value")
+        decodeD1Row decoder [("number", D1Real (1 / 0))] `shouldBe` Left (D1InvalidColumnValue "number" "non-finite numeric value")
+        decodeD1Row decoder [("number", D1Real (0 / 0))] `shouldBe` Left (D1InvalidColumnValue "number" "non-finite numeric value")
     it "rejects unsafe native integers instead of accepting already-rounded data" $ do
         decodeD1Row (d1Column "number" d1Integer) [("number", D1Integer 9007199254740991)] `shouldBe` Right 9007199254740991
         decodeD1Row (d1Column "number" d1Integer) [("number", D1Integer 9007199254740992)] `shouldBe` Left (D1InvalidColumnValue "number" "integer exceeds exact JavaScript numeric range")
@@ -65,9 +66,9 @@ spec = describe "typed D1 rows and parameters" $ do
         result `shouldBe` Left (D1MissingColumn "name")
     it "rejects unsafe bound values before touching an invalid native database handle" $ do
         let database = D1 phantomJSVal
-        result <- try @D1QueryError (d1PrepareQuery database (D1Statement "SELECT ?" [D1Integer 9007199254740993]) >> pure ())
+        result <- try @D1QueryError (void (d1PrepareQuery database (D1Statement "SELECT ?" [D1Integer 9007199254740993])))
         result `shouldBe` Left (D1InvalidParameter 1 "integer exceeds exact JavaScript numeric range")
-        validateD1Statement (D1Statement "SELECT ?, ?" [D1Text "valid", D1Real (1/0)])
+        validateD1Statement (D1Statement "SELECT ?, ?" [D1Text "valid", D1Real (1 / 0)])
             `shouldBe` Left (D1InvalidParameter 2 "non-finite numeric value")
         validateD1Statement (D1Statement "SELECT ?" [D1Integer 9007199254740991]) `shouldBe` Right ()
     it "treats an empty batch as no work without touching native bindings" $
