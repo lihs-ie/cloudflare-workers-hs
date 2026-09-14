@@ -1,7 +1,7 @@
 module Support.Runtime.WorkflowBoundaryExtra (workflowBoundaryExtraProbe) where
 
 import Cloudflare.Workers.Binding.Workflow
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, try)
 import Data.Aeson
 import Data.List (sort)

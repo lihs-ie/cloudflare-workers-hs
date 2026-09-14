@@ -1,7 +1,6 @@
-module Servant.Cloudflare.Workers.Access.Internal.FFI.SubtleCrypto (
-    importKeyViaFFI,
-    verifyViaFFI,
-    jsDateNowMillis,
+module Cloudflare.Workers.Internal.FFI.WebCrypto (
+    importRS256JWKViaFFI,
+    verifyRS256ViaFFI,
 ) where
 
 import Cloudflare.Workers.Internal.FFI.Envelope (
@@ -13,22 +12,22 @@ import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
 import Data.Text (Text)
 import GHC.Wasm.Prim (JSVal)
 
-importKeyViaFFI :: JSVal -> IO (Either Text JSVal)
-importKeyViaFFI jwkJSONTextJSVal = do
-    envelopeJSVal <- jsImportKeyEnveloped jwkJSONTextJSVal
-    decodeSubtleEnvelope jsSubtleEnvelopeKeyValueField envelopeJSVal
+importRS256JWKViaFFI :: JSVal -> IO (Either Text JSVal)
+importRS256JWKViaFFI jwkJSONTextJSVal = do
+    envelopeJSVal <- jsImportRS256JWKEnveloped jwkJSONTextJSVal
+    decodeWebCryptoEnvelope jsWebCryptoEnvelopeKeyValueField envelopeJSVal
 
-verifyViaFFI :: JSVal -> JSVal -> JSVal -> IO (Either Text Bool)
-verifyViaFFI cryptoKeyJSVal signatureBytesJSVal dataBytesJSVal = do
-    envelopeJSVal <- jsVerifyEnveloped cryptoKeyJSVal signatureBytesJSVal dataBytesJSVal
-    decodeSubtleEnvelope jsSubtleEnvelopeVerifiedValueField envelopeJSVal
+verifyRS256ViaFFI :: JSVal -> JSVal -> JSVal -> IO (Either Text Bool)
+verifyRS256ViaFFI cryptoKeyJSVal signatureBytesJSVal dataBytesJSVal = do
+    envelopeJSVal <- jsVerifyRS256Enveloped cryptoKeyJSVal signatureBytesJSVal dataBytesJSVal
+    decodeWebCryptoEnvelope jsWebCryptoEnvelopeVerifiedValueField envelopeJSVal
 
-decodeSubtleEnvelope :: (JSVal -> IO a) -> JSVal -> IO (Either Text a)
-decodeSubtleEnvelope readValueField envelopeJSVal = do
+decodeWebCryptoEnvelope :: (JSVal -> IO a) -> JSVal -> IO (Either Text a)
+decodeWebCryptoEnvelope readValueField envelopeJSVal = do
     envelopeTag <- readEnvelopeTag envelopeJSVal
     case envelopeTag of
         EnvelopeSuccessTag -> Right <$> readValueField envelopeJSVal
-        EnvelopeFailureTag -> Left <$> (jsValToText =<< jsSubtleEnvelopeMessageField envelopeJSVal)
+        EnvelopeFailureTag -> Left <$> (jsValToText =<< jsWebCryptoEnvelopeMessageField envelopeJSVal)
         EnvelopeMalformedTag -> Left <$> describeMalformedEnvelope envelopeJSVal
 
 foreign import javascript safe
@@ -58,13 +57,18 @@ foreign import javascript safe
       }
     })()
     """
-    jsImportKeyEnveloped :: JSVal -> IO JSVal
+    jsImportRS256JWKEnveloped :: JSVal -> IO JSVal
 
 foreign import javascript safe
     """
     (async () => {
       try {
-        const verified = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', $1, $2, $3);
+        const verified = await crypto.subtle.verify(
+          'RSASSA-PKCS1-v1_5',
+          $1,
+          $2,
+          $3
+        );
 
         return {
           ok: true,
@@ -80,16 +84,13 @@ foreign import javascript safe
       }
     })()
     """
-    jsVerifyEnveloped :: JSVal -> JSVal -> JSVal -> IO JSVal
+    jsVerifyRS256Enveloped :: JSVal -> JSVal -> JSVal -> IO JSVal
 
 foreign import javascript unsafe "$1.value"
-    jsSubtleEnvelopeKeyValueField :: JSVal -> IO JSVal
+    jsWebCryptoEnvelopeKeyValueField :: JSVal -> IO JSVal
 
 foreign import javascript unsafe "$1.value === true"
-    jsSubtleEnvelopeVerifiedValueField :: JSVal -> IO Bool
+    jsWebCryptoEnvelopeVerifiedValueField :: JSVal -> IO Bool
 
 foreign import javascript unsafe "$1.message"
-    jsSubtleEnvelopeMessageField :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "Date.now()"
-    jsDateNowMillis :: IO Double
+    jsWebCryptoEnvelopeMessageField :: JSVal -> IO JSVal

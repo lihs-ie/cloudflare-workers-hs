@@ -57,6 +57,12 @@ test-replay target seed="42":
 test-registration:
     python3 scripts/testing/registration.py --output artifacts/testing/registration.json
 
+test-internal-boundary-manifest:
+    python3 scripts/testing/internal-module-boundaries.py manifest
+
+test-internal-boundaries: test-internal-boundary-manifest
+    python3 scripts/testing/internal-module-boundaries.py consumer
+
 test-tools:
     python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
     python3 scripts/testing/Support/coverage_checks.py
@@ -65,6 +71,5 @@ test-tools:
 test-mutations:
     python3 scripts/testing/mutations.py
 
-lint:
+lint: test-registration test-internal-boundary-manifest
     scripts/hlint
-    just test-registration

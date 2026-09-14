@@ -10,7 +10,6 @@ import GHC.Wasm.Prim (JSVal)
 import Minimal.Application (server)
 import Servant.Cloudflare.Workers.Server
 import Servant.Cloudflare.Workers.Generic (genericServeWithContext)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 main :: IO ()
 main = pure ()

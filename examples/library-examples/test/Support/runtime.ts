@@ -28,7 +28,6 @@ export const reactor = await createReactor(
       coverage: typeof exports.coverage === "function"
         ? bindExport<[], string>(exports, "coverage", decodeString)
         : undefined,
-      uploadPartKeyContract: bindExport<[], string>(exports, "uploadPartKeyContract", decodeString),
       queueContract: bindExport<
         [string, object, object, ExecutionContext],
         string

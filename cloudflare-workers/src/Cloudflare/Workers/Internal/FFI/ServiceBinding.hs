@@ -1,12 +1,14 @@
 module Cloudflare.Workers.Internal.FFI.ServiceBinding (
     serviceBindingFetchViaFFI,
+    serviceBindingFetchPassthroughViaFFI,
     serviceBindingCallViaFFI,
 ) where
 
 import Cloudflare.Workers.HTTP (
+    PassthroughResponse (PassthroughResponse),
     Request,
     Response,
-    ResponseBody (ResponseBodyBytes, ResponseBodyStream),
+    ResponseBody (ResponseBodyBytes, ResponseBodyPassthrough, ResponseBodyStream),
     Status (Status),
     createResponse,
  )
@@ -14,7 +16,7 @@ import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Cloudflare.Workers.Internal.FFI.Headers (headersFromJSVal)
 import Cloudflare.Workers.Internal.FFI.Request (requestToJSVal)
 import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
-import Cloudflare.Workers.Streaming (readableStreamFromJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal)
 import Control.Exception (Exception (displayException), SomeException, try, throwIO)
 import Data.Foldable (for_)
 import Data.Text (Text)
@@ -22,13 +24,23 @@ import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
 
 serviceBindingFetchViaFFI :: JSVal -> Request -> IO (Either Text Response)
-serviceBindingFetchViaFFI serviceJSVal request = do
+serviceBindingFetchViaFFI = serviceBindingFetchWith responseFromEnvelopeValue
+
+-- | Fetch a native response without detaching its request-scoped body stream.
+-- This is required for bindings such as Assets whose response is returned to
+-- the caller unchanged. Inspecting and reconstructing the body can otherwise
+-- move a Cloudflare I/O object across concurrent request contexts.
+serviceBindingFetchPassthroughViaFFI :: JSVal -> Request -> IO (Either Text Response)
+serviceBindingFetchPassthroughViaFFI = serviceBindingFetchWith responseFromPassthroughEnvelopeValue
+
+serviceBindingFetchWith :: (JSVal -> IO Response) -> JSVal -> Request -> IO (Either Text Response)
+serviceBindingFetchWith decodeResponse serviceJSVal request = do
     outcome <- try (requestToJSVal request)
     case outcome of
         Left exception -> pure (serviceFetchFailure exception)
         Right requestJSVal -> do
             envelopeJSVal <- jsServiceBindingFetchEnveloped serviceJSVal requestJSVal
-            decodeEnvelopedSafely responseFromEnvelopeValue envelopeJSVal
+            decodeEnvelopedSafely decodeResponse envelopeJSVal
   where
     serviceFetchFailure :: SomeException -> Either Text Response
     serviceFetchFailure = Left . Text.pack . displayException
@@ -60,6 +72,18 @@ responseFromEnvelopeValue responseJSVal = do
     bodyIsNullish <- jsIsNullish bodyJSVal
     let body = if bodyIsNullish then ResponseBodyBytes mempty else ResponseBodyStream (readableStreamFromJSVal bodyJSVal)
     pure (createResponse (Status statusCodeValue) headers body)
+
+responseFromPassthroughEnvelopeValue :: JSVal -> IO Response
+responseFromPassthroughEnvelopeValue responseJSVal = do
+    statusCodeValue <- jsResponseStatus responseJSVal
+    headersJSVal <- jsResponseHeaders responseJSVal
+    headers <- headersFromJSVal headersJSVal
+    pure
+        ( createResponse
+            (Status statusCodeValue)
+            headers
+            (ResponseBodyPassthrough (PassthroughResponse responseJSVal))
+        )
 
 foreign import javascript safe
     """

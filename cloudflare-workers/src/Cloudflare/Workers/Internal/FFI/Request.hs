@@ -10,7 +10,8 @@ import Cloudflare.Workers.HTTP (Request (requestHeaders), methodToText, requestB
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray)
 import Cloudflare.Workers.Internal.FFI.Headers (headersToJSVal)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Streaming (ReadableStreamReadError (ReadableStreamExceededByteLimit, ReadableStreamStalled), readableStreamToJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamToJSVal)
+import Cloudflare.Workers.Streaming (ReadableStreamReadError (ReadableStreamExceededByteLimit, ReadableStreamReadFailed, ReadableStreamStalled))
 import Cloudflare.Workers.URL (urlText)
 import Data.ByteString.Lazy qualified as LazyByteString
 import Data.Text (Text)
@@ -68,6 +69,8 @@ requestToJSVal request = do
                         error "requestToJSVal: request body exceeded the representable byte limit"
                     Left ReadableStreamStalled ->
                         error "requestToJSVal: the request body stream stalled (a chunk carrying no bytes)"
+                    Left (ReadableStreamReadFailed message) ->
+                        error ("requestToJSVal: request body read failed: " <> Text.unpack message)
     envelope <- jsNewRequest urlJSVal methodJSVal headersJSVal bodyJSVal
     outcome <- decodeEnveloped pure envelope
     either (throwIO . userError . Text.unpack) pure outcome

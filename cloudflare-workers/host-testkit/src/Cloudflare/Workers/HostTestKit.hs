@@ -2,7 +2,7 @@ module Cloudflare.Workers.HostTestKit (
     phantomJSVal,
 ) where
 
-import GHC.Wasm.Prim.Host.Internal (JSVal (HostPhantomJSVal))
+import GHC.Wasm.Prim (JSVal, hostPhantomJSVal)
 
 phantomJSVal :: JSVal
-phantomJSVal = HostPhantomJSVal
+phantomJSVal = hostPhantomJSVal

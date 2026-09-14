@@ -15,13 +15,11 @@ import Control.Exception (SomeException, evaluate, try)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
-import Servant.Cloudflare.Workers.Access (AccessClaims, AccessServiceClaims, AccessError)
+import Servant.Cloudflare.Workers.Access (AccessClaims, AccessError, AccessServiceClaims)
 import Servant.Cloudflare.Workers.Error (err401)
 import Servant.Cloudflare.Workers.Handler (Handler)
 import Servant.Cloudflare.Workers.Server (Context, HasContextEntry (getContextEntry), HasWorkerServer (ServerT, route))
-import Servant.Cloudflare.Workers.Server.Internal.Delayed (Delayed, addAuthCheck)
-import Servant.Cloudflare.Workers.Server.Internal.DelayedIO (DelayedIO, delayedFailFatal, withRequest)
-import Servant.Cloudflare.Workers.Server.Internal.Router (Router)
+import Servant.Cloudflare.Workers.Server.Extension (Delayed, DelayedIO, Router, addAuthCheck, delayedFailFatal, withRequest)
 
 {- | Empty marker type: ZeroTrust :> api requires a verified Cloudflare
 Access identity before dispatching into api. Never constructed --

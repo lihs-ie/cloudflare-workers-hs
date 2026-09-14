@@ -15,7 +15,6 @@ import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
 import Realtime.API
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 initialize :: DurableObjectStorage -> WebSocketState -> IO ()
 initialize storage state = do

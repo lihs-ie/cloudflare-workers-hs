@@ -79,6 +79,8 @@ data ResponseBody
     = ResponseBodyBytes ByteString
     | ResponseBodyLazyBytes LazyByteString.ByteString
     | ResponseBodyStream ReadableStream
+    -- | An opaque native response returned unchanged to the Worker runtime.
+    -- Its status, headers, and request-scoped body remain platform-owned.
     | ResponseBodyPassthrough PassthroughResponse
     | ResponseBodyWebSocket PassthroughResponse
 

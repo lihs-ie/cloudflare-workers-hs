@@ -20,7 +20,6 @@ import Servant.API.Generic ((:-))
 import Servant.Cloudflare.Workers.Error
 import Servant.Cloudflare.Workers.Handler (Handler)
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 import URLShortener.Domain
 
 data ManagementEnv = ManagementEnv

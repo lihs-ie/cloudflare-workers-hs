@@ -2,7 +2,7 @@ module Support.Database (databaseFailureRecovery) where
 
 import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (textToJSVal)
 import Control.Exception (try, finally)
 import Control.Monad (void)
 import Data.Aeson (object, encode, (.=))

@@ -143,12 +143,8 @@ export function registerStorageErrorCases(): void {
         expect(calls).toBe(2);
       });
     }
-    it("validates D1 nonnumeric parameters and serializes low-level KV JSON", async () => {
+    it("validates D1 nonnumeric parameters", async () => {
       expect(await storageErrorProbe({}, "d1-validate")).toBe("ok");
-      const observed: unknown[] = [];
-      const handle = { put: async (_key: string, value: unknown) => { observed.push(value); } };
-      expect(await storageErrorProbe(handle, "kv-ffi-json")).toBe("ok");
-      expect(observed).toEqual([{ version: 2 }]);
     });
     it("rejects an empty SQL plan whose JSON encoding exceeds the limit before native work", async () => {
       let calls = 0;

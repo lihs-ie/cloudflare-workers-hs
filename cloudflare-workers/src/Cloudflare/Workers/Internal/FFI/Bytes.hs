@@ -14,11 +14,15 @@ module Cloudflare.Workers.Internal.FFI.Bytes (
 ) where
 
 import Control.Exception (Exception, throwIO)
+import Cloudflare.Workers.Internal.ByteArray (
+    JSByteArrayRejection (..),
+    classifyJSByteArrayLengthCode,
+    describeJSByteArrayRejection,
+ )
 import Data.ByteString (ByteString)
 import Data.ByteString.Internal (create)
 import Data.ByteString.Unsafe (unsafeUseAsCStringLen)
 import Data.Text (Text)
-import Data.Text qualified as Text
 import Data.Word (Word8)
 import Foreign.Ptr (Ptr, castPtr)
 import GHC.Wasm.Prim (JSVal)
@@ -28,44 +32,10 @@ byteStringToJSByteArray sourceByteString =
     unsafeUseAsCStringLen sourceByteString $ \(sourcePointer, byteCount) ->
         jsCopyBytesOutOfMemory (castPtr sourcePointer) byteCount
 
-data JSByteArrayRejection
-    = JSByteArrayNotAView
-    | JSByteArrayWrongElementWidth
-    | JSByteArrayLengthUnrepresentable
-    | JSByteArrayUnknownRejection Int
-    deriving stock (Show, Eq)
-
 newtype JSByteArrayReadError = JSByteArrayReadError Text
     deriving stock (Show, Eq)
 
 instance Exception JSByteArrayReadError
-
-classifyJSByteArrayLengthCode :: Int -> Either JSByteArrayRejection Int
-classifyJSByteArrayLengthCode lengthCode
-    | lengthCode >= 0 = Right lengthCode
-    | lengthCode == -1 = Left JSByteArrayNotAView
-    | lengthCode == -2 = Left JSByteArrayWrongElementWidth
-    | lengthCode == -3 = Left JSByteArrayLengthUnrepresentable
-    | otherwise = Left (JSByteArrayUnknownRejection lengthCode)
-
-describeJSByteArrayRejection :: JSByteArrayRejection -> Text
-describeJSByteArrayRejection JSByteArrayNotAView =
-    "jsByteArrayToByteString: the JS value is not an ArrayBufferView \
-    \(an ArrayBuffer, DataView, Blob, plain object, Array or string \
-    \has no byte-array shape here -- wrap an ArrayBuffer with \
-    \`new Uint8Array(buffer)` before crossing)"
-describeJSByteArrayRejection JSByteArrayWrongElementWidth =
-    "jsByteArrayToByteString: the JS value is an ArrayBufferView whose \
-    \elements are wider than one byte, so its own .length counts \
-    \elements rather than bytes"
-describeJSByteArrayRejection JSByteArrayLengthUnrepresentable =
-    "jsByteArrayToByteString: the JS value's .length must be a \
-    \non-negative integer within the boundary limit, equal to its intrinsic \
-    \view length, and backed by a readable, attached buffer"
-describeJSByteArrayRejection (JSByteArrayUnknownRejection lengthCode) =
-    "jsByteArrayToByteString: the JS side answered with the \
-    \unrecognised rejection code "
-        <> Text.pack (show lengthCode)
 
 jsByteArrayToByteStringEither :: JSVal -> IO (Either Text ByteString)
 jsByteArrayToByteStringEither sourceJSByteArray = do

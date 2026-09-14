@@ -9,25 +9,10 @@ module Cloudflare.Workers.Internal.FFI.Images (
 
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnvelopedWithError)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Internal.Images.FFITypes
 import Control.Monad (forM_)
 import Data.Text (Text)
 import GHC.Wasm.Prim (JSVal)
-
-data ImageInfoViaFFI
-    = SVGImageInfoViaFFI
-    | RasterImageInfoViaFFI Text Integer Int Int
-
-data ImageTransformationViaFFI
-    = ResizeToWidthViaFFI Int
-    | ResizeToHeightViaFFI Int
-    | ResizeToDimensionsViaFFI Int Int
-    | RotateViaFFI Int
-
-data ImagesErrorViaFFI = ImagesErrorViaFFI
-    { imagesErrorCodeViaFFI :: Maybe Int
-    , imagesErrorNameViaFFI :: Maybe Text
-    , imagesErrorMessageViaFFI :: Text
-    }
 
 data ImagesOutputViaFFI = ImagesOutputViaFFI Text JSVal
 

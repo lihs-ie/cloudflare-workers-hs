@@ -4,7 +4,7 @@ import Cloudflare.Workers.Binding.Queue
 import Cloudflare.Workers.Entrypoint.Queue
 import Cloudflare.Workers.Entrypoint.Queue.Typed
 import Cloudflare.Workers.Env (BindingEnv)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, try)
 import Data.Aeson (Value, encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy

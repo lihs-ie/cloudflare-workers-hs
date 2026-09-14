@@ -6,7 +6,6 @@ import Data.Proxy
 import Servant.API
 import Cloudflare.Workers.HTTP
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Servant.Cloudflare.Workers.EdgeDataCenter
 import Support.HTTP.Fixtures
 spec :: Spec

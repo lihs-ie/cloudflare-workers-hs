@@ -12,7 +12,6 @@ import Data.Text (Text)
 import Servant.API hiding (DELETE, GET, HEAD, POST)
 import Servant.API qualified as API
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 import Support.HTTP.Fixtures
 import Test.Syd hiding (context)
 

@@ -1,18 +1,17 @@
 module Support.Runtime.StorageErrors (storageErrorProbe) where
 
+import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage(..))
+import Cloudflare.Workers.Binding.DurableObject.SQL
+import Data.Aeson (eitherDecode)
 import Cloudflare.Workers.Binding.D1
 import Cloudflare.Workers.Binding.D1.Query
-import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage (..))
-import Cloudflare.Workers.Binding.DurableObject.SQL
 import Cloudflare.Workers.Binding.KV
-import Cloudflare.Workers.Internal.FFI.KV qualified as KVFFI
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Applicative (liftA2)
-import Control.Exception (SomeException, displayException, evaluate, try)
 import Control.Monad (unless)
-import Data.Aeson (eitherDecode)
-import Data.Maybe (fromMaybe)
+import Control.Exception (SomeException, displayException, evaluate, try)
 import Data.Text qualified as Text
+import Data.Maybe (fromMaybe)
 import GHC.Wasm.Prim (JSVal)
 
 -- Observe public results inside the exception boundary, including lazy metadata.
@@ -32,8 +31,8 @@ storageErrorProbe handle commandValue = do
             "d1-composition" -> do
                 let a = d1Column "a" d1Integer
                     b = d1Column "b" d1Integer
-                    good = [("a", D1Integer 2), ("b", D1Integer 3)]
-                    bad = [("a", D1Text "wrong"), ("b", D1Integer 3)]
+                    good = [("a",D1Integer 2),("b",D1Integer 3)]
+                    bad = [("a",D1Text "wrong"),("b",D1Integer 3)]
                     check condition = unless condition (fail "D1 composition contract failed")
                 check (decodeD1Row (liftA2 (+) a b) good == Right 5)
                 check (decodeD1Row (a *> b) good == Right 3)
@@ -66,9 +65,7 @@ storageErrorProbe handle commandValue = do
             "d1-validate" -> case validateD1Statement (D1Statement "SELECT ?" [D1Text "text", D1Null, D1Blob "bytes"]) of
                 Left failure -> fail (show failure)
                 Right _ -> pure "ok"
-            "kv-ffi-json" -> do
-                result <- KVFFI.kvPutViaFFI handle "key" (KVFFI.KVJSONValueViaFFI "{\"version\":2}") Nothing Nothing Nothing
-                either (fail . Text.unpack) (const (pure "ok")) result
+            "kv-put-text" -> kvPut (KV handle) "key" (KVPutText "{\"version\":2}") kvPutDefaultOptions >> pure "ok"
             "kv-default-ttl" -> pure (shown (kvCacheTtlIsValid kvReadDefaultOptions))
             "kv-get" -> maybe "missing" valueText <$> kvGet (KV handle) "key" KVReadText options
             "kv-metadata" -> metadataText <$> kvGetWithMetadata (KV handle) "key" KVReadText options
@@ -84,7 +81,7 @@ storageErrorProbe handle commandValue = do
   where
     options = KVReadOptions (Just 30)
     batch = KVKeyBatch "key" ["missing"]
-    shown :: (Show a) => a -> Text.Text
+    shown :: Show a => a -> Text.Text
     shown = Text.pack . show
     valueText (KVTextValue value) = value
     valueText (KVJSONValue value) = value

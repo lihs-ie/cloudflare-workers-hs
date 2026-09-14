@@ -17,7 +17,6 @@ import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as LBS
 import Data.Text qualified as Text
 import Control.Monad (unless)
-import Support.Runtime.RouterInternals (runRouterInternals, runDelayedFailures)
 import Servant.Cloudflare.Workers.CacheControl
 import Cloudflare.Workers.Reactor (WorkersExecutionContext)
 import Control.Monad.Except (throwError)
@@ -27,18 +26,11 @@ import Data.Text (Text)
 import Servant.API
 import Servant.Cloudflare.Workers.Error (err400)
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal (EmptyServer (..))
 
 routingFixture :: Text -> Request -> WorkersExecutionContext -> IO Response
 routingFixture mode request context = case mode of
-  "delayed-matrix" -> do
-    names <- runDelayedFailures request
-    pure (createResponse (Status 200) (Headers.headersFromList [("Content-Type", "application/json")]) (ResponseBodyLazyBytes (Aeson.encode names)))
   "body-reader-matrix" -> runBodyReaderMatrix request context
   "matrix" -> runRoutingMatrix request context
-  "internals" -> do
-    names <- runRouterInternals request context
-    pure (createResponse (Status 200) (Headers.headersFromList [("Content-Type", "application/json")]) (ResponseBodyLazyBytes (Aeson.encode names)))
   "no-content-get" -> serveWithContext (Proxy @(NoContentVerb 'GET)) EmptyContext (pure NoContent) request context ()
   "no-content-delete" -> serveWithContext (Proxy @(NoContentVerb 'DELETE)) EmptyContext (pure NoContent) request context ()
   "no-content-failure" -> serveWithContext (Proxy @(NoContentVerb 'DELETE)) EmptyContext (throwError err400) request context ()

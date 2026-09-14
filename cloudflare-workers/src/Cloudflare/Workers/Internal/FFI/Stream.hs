@@ -8,6 +8,7 @@ module Cloudflare.Workers.Internal.FFI.Stream (
     producerDrivenReadableStreamViaFFI,
     readableStreamGetReaderViaFFI,
     readableStreamReaderReadViaFFI,
+    withReadableStreamReaderViaFFI,
     streamDrainStepDecision,
     StreamDrainStep (..),
 ) where
@@ -16,7 +17,7 @@ import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArr
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
 import Control.Concurrent (forkIO)
-import Control.Exception (Exception (displayException), SomeException, throwIO, try, bracket, onException)
+import Control.Exception (Exception (displayException), SomeException, bracket, onException, throwIO, try)
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Lazy qualified as LazyByteString
 import Data.Text (Text)
@@ -55,8 +56,9 @@ instance Exception StreamDrainFailure
 readableStreamDrain :: Int -> JSVal -> IO StreamDrainOutcome
 readableStreamDrain byteLimit streamJSValue =
     bracket (jsGetReader streamJSValue) jsReleaseReader $ \reader -> do
-        outcome <- (if byteLimit < 0 then pure StreamDrainByteLimitExceeded else drainFrom reader 0 [])
-            `onException` jsCancelReader reader
+        outcome <-
+            (if byteLimit < 0 then pure StreamDrainByteLimitExceeded else drainFrom reader 0 [])
+                `onException` jsCancelReader reader
         case outcome of
             StreamDrainCompleted _ -> pure outcome
             _ -> jsCancelReader reader >> pure outcome
@@ -78,10 +80,12 @@ boundedReaderRead reader remaining = do
   where
     decode result = do
         done <- jsReadResultDone result
-        if done then pure (Right Nothing) else do
-            chunk <- jsReadResultValue result
-            exceeds <- jsChunkExceedsLimit chunk remaining
-            if exceeds then pure (Left ()) else Right . Just <$> jsByteArrayToByteString chunk
+        if done
+            then pure (Right Nothing)
+            else do
+                chunk <- jsReadResultValue result
+                exceeds <- jsChunkExceedsLimit chunk remaining
+                if exceeds then pure (Left ()) else Right . Just <$> jsByteArrayToByteString chunk
 
 -- Typed arrays can shadow .byteLength. Inspect their intrinsic size before
 -- allocating or copying bytes; never invoke a caller-owned property getter.
@@ -194,6 +198,12 @@ readableStreamReaderReadViaFFI readerJSVal = do
             else do
                 chunkJSVal <- jsReadResultValue readResultJSVal
                 Just <$> jsByteArrayToByteString chunkJSVal
+
+withReadableStreamReaderViaFFI :: JSVal -> (JSVal -> IO a) -> IO a
+withReadableStreamReaderViaFFI stream =
+    bracket (readableStreamGetReaderViaFFI stream) closeReader
+  where
+    closeReader reader = jsCancelReader reader >> jsReleaseReader reader
 
 foreign import javascript unsafe
     """

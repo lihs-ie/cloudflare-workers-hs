@@ -24,7 +24,6 @@ import Servant.Cloudflare.Workers.Client.Fetch
     ( FetchClient, FetchTransportError, fetchTransportErrorConstructorName, runFetchClientWithServiceBinding
     , FetchClientOptions (..), fetchWithOptions )
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 -- Mounted under /client-target in the Worker. The test boundary injects lost
 -- connections and malformed responses while successful requests reach this

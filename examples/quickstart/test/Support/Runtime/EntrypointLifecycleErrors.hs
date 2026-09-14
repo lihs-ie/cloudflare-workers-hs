@@ -1,16 +1,15 @@
 module Support.Runtime.EntrypointLifecycleErrors (entrypointLifecycleErrorsProbe) where
 
-import Cloudflare.Workers.Binding.Var (Var, unVar)
 import Cloudflare.Workers.Entrypoint.DurableObject
 import Cloudflare.Workers.Entrypoint.Workflow
 import Cloudflare.Workers.Env (BindingEnv, getBinding)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Internal.FFI.Workflow (WorkflowNativeError (..))
+import Cloudflare.Workers.Binding.Var (Var, unVar)
+import Data.Proxy (Proxy (..))
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (AsyncException (ThreadKilled), SomeException, displayException, evaluate, throwIO, try)
 import Data.Aeson
 import Data.ByteString qualified as Bytes
 import Data.ByteString.Lazy qualified as Lazy
-import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import GHC.Wasm.Prim (JSVal)
@@ -53,24 +52,15 @@ entrypointLifecycleErrorsProbe rawMode native value env = do
             clean <- closeClean value
             unit (createWebSocketCloseHandler closeHandler native code reason clean env)
         "handler-failure" -> unit (createWebSocketMessageHandler messageHandler native value env)
-        "native-error-diagnostics" -> do
-            let errors = [WorkflowNativeError "first" native, WorkflowNativeError "second" native]
-            pure $ object ["list" .= showList errors " suffix", "individual" .= map (`shows` " suffix") errors]
-        "native-error-show" -> pure (toJSON (show (WorkflowNativeError "native failure" native)))
         "workflow-invalid" -> workflowResult (createWorkflowHandler normalHandler value native env native)
         "workflow-unsafe-number" -> workflowResult (createWorkflowHandler unsafeNumberHandler value native env native)
         "workflow-async" -> do
             _ <- createWorkflowHandler asyncHandler value native env native
             fail "asynchronous exception was swallowed"
         _ -> fail "Unknown entrypoint lifecycle mode"
-    textToJSVal $
-        Text.decodeUtf8 $
-            Lazy.toStrict $
-                encode $
-                    either
-                        (\exception -> object ["ok" .= False, "message" .= displayException exception])
-                        (\result -> object ["ok" .= True, "value" .= result])
-                        outcome
+    textToJSVal $ Text.decodeUtf8 $ Lazy.toStrict $ encode $
+        either (\exception -> object ["ok" .= False, "message" .= displayException exception])
+               (\result -> object ["ok" .= True, "value" .= result]) outcome
   where
     configuredMessage :: WebSocketMessageHandler ConfigEnv
     configuredMessage socket payload bindings = case payload of

@@ -1,3 +1,6 @@
-module GHC.Wasm.Prim (JSVal) where
+module GHC.Wasm.Prim (JSVal, hostPhantomJSVal) where
 
-import GHC.Wasm.Prim.Host.Internal (JSVal)
+data JSVal = HostPhantomJSVal
+
+hostPhantomJSVal :: JSVal
+hostPhantomJSVal = HostPhantomJSVal

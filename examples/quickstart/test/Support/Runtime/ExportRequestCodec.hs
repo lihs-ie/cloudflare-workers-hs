@@ -1,6 +1,6 @@
 module Support.Runtime.ExportRequestCodec (exportRequestCodecProbe) where
 
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Data.Aeson (Value, eitherDecodeStrict', encode, object, toJSON, (.=))
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding qualified as Text

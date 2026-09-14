@@ -5,7 +5,6 @@ module Servant.Cloudflare.Workers.Access.Internal.Clock (
 ) where
 
 #if defined(wasm32_HOST_ARCH)
-import Servant.Cloudflare.Workers.Access.Internal.FFI.SubtleCrypto (jsDateNowMillis)
 #else
 import Data.Time.Clock.POSIX (getPOSIXTime)
 #endif
@@ -17,4 +16,9 @@ currentEpochSeconds = do
   pure (floor (epochMillis / 1000))
 #else
 currentEpochSeconds = floor <$> getPOSIXTime
+#endif
+
+#if defined(wasm32_HOST_ARCH)
+foreign import javascript unsafe "Date.now()"
+    jsDateNowMillis :: IO Double
 #endif

@@ -3,7 +3,7 @@
 module Cloudflare.Workers.Binding.Assets (Assets(..), AssetsError(..), assetsFetch) where
 
 import Cloudflare.Workers.HTTP (Request, Response)
-import Cloudflare.Workers.Internal.FFI.ServiceBinding (serviceBindingFetchViaFFI)
+import Cloudflare.Workers.Internal.FFI.ServiceBinding (serviceBindingFetchPassthroughViaFFI)
 import Control.Exception (Exception, throwIO)
 import Data.Text (Text)
 import GHC.Wasm.Prim (JSVal)
@@ -14,5 +14,5 @@ instance Exception AssetsError
 
 assetsFetch :: Assets -> Request -> IO Response
 assetsFetch (Assets binding) request = do
-    outcome <- serviceBindingFetchViaFFI binding request
+    outcome <- serviceBindingFetchPassthroughViaFFI binding request
     either (throwIO . AssetsFetchFailed) pure outcome

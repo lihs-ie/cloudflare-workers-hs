@@ -6,7 +6,7 @@ import Cloudflare.Workers.Binding.ServiceBinding
 import Cloudflare.Workers.Cache
 import Cloudflare.Workers.Headers (headersFromList, headersToList)
 import Cloudflare.Workers.HTTP
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Cloudflare.Workers.Reactor (WorkersExecutionContext (..))
 import Cloudflare.Workers.URL (parseURL)
 import Cloudflare.Workers.Streaming (readableStreamToLazyByteString)
@@ -110,6 +110,7 @@ summarizeResponse response = pure $ object
     , "body" .= case responseBody response of
         ResponseBodyBytes bytes -> object ["kind" .= ("bytes" :: Text.Text), "length" .= Bytes.length bytes]
         ResponseBodyStream _ -> object ["kind" .= ("stream" :: Text.Text)]
+        ResponseBodyPassthrough _ -> object ["kind" .= ("passthrough" :: Text.Text)]
         _ -> object ["kind" .= ("other" :: Text.Text)]
     ]
 

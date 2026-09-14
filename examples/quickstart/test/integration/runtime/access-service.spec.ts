@@ -39,7 +39,7 @@ describe("typed user and service Access verification", () => {
     }
     const response = await worker.fetch(new Request("https://example.test/__access/configured", {
       method: "POST",
-      body: JSON.stringify({ token: input + "." + encode(signature), audience: "runtime-audience", team: "runtime-team", url: issuer + "/cdn-cgi/access/certs", skew: 0, ttl: 60, reset: true, identityKind }),
+      body: JSON.stringify({ token: input + "." + encode(signature), audience: "runtime-audience", team: "runtime-team", url: issuer + "/cdn-cgi/access/certs", skew: 0, ttl: 60, identityKind }),
     }), env, createExecutionContext());
     expect(await response.json()).toEqual({ identity: expected });
   });

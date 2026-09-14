@@ -7,6 +7,7 @@
     name: Avoid restricted function
     within:
       - Servant.Cloudflare.Workers.Access.Internal.JWKSCache
+      - ExampleSupport.Interop
 - ignore:
     name: Use lambda-case
     within:

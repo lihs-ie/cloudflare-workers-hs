@@ -8,11 +8,10 @@ import Cloudflare.Workers.Binding.DurableObject
 import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler)
 import Cloudflare.Workers.Entrypoint.DurableObject
 import Cloudflare.Workers.Env (BindingEnv)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
 import Data.Aeson (encode, object, (.=))
 import Cloudflare.Workers.HTTP (Response(..), Status(..))
 import Cloudflare.Workers.Headers (headersFromList)
-import Cloudflare.Workers.Internal.FFI.Response (responsetoJSVal)
+import ExampleSupport.Interop (jsValToText, responseToJSVal, textToJSVal)
 import Control.Exception (SomeException, try, catch, throwIO)
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding (decodeUtf8)
@@ -101,9 +100,9 @@ upgradeChecks :: IO JSVal
 upgradeChecks = do
   (client, _) <- webSocketPair
   response <- webSocketUpgradeResponse client
-  accepted <- responsetoJSVal response{responseHeaders = headersFromList [("x-upgrade", "retained")]}
+  accepted <- responseToJSVal response{responseHeaders = headersFromList [("x-upgrade", "retained")]}
   header <- jsHeader accepted >>= jsValToText
-  rejected <- try @SomeException (responsetoJSVal response{responseStatus = Status 403})
+  rejected <- try @SomeException (responseToJSVal response{responseStatus = Status 403})
   invalidIdentifier <- try @DurableObjectError (doIDToString . DurableObjectID =<< jsInvalidIdentifier)
   throwingIdentifier <- try @DurableObjectError (doIDToString . DurableObjectID =<< jsThrowingIdentifier)
   let identifierRejected value = case value of Left (DurableObjectIDSerializationFailed _) -> True; _ -> False

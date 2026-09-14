@@ -1,7 +1,7 @@
 module Cloudflare.Workers.Binding.R2Spec (spec) where
 import Cloudflare.Workers.HostTestKit
 import Control.Exception (try)
-import Cloudflare.Workers.Internal.FFI.R2 (r2RangeComponentToJSNumber)
+import Cloudflare.Workers.Internal.R2Range (r2RangeComponentToJSNumber)
 import Cloudflare.Workers.Binding.R2
 import Data.ByteString qualified as BS
 import Data.Maybe (isJust)

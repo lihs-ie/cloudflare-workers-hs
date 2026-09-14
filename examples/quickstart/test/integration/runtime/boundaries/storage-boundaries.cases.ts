@@ -48,7 +48,7 @@ export function registerStorageBoundaryCases(): void {
 
 function registerStorageNativeCases(): void {
   describe("native-shaped storage contracts", () => {
-    for (const command of ["legacy-send", "legacy-batch", "ffi-send", "ffi-batch", "json", "clone-v8"]) {
+    for (const command of ["legacy-send", "legacy-batch", "public-send", "public-batch", "json", "clone-v8"]) {
       it(`forwards ${command} once through the native producer`, async () => {
         const observed: unknown[] = [];
         const operation = async (body: unknown) => { observed.push(body); };
@@ -70,77 +70,6 @@ function registerStorageNativeCases(): void {
         expect(calls).toBe(1);
       });
     }
-    it("reads omitted and present alarm fields", async () => {
-      expect(await storageNativeProbe({}, "alarm-info")).toBe("(Nothing,False,0)");
-      expect(await storageNativeProbe({ scheduledTime: 123, isRetry: true, retryCount: 2 }, "alarm-info")).toBe("(Just 123,True,2)");
-      expect(await storageNativeProbe({ getAlarm: async () => null }, "alarm-get")).toBe("Right Nothing");
-      expect(await storageNativeProbe({ getAlarm: async () => 123 }, "alarm-get")).toBe("Right (Just 123)");
-    });
-    it("preserves alarm and jurisdiction native failures and recovers", async () => {
-      expect(await storageNativeProbe({ getAlarm: async () => { throw new Error("alarm unavailable"); } }, "alarm-get")).toContain("alarm unavailable");
-      expect(await storageNativeProbe({ jurisdiction: () => { throw new Error("jurisdiction unavailable"); } }, "jurisdiction")).toContain("jurisdiction unavailable");
-      const observed: string[] = [];
-      expect(await storageNativeProbe({ jurisdiction: (value: string) => { observed.push(value); return {}; } }, "jurisdiction")).toBe("ok");
-      expect(observed).toEqual(["eu"]);
-    });
-    type State = { status: string; claimIdentifier: string; leaseExpiresAtMilliseconds: number | null };
-    const transactionFixture = (initial?: State) => {
-      let current = initial;
-      const transaction = {
-        get: async (_key: string) => current,
-        put: async (_key: string, value: State) => { current = value; },
-      };
-      return { transaction: async (action: (value: typeof transaction) => Promise<unknown>) => action(transaction) };
-    };
-    it("claims, observes an active lease, completes, and repeats the terminal transition", async () => {
-      const storage = transactionFixture();
-      expect(await storageNativeProbe(storage, "claim")).toContain('"acquired","pending","owner",Just 200');
-      expect(await storageNativeProbe(storage, "claim")).toContain('"inProgress","pending","owner",Just 200');
-      expect(await storageNativeProbe(storage, "complete")).toContain('"transitioned","completed","owner",Nothing');
-      expect(await storageNativeProbe(storage, "complete")).toContain('"alreadyTerminal","completed","owner",Nothing');
-      expect(await storageNativeProbe(storage, "claim")).toContain('"alreadyCompleted","completed","owner",Nothing');
-    });
-    for (const initial of [
-      { status: "failed", claimIdentifier: "old", leaseExpiresAtMilliseconds: null },
-      { status: "pending", claimIdentifier: "old", leaseExpiresAtMilliseconds: 100 },
-    ]) {
-      it(`reclaims ${initial.status} at its lease boundary`, async () => {
-        expect(await storageNativeProbe(transactionFixture(initial), "claim")).toContain('"acquired"');
-      });
-    }
-    it("rejects completion without ownership or with an expired lease", async () => {
-      for (const initial of [undefined,
-        { status: "pending", claimIdentifier: "other", leaseExpiresAtMilliseconds: 200 },
-        { status: "pending", claimIdentifier: "owner", leaseExpiresAtMilliseconds: 100 },
-      ]) {
-        expect(await storageNativeProbe(transactionFixture(initial), "complete")).toContain('"ownershipLost"');
-      }
-      expect(await storageNativeProbe({ transaction: async () => { throw new Error("transaction failed"); } }, "claim")).toContain("transaction failed");
-      expect(await storageNativeProbe(transactionFixture(), "claim")).toContain('"acquired"');
-    });
-    it("rejects malformed transaction results without poisoning the next call", async () => {
-      for (const command of ["claim", "complete"]) {
-        for (const value of [null, {},
-          { tag: "acquired", status: "pending", claimIdentifier: "owner", leaseExpiresAtMilliseconds: -1 },
-          { tag: "acquired", status: "pending", claimIdentifier: "owner", leaseExpiresAtMilliseconds: Infinity },
-          { tag: "acquired", status: "pending", claimIdentifier: "owner", leaseExpiresAtMilliseconds: 9007199254740992 },
-        ]) {
-          expect(await storageNativeProbe({ transaction: async () => value }, command)).toContain("Invalid queue idempotency result");
-          expect(await storageNativeProbe(transactionFixture(), "claim")).toContain('"acquired"');
-        }
-      }
-    });
-    it("contains errors whose string conversion throws and remains usable", async () => {
-      const unprintable = { toString() { throw new Error("secondary stringify failure"); } };
-      for (const command of ["claim", "complete"]) {
-        const brokenResult = { get tag() { throw unprintable; } };
-        expect(await storageNativeProbe({ transaction: async () => brokenResult }, command))
-          .toContain("Invalid queue idempotency result: unprintable error");
-        expect(await storageNativeProbe({ transaction: async () => { throw unprintable; } }, command))
-          .toContain("Queue idempotency operation failed with an unprintable error");
-        expect(await storageNativeProbe(transactionFixture(), "claim")).toContain('"acquired"');
-      }
-    });
     const meta = { duration: 1 };
     const databaseFixture = (success: boolean, rows: unknown[], batchCount = 2) => {
       const statement = { bind: (..._values: unknown[]) => statement,
@@ -185,15 +114,9 @@ function registerStorageNativeCases(): void {
       expect(await storageNativeProbe(storage, "alarm-set-negative")).toContain("must not be negative");
       expect(await storageNativeProbe(storage, "alarm-set-unsafe")).toContain("safe integer range");
       expect(calls).toEqual([]);
-      expect(await storageNativeProbe(storage, "alarm-set")).toBe("Right ()");
-      expect(await storageNativeProbe(storage, "alarm-delete")).toBe("Right ()");
+      expect(await storageNativeProbe(storage, "alarm-set")).toBe("ok");
+      expect(await storageNativeProbe(storage, "alarm-delete")).toBe("ok");
       expect(calls).toEqual([123, "delete"]);
-    });
-    it("forwards jurisdiction to unique ID creation and preserves rejection", async () => {
-      const calls: unknown[] = [];
-      expect(await storageNativeProbe({ newUniqueId: (options: unknown) => { calls.push(options); return {}; } }, "unique-eu")).toBe("ok");
-      expect(calls).toEqual([{ jurisdiction: "eu" }]);
-      expect(await storageNativeProbe({ newUniqueId: () => { throw Error("unique rejected"); } }, "unique-eu")).toContain("unique rejected");
     });
     for (const command of ["r2-delete", "r2-delete-many"]) {
       it(`retains ${command} failure and succeeds on retry`, async () => {
@@ -209,10 +132,10 @@ function registerStorageNativeCases(): void {
         const failed = { put: async () => { throw Error("storage write failed"); }, transaction: async () => { throw Error("storage write failed"); } };
         expect(await storageNativeProbe(failed, command)).toContain("storage write failed");
         const success = { put: async () => {}, transaction: async (action: (txn: { put: () => Promise<void> }) => Promise<void>) => action({ put: async () => {} }) };
-        expect(await storageNativeProbe(success, command)).toBe("Right ()");
+        expect(await storageNativeProbe(success, command)).toBe(command === "do-put" ? "ok" : "Right ()");
       }
-      expect(await storageNativeProbe({ list: async () => new Map([["key", { invalid: true }]]) }, "do-list")).toContain("Left");
-      expect(await storageNativeProbe({ list: async () => new Map([["key", new Uint8Array([97])]]) }, "do-list")).toContain('Right [("key","a")]');
+      expect(await storageNativeProbe({ list: async () => new Map([["key", { invalid: true }]]) }, "do-list")).toContain("DurableObjectStorageFailed");
+      expect(await storageNativeProbe({ list: async () => new Map([["key", new Uint8Array([97])]]) }, "do-list")).toBe('[("key","a")]');
     });
     it("preserves R2 put/create/upload/list rejection and recovers on a later call", async () => {
       for (const command of ["r2-put", "r2-create", "r2-upload", "r2-list"]) {

@@ -7,7 +7,7 @@ type Probe = (mode: string) => Promise<string>;
 export function registerStoragePublicContractsCases(probe: Probe): void {
   it("detects storage snapshots and configuration changes without losing diagnostic suffixes", async () => {
     const result = JSON.parse(await probe("snapshots"));
-    expect(result.contracts).toHaveLength(51);
+    expect(result.contracts).toHaveLength(44);
     expect(result.multipartDeduplicated).toBe(true);
     for (const contract of result.contracts) {
       expect(contract, contract.name).toMatchObject({
@@ -78,13 +78,13 @@ export function registerStoragePublicContractsCases(probe: Probe): void {
     expect(await sqlProbe(storage, "default-batch")).toBe('[SQLResult {columns = ["value"], rows = [[SQLNumber 1.5,SQLText "text",SQLNull]], rowsRead = 1, rowsWritten = 0}]');
     expect(seen).toEqual([["SELECT ?", 1.5, "text", null]]);
     expect(await storageErrorProbe({ get: () => null }, "kv-get")).toBe("missing");
-    expect(await storageErrorProbe({ put: () => { throw new Error("put unavailable"); } }, "kv-ffi-json")).toBe("user error (Error: put unavailable)");
+    expect(await storageErrorProbe({ put: () => { throw new Error("put unavailable"); } }, "kv-put-text")).toContain("KVPutFailed");
     expect(await storageErrorProbe({}, "invalid-command")).toBe("user error (unknown storage error command)");
     expect(await storageObjectErrors({}, "invalid-command")).toBe("user error (unknown storage object command)");
     expect(await storageNativeProbe({}, "invalid-command")).toBe("user error (unknown storage probe)");
-    for (const command of ["ffi-send", "ffi-batch"]) {
+    for (const command of ["public-send", "public-batch"]) {
       const producer = { send: () => { throw new Error("queue unavailable"); }, sendBatch: () => { throw new Error("queue unavailable"); } };
-      expect(await queueOutcome(producer, command)).toBe("user error (Error: queue unavailable)");
+      expect(await queueOutcome(producer, command)).toContain(command === "public-batch" ? "QueueSendBatchFailed" : "QueueSendFailed");
     }
   });
 

@@ -15,7 +15,6 @@ import Data.Time (getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Servant.Cloudflare.Workers.Error (err400, err500, withDetail)
 import Servant.Cloudflare.Workers.Server (Server)
-import Servant.Cloudflare.Workers.Server.Internal ()
 import WorkflowExample.API
 import WorkflowExample.Domain
 

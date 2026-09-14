@@ -120,9 +120,6 @@ export default {
     if (archiveResponse) {
       return archiveResponse;
     }
-    if (url.pathname === "/__fixture/r2/upload-part-key-contract") {
-      return Response.json(JSON.parse(await reactor.uploadPartKeyContract()));
-    }
     if (url.pathname.startsWith("/__fixture/queue-contract/")) {
       return inspectQueueContract(
         url.pathname.slice("/__fixture/queue-contract/".length),

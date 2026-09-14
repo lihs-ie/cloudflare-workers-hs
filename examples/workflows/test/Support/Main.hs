@@ -8,7 +8,7 @@ import Cloudflare.Workers.Binding.D1 (D1 (..))
 import Cloudflare.Workers.Binding.Workflow
 import Cloudflare.Workers.Entrypoint.Workflow (createWorkflowHandler)
 import Cloudflare.Workers.Env (BindingEnv, getBinding)
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (try)
 import Data.Aeson (Value, encode, object, (.=))
 import Data.ByteString.Lazy qualified as Lazy

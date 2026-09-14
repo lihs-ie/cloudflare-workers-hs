@@ -19,7 +19,6 @@ async function withAdapter(url, options, inspect) {
           "loggingUnknownRecovery",
           "clientDefaultOptions",
           "jobsFailure",
-          "uploadPartKeyContract",
           "queueContract",
           "cachePurgeExample",
           "socketBoundary",

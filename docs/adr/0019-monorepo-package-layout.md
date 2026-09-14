@@ -88,6 +88,10 @@ auth = `Servant.Cloudflare.Workers.Access.*`。**全パッケージで複数形 
 
 ### 公開/内部の2層 API
 
+> **置換 (→ ADR-0028):** この節の `*.Internal.*` を `exposed-modules` とする決定は、
+> [ADR-0028](./0028-hide-internal-modules-from-consumers.md) により置き換えられた。Internal module は
+> `other-modules` とし、必要な能力は型付き公開 façade または最小 extension API で提供する。
+
 型レベル機構を多用するパッケージは、安定 façade モジュールと `*.Internal.*` モジュールに分ける。`*.Internal.*` は
 `exposed-modules` として見せるが Haddock で「PVP 保証なし」と明記する。これは `servant`/`servant-server` の
 `Servant.Server.Internal.*` 慣行に倣い、[ADR-0018](./0018-versioning-release-distribution.md) の型レベル破壊的変更運用を
@@ -210,8 +214,8 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
 - [ ] パッケージ間依存は本 ADR の依存グラフに従い、相互に PVP バージョン境界を張る（`client` は server/auth を引かない）。
 - [ ] モジュール名前空間は基盤 `Cloudflare.Workers.*` / server `Servant.Cloudflare.Workers.*` / client `…​.Client.*` /
       auth `…​.Access.*`、複数形 `Workers` 統一、コード識別子の略語は許可略語（`URL`/`URI`/`UUID`/`ULID`/`HTTP` 等）のみ。
-- [ ] 型レベル機構は `*.Internal.*`（exposed・Haddock で PVP 無保証明記）に置き、生 `foreign import javascript` は
-      `Internal/FFI/*` に隔離する。
+- [ ] 型レベル機構は `*.Internal.*` に置き、生 `foreign import javascript` は `Internal/FFI/*` に隔離する。
+      [ADR-0028](./0028-hide-internal-modules-from-consumers.md) に従い、Internal module は expose しない。
 - [ ] foreign export を持つのは `examples/quickstart/` のみとし、これを [ADR-0017](./0017-testing-strategy.md) tier2 の統合
       fixture として用いる。`packages` 相当の公開パッケージに `app/Main.hs` 的 foreign export を置かない。
 - [ ] 各パッケージ `src/` は単一ツリーとし、stock GHC 型検査は `ghc-wasm-compat` を `!arch(wasm32)` 限定依存で用いる。

@@ -36,7 +36,7 @@ import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArr
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Cloudflare.Workers.Internal.FFI.Headers (headersFromJSVal, headersToJSVal)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Streaming (ReadableStreamReadError (ReadableStreamExceededByteLimit, ReadableStreamStalled))
+import Cloudflare.Workers.Streaming (ReadableStreamReadError (ReadableStreamExceededByteLimit, ReadableStreamReadFailed, ReadableStreamStalled))
 import Cloudflare.Workers.URL (urlPathRaw, urlQueryRaw)
 import Control.Monad (forM, join)
 import Data.ByteString (ByteString)
@@ -117,6 +117,8 @@ requestToJSVal request = do
                     error "requestToJSVal: request body exceeded the doFetch probe byte limit"
                 Left ReadableStreamStalled ->
                     error "requestToJSVal: the request body stream stalled (a chunk carrying no bytes)"
+                Left (ReadableStreamReadFailed message) ->
+                    error ("requestToJSVal: request body read failed: " <> Text.unpack message)
     jsNewRequest urlJSVal methodJSVal headersJSVal bodyJSVal
   where
     url = requestURL request

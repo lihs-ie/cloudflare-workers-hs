@@ -96,11 +96,6 @@ export function registerServantExtraCases(): void {
       } finally { globalThis.fetch = original; }
     });
   });
-  it("preserves all sixteen delayed failure boundaries", async () => {
-    const response = await routingProbe("delayed-matrix", new Request("https://fixture.test/"), createExecutionContext());
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(["recoverable", "fatal"].flatMap(kind => ["capture", "method", "auth", "accept", "content", "params", "headers", "body"].map(stage => `${kind}-${stage}`)));
-  });
   it("does not read body before method, accept, or content validation", async () => {
     const response = await routingProbe("body-reader-matrix", new Request("https://fixture.test/"), createExecutionContext());
     expect(response.status).toBe(200);

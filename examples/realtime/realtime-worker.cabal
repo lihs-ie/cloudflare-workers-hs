@@ -22,9 +22,9 @@ executable realtime-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-realtime-worker
-  hs-source-dirs: app, src, test
+  hs-source-dirs: app, src, test, ../support/src
   main-is: Main.hs
-  other-modules: Support.RoomFixture, Realtime.API, Realtime.Application, Realtime.Room, Support.SQLFixture
+  other-modules: ExampleSupport.Interop, Support.RoomFixture, Realtime.API, Realtime.Application, Realtime.Room, Support.SQLFixture
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall

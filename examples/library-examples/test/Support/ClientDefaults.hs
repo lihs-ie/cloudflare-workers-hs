@@ -1,10 +1,10 @@
 -- | Run the exported default application policy against an owned HTTP fixture.
 module Support.ClientDefaults (clientDefaultOptions, clientOptionDiagnostics) where
 
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (textToJSVal, jsValToText)
 import Data.Aeson (encode, toJSON)
-import Data.ByteString.Lazy qualified as Lazy
 import Data.Either (fromLeft)
+import Data.ByteString.Lazy qualified as Lazy
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Wasm.Prim (JSVal)

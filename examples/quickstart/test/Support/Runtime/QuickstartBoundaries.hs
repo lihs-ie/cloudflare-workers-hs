@@ -5,7 +5,7 @@ import Cloudflare.Workers.Entrypoint.Fetch (createFetchHandler)
 import Cloudflare.Workers.Env (BindingEnv)
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace(..))
 import Quickstart.Background.Coordinator (withLease)
-import Cloudflare.Workers.Internal.FFI.Text (textToJSVal)
+import ExampleSupport.Interop (textToJSVal)
 import Control.Exception (try, SomeException, throwIO, displayException)
 import Data.Aeson (encode, object, (.=))
 import Data.Text.Encoding (decodeUtf8)
@@ -17,7 +17,6 @@ import Data.Time (UTCTime(..), fromGregorian)
 import GHC.Wasm.Prim (JSVal)
 import Quickstart.Management qualified as Management
 import Servant.Cloudflare.Workers.Server
-import Servant.Cloudflare.Workers.Server.Internal ()
 
 -- Deterministic identifiers and clock only; statements execute against native D1.
 -- mode 0 collides once then succeeds; mode 1 exhausts all eight attempts.

@@ -96,10 +96,9 @@ import Cloudflare.Workers.Internal.FFI.R2 (
 import Cloudflare.Workers.Streaming (
     ReadableStream,
     ReadableStreamReadError,
-    readableStreamFromJSVal,
-    readableStreamToJSVal,
     readableStreamToLazyByteString,
  )
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal, readableStreamToJSVal)
 
 data R2Error
     = R2PutFailed Text

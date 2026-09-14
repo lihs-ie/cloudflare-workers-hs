@@ -3,14 +3,11 @@
 -- observe cancellation, registration count, and recovery on subsequent calls.
 module Support.Runtime.Client (runClientService) where
 
-import Cloudflare.Workers.HTTP qualified as Workers
-import Cloudflare.Workers.Headers (headersFromList)
-import Servant.Cloudflare.Workers.Client.Internal.FFI.Fetch (workersResponseToStreamingResponse, serviceFetchStreamingViaFFI)
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding (..))
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, displayException, throwIO, try)
 import Control.Monad.IO.Class (liftIO)
-import Network.HTTP.Types.Status (mkStatus, statusCode)
+import Network.HTTP.Types.Status (mkStatus)
 import Network.HTTP.Media ((//))
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson qualified as Aeson
@@ -19,7 +16,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Encoding
 import Data.Text.Encoding.Error (lenientDecode)
 import GHC.Wasm.Prim (JSVal)
-import Servant.Client.Core (BaseUrl (..), Scheme (..), RunClient (runRequestAcceptStatus), RunStreamingClient (withStreamingRequest), ResponseF (responseBody, responseStatusCode), RequestF (requestBody, requestMethod), RequestBody (..), defaultRequest)
+import Servant.Client.Core (BaseUrl (..), Scheme (..), RunClient (runRequestAcceptStatus), RunStreamingClient (withStreamingRequest), ResponseF (responseBody), RequestF (requestBody, requestMethod), RequestBody (..), defaultRequest)
 import Servant.Cloudflare.Workers.Client.Fetch (FetchClient (runFetchClient), FetchClientOptions (..), fetchWithOptions, runFetchClientWithServiceBinding)
 import Servant.Types.SourceT qualified as SourceT
 
@@ -49,12 +46,6 @@ runClientService rawBinding rawMode = do
         either (throwIO . userError) (pure . bodyText . LBS.fromChunks) result
     action "strict-request" = bodyText . responseBody <$> runRequestAcceptStatus Nothing (bufferedRequest (RequestBodyBS "strict-body"))
     action "lazy-request" = bodyText . responseBody <$> runRequestAcceptStatus Nothing (bufferedRequest (RequestBodyLBS (LBS.fromChunks ["lazy-", "body"])))
-    action "invalid-service-target" = liftIO $ do
-        result <- serviceFetchStreamingViaFFI (ServiceBinding rawBinding) "" "GET" (headersFromList []) Nothing (\_ -> pure "unexpected")
-        either (throwIO . userError . show) pure result
-    action "websocket-response" = liftIO $ convertResponse (Workers.ResponseBodyWebSocket (Workers.PassthroughResponse rawBinding))
-    action "strict-response" = liftIO $ convertResponse (Workers.ResponseBodyBytes "strict-response")
-    action "lazy-response" = liftIO $ convertResponse (Workers.ResponseBodyLazyBytes (LBS.fromChunks ["lazy-", "response"]))
     action "retry" = liftIO $ bodyText . responseBody <$> fetchWithOptions (FetchClientOptions 25 2 1) Nothing baseURL defaultRequest
     action "stream-put" = liftIO $ bodyText . responseBody <$> fetchWithOptions (FetchClientOptions 25 2 1) Nothing baseURL (streamRequest False){requestMethod = "PUT"}
     action "buffered-put" = liftIO $ bodyText . responseBody <$> fetchWithOptions (FetchClientOptions 25 2 1) Nothing baseURL (bufferedRequest (RequestBodyBS "repeatable")){requestMethod = "PUT"}
@@ -83,7 +74,3 @@ runClientService rawBinding rawMode = do
         ending = if failAfterChunk then SourceT.Error "client request producer failed" else SourceT.Yield "second" SourceT.Stop
 
     bufferedRequest body = defaultRequest{requestMethod = "POST", requestBody = Just (body, "application" // "octet-stream")}
-    convertResponse body = workersResponseToStreamingResponse (Workers.createResponse (Workers.Status 200) (headersFromList []) body) $ \response -> do
-        result <- runExceptT (SourceT.runSourceT (responseBody response))
-        bytes <- either (throwIO . userError) pure result
-        pure (Text.pack (show (statusCode (responseStatusCode response))) <> ":" <> bodyText (LBS.fromChunks bytes))

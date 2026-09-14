@@ -1,7 +1,7 @@
 module Support.JobsFailures (jobsFailure) where
 
 import Cloudflare.Workers.Binding.DurableObject
-import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import ExampleSupport.Interop (jsValToText, textToJSVal)
 import Control.Exception (SomeException, fromException, throwIO, try)
 import Data.Aeson
 import Data.ByteString.Lazy qualified as Lazy

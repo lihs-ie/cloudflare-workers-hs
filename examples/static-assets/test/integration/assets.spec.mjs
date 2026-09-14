@@ -86,8 +86,9 @@ test("concurrent asset streams preserve independent response bodies", async () =
   }));
   await Promise.all(Array.from({ length: 12 }, async (_, index) => {
     const selected = index % paths.length;
-    const response = await request(paths[selected]);
-    assert.equal(response.status, 200);
-    assert.equal(await response.text(), expected[selected]);
+    const path = paths[selected];
+    const response = await request(path);
+    assert.equal(response.status, 200, `${path}; logs: ${worker.logPath}\n${worker.getLogs()}`);
+    assert.equal(await response.text(), expected[selected], `${path}; logs: ${worker.logPath}\n${worker.getLogs()}`);
   }));
 });

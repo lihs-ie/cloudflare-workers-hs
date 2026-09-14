@@ -31,7 +31,7 @@ import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnveloped)
 import Cloudflare.Workers.Internal.FFI.Headers (headersFromJSVal, headersToJSVal)
 import Cloudflare.Workers.Internal.FFI.Response (responsetoJSVal)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
-import Cloudflare.Workers.Streaming (readableStreamFromJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal)
 import Cloudflare.Workers.URL (urlText)
 
 data CacheKeyViaFFI

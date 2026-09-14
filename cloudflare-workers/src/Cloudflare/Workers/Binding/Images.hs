@@ -32,7 +32,8 @@ import Cloudflare.Workers.Internal.FFI.Images (
     imagesInfoViaFFI,
     imagesTransformViaFFI,
  )
-import Cloudflare.Workers.Streaming (ReadableStream, readableStreamFromJSVal, readableStreamToJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal, readableStreamToJSVal)
+import Cloudflare.Workers.Streaming (ReadableStream)
 import Data.Text (Text)
 import GHC.Wasm.Prim (JSVal)
 
