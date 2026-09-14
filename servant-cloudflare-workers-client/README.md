@@ -11,7 +11,7 @@ boundary.
 
 ## Compatibility
 
-The package supports `servant-client-core` 0.20 and 0.21.
+The package targets the current `servant-client-core` 0.21 API.
 
 Version 0.21 represents query parameters as partially escaped query items.
 The client uses the official `http-types` partial-escape renderer so encoded

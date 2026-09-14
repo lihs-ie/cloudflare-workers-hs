@@ -22,7 +22,7 @@ also show the seed and Hedgehog shrink path.
 ## Outstanding contract decision
 
 The agreed compatibility comparison includes exact Content-Type on errors.
-The actual servant-server 0.20.3.0 response to `POST /hello` is status 405 with no
+The actual servant-server 0.21.0.0 response to `POST /hello` is status 405 with no
 Content-Type. Workers returns status 405 with
 `application/json;charset=utf-8` and the independently specified JSON error
 body. The comparison deliberately fails on this difference, pending a decision
@@ -31,10 +31,10 @@ about the compatibility boundary. It does not strip or normalize the header.
 Legacy unregistered golden files are retained under `Support/Fixtures/Legacy`
 as historical input, and are not treated as reference expectations.
 
-## Verified baseline (2026-09-07)
+## Verified baseline (2026-09-14)
 
-- Sydtest 0.28.0.0, sydtest-hedgehog 0.4.0.0, Hedgehog 1.7, GHC 9.14.1.
-- Unit suite: 145 tests, 343 examples, no failures.
+- Servant 0.20.4.0, servant-server 0.21.0.0, and GHC 9.14.1.
+- Unit suite: 202 tests, 499 examples, no failures.
 - Unit-only shipping-library HPC: expressions 1238/1422, alternatives 116/122.
   This is not 100% and does not include the coverage contribution of the failing
   conformance suite or claim WASM/FFI coverage.

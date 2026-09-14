@@ -33,10 +33,10 @@ spec = describe "host/WASM routing matrix" $ do
     , ("head", HEAD, "/", 200, "", Just "text/plain;charset=utf-8", Nothing)
     , ("head", GET, "/", 200, "payload", Just "text/plain;charset=utf-8", Nothing)
     , ("method-choice", POST, "/", 200, "post", Just "text/plain;charset=utf-8", Nothing)
-    , ("capture-all", GET, "/", 200, "[]", Just "application/json;charset=utf-8", Nothing)
-    , ("capture-all", GET, "/1/2", 200, "[1,2]", Just "application/json;charset=utf-8", Nothing)
-    , ("empty-prefix", GET, "/", 200, "42", Just "application/json;charset=utf-8", Nothing)
-    , ("named-context", GET, "/", 200, "42", Just "application/json;charset=utf-8", Nothing)
+    , ("capture-all", GET, "/", 200, "[]", Just "application/json", Nothing)
+    , ("capture-all", GET, "/1/2", 200, "[1,2]", Just "application/json", Nothing)
+    , ("empty-prefix", GET, "/", 200, "42", Just "application/json", Nothing)
+    , ("named-context", GET, "/", 200, "42", Just "application/json", Nothing)
     ]
   mapM_ (\(mode, method, path, status, allow) ->
     it (show (mode, method, path, status)) $ do

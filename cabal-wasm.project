@@ -21,6 +21,15 @@ index-state: 2026-08-11T04:22:47Z
 optimization: 0
 jobs: $ncpus
 
+-- Keep WASM builds on the same servant-client-core API as host builds.
+source-repository-package
+  type: git
+  location: https://github.com/haskell-servant/servant.git
+  tag: 4f9e7c0dc76bf6ea0423d4d7b80d6a9acd6d31a6
+  subdir:
+    servant
+    servant-client-core
+
 allow-newer:
   http-media:containers,
   servant:base,

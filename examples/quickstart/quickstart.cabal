@@ -55,7 +55,7 @@ library
     , quickstart-infrastructure
     , servant-cloudflare-workers-access
     , mtl
-    , servant                     ^>=0.20.3.0
+    , servant                     ^>=0.20.4.0
     , servant-cloudflare-workers
     , text
 

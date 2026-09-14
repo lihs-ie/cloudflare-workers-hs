@@ -14,11 +14,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TextEncoding
 import Data.Text.Encoding.Error qualified as TextEndodingError
 import Network.HTTP.Media (RenderHeader (renderHeader))
-#if MIN_VERSION_servant_client_core(0,21,0)
 import Network.HTTP.Types (renderQueryPartialEscape)
-#else
-import Network.HTTP.Types (urlEncode)
-#endif
 import Servant.Client.Core (
     BaseUrl,
     Request,
@@ -40,22 +36,8 @@ buildFetchTargetURL baseURL request =
     Text.pack (showBaseUrl baseURL)
         <> decodeUTF8Lenient
             (LazyByteString.toStrict (Builder.toLazyByteString (requestPath request)))
-#if MIN_VERSION_servant_client_core(0,21,0)
         <> decodeUTF8Lenient
             (renderQueryPartialEscape True (toList (requestQueryString request)))
-#else
-        <> queryStringText (toList (requestQueryString request))
-  where
-    queryStringText [] = Text.empty
-    queryStringText queryItems = "?" <> Text.intercalate "&" (map queryItemText queryItems)
-
-    queryItemText (name, maybeValue) =
-        decodeUTF8Lenient (urlEncode True name)
-            <> maybe
-                Text.empty
-                (\value -> "=" <> decodeUTF8Lenient value)
-                maybeValue
-#endif
 
 requestHeadersToWorkersHeaders :: Request -> Headers
 requestHeadersToWorkersHeaders request =

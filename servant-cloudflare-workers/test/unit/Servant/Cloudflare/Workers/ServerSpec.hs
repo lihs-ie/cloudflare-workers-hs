@@ -57,7 +57,7 @@ spec = do
       EmptyContext (pure (API.addHeader ("created" :: Text) ("payload" :: Text))) request context ()
     responseStatus response `shouldBe` Status 200
     bodyBytes response `shouldBe` "\"payload\""
-    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json;charset=utf-8"
+    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json"
     headerLookup "X-Result" (responseHeaders response) `shouldBe` Just "created"
   it "renders a typed redirect with NoContent and both headers" $ do
     response <- serveWithContext
