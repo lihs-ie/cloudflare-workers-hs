@@ -7,16 +7,16 @@ import Control.Exception (SomeException, displayException, try, throwIO, backtra
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as LBS
+import Data.Sequence qualified as Seq
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Encoding
 import GHC.Wasm.Prim (JSVal)
 import Network.HTTP.Media ((//))
-import Network.HTTP.Types (http11, mkStatus, statusCode, statusMessage)
+import Network.HTTP.Types (EscapeItem (QN), http11, mkStatus, statusCode, statusMessage)
 import Servant.Client.Core
 import Servant.Cloudflare.Workers.Client.Fetch
 import Servant.Cloudflare.Workers.Client.Fetch.Request (buildFetchTargetURL, requestHeadersToWorkersHeaders)
 import Servant.Types.SourceT qualified as SourceT
-import Data.Sequence qualified as Seq
 
 -- | Observe public policy values and response metadata, not only body effects.
 runClientRetryExtra :: JSVal -> JSVal -> IO JSVal
@@ -29,10 +29,16 @@ runClientRetryExtra rawBinding rawMode = do
   where
     baseURL = BaseUrl Https "service.example" 443 "/api"
     action "query-fields" = do
-        let request = defaultRequest
-                { requestQueryString = Seq.fromList [("a&b", Just "first%20value"), ("flag", Nothing), ("empty", Just "")]
-                , requestHeaders = Seq.fromList [("X-Malformed", "\255")]
-                }
+        let request =
+                defaultRequest
+                    { requestQueryString =
+                        Seq.fromList
+                            [ ("a&b", [QN "first%20value"])
+                            , ("flag", [])
+                            , ("empty", [QN ""])
+                            ]
+                    , requestHeaders = Seq.fromList [("X-Malformed", "\255")]
+                    }
         pure $ Aeson.object
             [ "url" Aeson..= buildFetchTargetURL baseURL request
             , "header" Aeson..= headerLookup "x-malformed" (requestHeadersToWorkersHeaders request)
