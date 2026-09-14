@@ -11,11 +11,11 @@ snapshot="$(mktemp)"
 trap 'rm -f "$snapshot"' EXIT
 node test/Support/build-manifest.mjs capture "$snapshot"
 wasm32-wasi-cabal build exe:library-examples --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" -j2
-binary="$(wasm32-wasi-cabal list-bin exe:library-examples --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}")"
+binary="$(wasm32-wasi-cabal list-bin exe:library-examples --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" | tail -n 1)"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "$binary" --output worker/library-examples-jsffi.mjs
 cp "$binary" worker/library-examples.wasm
 wasm32-wasi-cabal build exe:library-examples-fixtures --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" -j2
-fixture_binary="$(wasm32-wasi-cabal list-bin exe:library-examples-fixtures --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}")"
+fixture_binary="$(wasm32-wasi-cabal list-bin exe:library-examples-fixtures --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" | tail -n 1)"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "$fixture_binary" --output worker/library-examples-fixtures-jsffi.mjs
 cp "$fixture_binary" worker/library-examples-fixtures.wasm
 node test/Support/build-manifest.mjs write "$snapshot"

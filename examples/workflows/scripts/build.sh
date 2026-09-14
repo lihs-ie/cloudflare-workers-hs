@@ -10,11 +10,11 @@ snapshot="$(mktemp)"
 trap 'rm -f "$snapshot"' EXIT
 node test/Support/build-manifest.mjs capture "$snapshot"
 wasm32-wasi-cabal build exe:workflow-example --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}" -j2
-binary="$(wasm32-wasi-cabal list-bin exe:workflow-example --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}")"
+binary="$(wasm32-wasi-cabal list-bin exe:workflow-example --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}" | tail -n 1)"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "$binary" --output worker/workflow-example-jsffi.mjs
 cp "$binary" worker/workflow-example.wasm
 wasm32-wasi-cabal build exe:workflow-example-fixture --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}" -j2
-fixture_binary="$(wasm32-wasi-cabal list-bin exe:workflow-example-fixture --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}")"
+fixture_binary="$(wasm32-wasi-cabal list-bin exe:workflow-example-fixture --project-file="${EXAMPLE_REPO_ROOT}/${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}" | tail -n 1)"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "$fixture_binary" --output worker/workflow-example-fixture-jsffi.mjs
 cp "$fixture_binary" worker/workflow-example-fixture.wasm
 node test/Support/build-manifest.mjs write "$snapshot"
