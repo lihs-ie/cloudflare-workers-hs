@@ -22,7 +22,7 @@ INPUT_SNAPSHOT="$(mktemp "${TMPDIR:-/tmp}/workers-build-inputs.XXXXXX")"
 trap 'rm -f "${INPUT_SNAPSHOT}"' EXIT
 node --input-type=module -e 'import {captureBuildInputs} from "./examples/quickstart/test/Support/Runtime/build-manifest.mts"; captureBuildInputs(process.argv[1]);' "${INPUT_SNAPSHOT}"
 wasm32-wasi-cabal build "exe:${TARGET}" --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" -j2
-WASM_BIN="$(wasm32-wasi-cabal list-bin "exe:${TARGET}" --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}")"
+WASM_BIN="$(wasm32-wasi-cabal list-bin "exe:${TARGET}" --project-file="${PROJECT_FILE}" --builddir="${BUILD_DIR}" | tail -n 1)"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "${WASM_BIN}" --output "${EXAMPLE_DIR}/worker/${TARGET}-jsffi.mjs"
 cp "${WASM_BIN}" "${EXAMPLE_DIR}/worker/${TARGET}.wasm"
 node --input-type=module -e 'import {writeBuild} from "./examples/quickstart/test/Support/Runtime/build-manifest.mts"; writeBuild(process.argv[1], process.argv[2]);' "${TARGET}" "${INPUT_SNAPSHOT}"

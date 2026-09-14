@@ -21,7 +21,18 @@ library
   import: settings
   hs-source-dirs: src
   exposed-modules: Support.Conformance.Oracle Support.Conformance.Generators
-  build-depends: base >=4.22 && <4.23, aeson, bytestring, case-insensitive, hedgehog, http-types, servant ==0.20.3.0, servant-server ==0.20.3.0, text, wai, wai-extra
+  build-depends:
+    , aeson
+    , base               >=4.22 && <4.23
+    , bytestring
+    , case-insensitive
+    , hedgehog
+    , http-types
+    , servant            ==0.20.4.0
+    , servant-server     >=0.21 && <0.22
+    , text
+    , wai
+    , wai-extra
   if os(wasi)
     buildable: False
 

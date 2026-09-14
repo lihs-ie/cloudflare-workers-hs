@@ -70,7 +70,7 @@ spec = do
     it "HEAD on GET preserves content type but emits no body" $ do
         response <- serveWithContext (Proxy @(Get '[JSON] Text)) EmptyContext (pure "hello") request{requestMethodField = HEAD} context ()
         responseStatus response `shouldBe` Status 200
-        headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json;charset=utf-8"
+        headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json"
         bodyBytes response `shouldBe` ""
     it "method mismatch includes GET and HEAD in Allow" $ do
         response <- serveWithContext (Proxy @(Get '[JSON] Text)) EmptyContext (pure "hello") request{requestMethodField = DELETE} context ()

@@ -39,7 +39,7 @@ data Observation = Observation
   } deriving (Eq, Read, Show)
 
 referenceVersion :: Text
-referenceVersion = "servant-server-0.20.3.0"
+referenceVersion = "servant-server-0.21.0.0"
 
 referenceServer :: Server ReferenceAPI
 referenceServer = pure "hello" :<|> pure :<|> pure :<|> pure :<|> pure :<|> pure "plain"
