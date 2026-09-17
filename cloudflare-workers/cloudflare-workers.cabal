@@ -172,20 +172,6 @@ test-suite host-testkit-unit
   if os(wasi)
     buildable: False
 
-executable images-contract-fixture
-  hs-source-dirs: test/images
-  main-is: Main.hs
-  default-language: GHC2024
-  default-extensions: OverloadedStrings
-  ghc-options: -Wall
-  build-depends: base, aeson, bytestring, text, containers, cloudflare-workers
-  if os(wasi)
-    build-depends: ghc-experimental >=9.1401 && <9.1500
-    default-extensions: JavaScriptFFI
-    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=info" "-optl-Wl,--export=transform" "-optl-Wl,--export=normalize"
-  else
-    buildable: False
-
 test-suite unit
   import:             warnings
   ghc-options:        -threaded -rtsopts -with-rtsopts=-N2
