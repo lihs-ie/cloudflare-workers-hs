@@ -72,6 +72,7 @@ library
     Cloudflare.Workers.Internal.FFI.Cache
     Cloudflare.Workers.Internal.FFI.D1
     Cloudflare.Workers.Internal.FFI.DurableObject
+    Cloudflare.Workers.Internal.FFI.DurableObject.Transaction
     Cloudflare.Workers.Internal.FFI.Env
     Cloudflare.Workers.Internal.FFI.Envelope
     Cloudflare.Workers.Internal.FFI.Fetch
@@ -184,6 +185,7 @@ test-suite unit
     Cloudflare.Workers.Internal.Images.FFITypes
     Cloudflare.Workers.Internal.R2Range
     Cloudflare.Workers.Binding.D1.QuerySpec
+    Cloudflare.Workers.Binding.DurableObject.SQLSpec
     Cloudflare.Workers.Binding.ImagesSpec
     Cloudflare.Workers.Binding.KVSpec
     Cloudflare.Workers.Binding.QueueSpec

@@ -1,8 +1,9 @@
--- | Eager, bounded SQL results. A batch executes wholly inside one native
--- transactionSync callback: no Haskell callback or cursor crosses an await.
+-- | Eager, bounded SQL results. 'sqlExec' calls native sql.exec directly;
+-- 'sqlExecute' and 'sqlBatch' wrap execution in native transactionSync.
+-- No cursor crosses an await.
 module Cloudflare.Workers.Binding.DurableObject.SQL
   ( SQLValue(..), SQLStatement(..), SQLResult(..), SQLLimits(..), sqlDefaultLimits
-  , SQLError(..), sqlExecute, sqlBatch
+  , SQLError(..), sqlExec, sqlExecute, sqlBatch
   ) where
 
 import Cloudflare.Workers.Binding.DurableObject (DurableObjectStorage(..))
@@ -55,8 +56,22 @@ sqlExecute storage limits statement = do
   result <- sqlBatch storage limits [statement]
   case result of [single] -> pure single; _ -> throwIO (SQLError "Unexpected SQL result count")
 
+-- | Call native sql.exec without introducing transactionSync. Results are
+-- consumed synchronously before returning across JSFFI, using the same bounded
+-- encoding as 'sqlExecute'. Inside 'doStorageTransactionWith', this participates
+-- in the enclosing native transaction. Unlike 'sqlExecute', an output decoding
+-- or limit failure does not itself roll back writes: let the exception escape
+-- the enclosing callback when rollback is required.
+sqlExec :: DurableObjectStorage -> SQLLimits -> SQLStatement -> IO SQLResult
+sqlExec storage limits statement = do
+  result <- executePlan False storage limits [statement]
+  case result of [single] -> pure single; _ -> throwIO (SQLError "Unexpected SQL result count")
+
 sqlBatch :: DurableObjectStorage -> SQLLimits -> [SQLStatement] -> IO [SQLResult]
-sqlBatch (DurableObjectStorage storage) limits statements = do
+sqlBatch = executePlan True
+
+executePlan :: Bool -> DurableObjectStorage -> SQLLimits -> [SQLStatement] -> IO [SQLResult]
+executePlan atomic (DurableObjectStorage storage) limits statements = do
   unless (maximumRows limits >= 0 && maximumRows limits <= 10000 && maximumBytes limits > 0 && maximumBytes limits <= 16777216 && maximumStatements limits > 0 && maximumStatements limits <= 128)
     (throwIO (SQLError "Invalid SQL result limits"))
   unless (length statements <= maximumStatements limits && all validStatement statements)
@@ -68,7 +83,7 @@ sqlBatch (DurableObjectStorage storage) limits statements = do
   let plan = encode statements
   unless (Lazy.length plan <= fromIntegral (maximumBytes limits)) (throwIO (SQLError "SQL input exceeds byte limit"))
   raw <- textToJSVal (decodeUtf8 (Lazy.toStrict plan))
-  outcome <- decodeEnveloped jsValToText =<< jsSQLBatch storage raw (maximumRows limits) (maximumBytes limits)
+  outcome <- decodeEnveloped jsValToText =<< jsSQLBatch storage raw (maximumRows limits) (maximumBytes limits) atomic
   text <- either (throwIO . SQLError) pure outcome
   either (throwIO . SQLError . Text.pack) pure (eitherDecodeStrict' (encodeUtf8 text))
   where
@@ -87,29 +102,46 @@ foreign import javascript unsafe
     try {
       const plan = JSON.parse($2);
       let rowCount = 0, byteCount = 0;
-      const count = n => { byteCount += n; if (byteCount > $4) throw new Error('SQL output exceeds byte limit'); };
+      const count = n => {
+        byteCount += n;
+        if (byteCount > $4) {
+          throw new Error('SQL output exceeds byte limit');
+        }
+      };
       const encode = value => {
-        if (value === null) { count(1); return {tag:'null'}; }
-        if (typeof value === 'string') { count(value.length * 2); return {tag:'text',value}; }
+        if (value === null) {
+          count(1);
+          return {tag:'null'};
+        }
+        if (typeof value === 'string') {
+          count(value.length * 2);
+          return {tag:'text',value};
+        }
         if (typeof value === 'number') {
-          if (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value))) throw new Error('SQL number cannot be represented safely');
-          count(8); return {tag:'number',value};
+          if (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value))) {
+            throw new Error('SQL number cannot be represented safely');
+          }
+          count(8);
+          return {tag:'number',value};
         }
         const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
         count(bytes.byteLength); return {tag:'blob',value:Array.from(bytes)};
       };
       const decode = item => item.tag === 'null' ? null : item.tag === 'blob' ? new Uint8Array(item.value).buffer : item.value;
-      const results = $1.transactionSync(() => plan.map(statement => {
+      const execute = () => plan.map(statement => {
         const cursor = $1.sql.exec(statement.sql, ...statement.parameters.map(decode));
         const columns = cursor.columnNames;
         columns.forEach(name => count(name.length * 2));
         const rows = [];
         for (const row of cursor.raw()) {
-          if (++rowCount > $3) throw new Error('SQL output exceeds row limit');
+          if (++rowCount > $3) {
+            throw new Error('SQL output exceeds row limit');
+          }
           rows.push(row.map(encode));
         }
         return {columns,rows,rowsRead:cursor.rowsRead,rowsWritten:cursor.rowsWritten};
-      }));
+      });
+      const results = $5 ? $1.transactionSync(execute) : execute();
       return {ok:true,value:JSON.stringify(results)};
     } catch (error) {
       let message = 'SQL operation failed with an unprintable error';
@@ -118,4 +150,4 @@ foreign import javascript unsafe
     }
   })()
   """
-  jsSQLBatch :: JSVal -> JSVal -> Int -> Int -> IO JSVal
+  jsSQLBatch :: JSVal -> JSVal -> Int -> Int -> Bool -> IO JSVal

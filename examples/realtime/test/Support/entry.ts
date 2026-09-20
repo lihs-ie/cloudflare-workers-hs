@@ -3,6 +3,10 @@ import { roomProbe } from "./room-probe";
 import worker, { ChatRoom as ProductionRoom } from "../../worker/index";
 import { reactor } from "../../worker/runtime";
 export class ChatRoom extends ProductionRoom {
+  /** Required by the native Alarm API used in storage transaction fixtures. */
+  async alarm(): Promise<void> {
+    throw new Error("Fixture alarms must be deleted before they fire");
+  }
   probe(scenario: string): Promise<unknown> {
     return roomProbe(scenario, this.ctx, this.env);
   }
