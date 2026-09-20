@@ -4,6 +4,8 @@ module Cloudflare.Workers.Binding.DurableObject (
     DurableObjectNamespace (..),
     DurableObjectValue (..),
     DurableObjectError (..),
+    DurableObjectTransactionError,
+    transactionFailureMessage,
     DurableObjectStorage (..),
     DurableObjectStorageOperation (..),
     doIDFromName,
@@ -19,14 +21,24 @@ module Cloudflare.Workers.Binding.DurableObject (
     doStorageDelete,
     doStorageList,
     doStorageTransaction,
+    doStorageTransactionWith,
+    doStorageGetAlarm,
     doStorageSetAlarm,
     doStorageDeleteAlarm,
 ) where
 
 import Data.Text (Text)
+import Cloudflare.Workers.Internal.FFI.DurableObject.Transaction
+    (DurableObjectTransactionError, transactionFailureMessage, doStorageTransactionWithViaFFI)
 
 import Cloudflare.Workers.HTTP (Request, Response)
-import Cloudflare.Workers.Internal.FFI.DurableObject (doStorageSetAlarmViaFFI, doStorageDeleteAlarmViaFFI, doCallViaFFI, doFetchViaFFI, doGetByNameViaFFI, doGetViaFFI, doIdFromNameViaFFI, doIdToStringViaFFI, doIdFromStringViaFFI, doNewUniqueIdViaFFI, doStorageDeleteViaFFI, doStorageGetViaFFI, doStorageListViaFFI, doStoragePutViaFFI, doStorageTransactionViaFFI)
+import Cloudflare.Workers.Internal.FFI.DurableObject
+    ( doStorageGetAlarmViaFFI, doStorageSetAlarmViaFFI, doStorageDeleteAlarmViaFFI
+    , doCallViaFFI, doFetchViaFFI, doGetByNameViaFFI, doGetViaFFI
+    , doIdFromNameViaFFI, doIdToStringViaFFI, doIdFromStringViaFFI
+    , doNewUniqueIdViaFFI, doStorageDeleteViaFFI, doStorageGetViaFFI
+    , doStorageListViaFFI, doStoragePutViaFFI, doStorageTransactionViaFFI
+    )
 import Control.Exception (Exception, throwIO)
 import Data.ByteString (ByteString)
 import GHC.Wasm.Prim (JSVal)
@@ -130,7 +142,32 @@ doStorageTransaction (DurableObjectStorage storageJSVal) operations = do
     toWireOperation (DurableObjectStorageOperationDelete key) = ("delete", Just key, Nothing)
     toWireOperation DurableObjectStorageOperationFail = ("fail", Nothing, Nothing)
 
--- | Schedule recovery at an absolute Unix timestamp in milliseconds.
+-- | Run a Haskell callback inside the native SQLite-backed storage transaction.
+-- Use this same storage for SQL, KV and Alarm operations in the callback.
+-- A normal return (including 'Left') commits; an escaping Haskell exception
+-- rejects the native callback and is rethrown unchanged after rollback.
+-- Native transaction failures throw 'DurableObjectTransactionError'.
+--
+-- KV-backed storage is unsupported: its retryable callback/txn object contract
+-- differs from SQLite storage. The callback result is not deeply evaluated.
+-- Await all asynchronous operations inside the callback; do not fork storage
+-- operations that outlive it. This function does not roll back external I/O.
+--
+-- Cancellation during the callback rejects it. Cancellation while waiting for
+-- settlement waits for native settlement before releasing FFI references; it
+-- cannot undo a commit already requested. Cleanup can therefore block until
+-- Cloudflare settles the transaction. No timeout or retry policy is added.
+doStorageTransactionWith :: DurableObjectStorage -> IO a -> IO a
+doStorageTransactionWith (DurableObjectStorage storage) =
+    doStorageTransactionWithViaFFI storage
+
+-- | Read the scheduled Unix timestamp in milliseconds, or 'Nothing'.
+-- Uses the platform's default getAlarm options.
+doStorageGetAlarm :: DurableObjectStorage -> IO (Maybe Integer)
+doStorageGetAlarm (DurableObjectStorage storage) =
+    doStorageGetAlarmViaFFI storage >>= either (throwIO . DurableObjectStorageFailed) pure
+
+-- | Schedule an alarm at an absolute Unix timestamp in milliseconds.
 doStorageSetAlarm :: DurableObjectStorage -> Integer -> IO ()
 doStorageSetAlarm (DurableObjectStorage storage) timestamp =
     doStorageSetAlarmViaFFI storage timestamp >>= either (throwIO . DurableObjectStorageFailed) pure

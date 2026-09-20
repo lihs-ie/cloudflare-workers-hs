@@ -7,6 +7,7 @@ import Control.Monad (void)
 import Data.Aeson
 import Data.ByteString qualified as Bytes
 import Data.Text (Text)
+import DurableObject.TransactionFixture (transactionChecks)
 
 -- Real SQL regression, invoked only by the test subclass's RPC bridge.
 sqlChecks :: DurableObjectStorage -> IO Value
@@ -45,6 +46,7 @@ sqlChecks storage = do
             , ("infinity", sqlDefaultLimits, [SQLStatement "SELECT ?" [SQLNumber (1 / 0)]])
             ]
     recovery <- sqlExecute storage sqlDefaultLimits (SQLStatement "SELECT COUNT(*) FROM checks" [])
-    pure (object ["inputChecks" .= inputChecks, "recovery" .= rows recovery, "typed" .= rows typed, "columns" .= columns typed, "rollback" .= isError rolledBack, "count" .= rows count, "afterLimit" .= rows afterLimit, "rowLimit" .= isError limit, "byteLimit" .= isError byteLimit])
+    transactions <- transactionChecks storage
+    pure (object ["transactions" .= transactions, "inputChecks" .= inputChecks, "recovery" .= rows recovery, "typed" .= rows typed, "columns" .= columns typed, "rollback" .= isError rolledBack, "count" .= rows count, "afterLimit" .= rows afterLimit, "rowLimit" .= isError limit, "byteLimit" .= isError byteLimit])
   where
     isError (Left _) = True; isError _ = False
