@@ -1,5 +1,3 @@
-{-# LANGUAGE MultilineStrings #-}
-
 module DurableObject.SQLExecFixture (sqlExecChecks) where
 
 import Cloudflare.Workers.Binding.DurableObject

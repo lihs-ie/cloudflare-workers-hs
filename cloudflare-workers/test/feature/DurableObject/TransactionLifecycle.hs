@@ -1,5 +1,3 @@
-{-# LANGUAGE MultilineStrings #-}
-
 module DurableObject.TransactionLifecycle (lifecycleChecks) where
 
 import Cloudflare.Workers.Binding.DurableObject

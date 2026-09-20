@@ -36,7 +36,7 @@ executable realtime-worker
     DurableObject.SQLExecFixture
     DurableObject.Wait
   default-language: GHC2024
-  default-extensions: OverloadedStrings
+  default-extensions: OverloadedStrings, MultilineStrings
   ghc-options: -Wall
   build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text
   if os(wasi)
