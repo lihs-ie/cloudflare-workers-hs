@@ -5,8 +5,11 @@ import Cloudflare.Workers.HTTP qualified as HTTP
 import Cloudflare.Workers.Headers qualified as Headers
 import Cloudflare.Workers.URL (parseURL)
 import Data.Proxy (Proxy(..))
+import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Servant.API ((:<|>)(..))
+import Servant.API qualified as API
+import Servant.API.UVerb (WithStatus (WithStatus))
 import Servant.Cloudflare.Workers.Server
 import Support.Conformance.Oracle
 import Support.HTTP.Fixtures (request, context, bodyBytes)
@@ -20,9 +23,14 @@ evaluateWorker input = do
         , HTTP.requestBodyReaderField = Just (\_ -> pure (Right (requestBody input)))
         }
   response <- serveWithContext (Proxy @ReferenceAPI) EmptyContext
-    (pure "hello" :<|> pure :<|> pure :<|> pure :<|> pure :<|> pure "plain") req context ()
+    (pure "hello" :<|> pure :<|> pure :<|> pure :<|> pure :<|> pure "plain" :<|> unionHandler) req context ()
   pure Observation
     { responseStatus = HTTP.statusCode (HTTP.responseStatus response)
     , responseContentType = Text.encodeUtf8 <$> Headers.headerLookup "Content-Type" (HTTP.responseHeaders response)
     , responseBody = bodyBytes response
     }
+  where
+    unionHandler outcome payload = case outcome of
+      "created" -> respond (WithStatus @201 (API.addHeader @"Location" ("/objects/new" :: Text) payload))
+      "done" -> respond (WithStatus @200 payload)
+      _ -> respond (WithStatus @409 payload)

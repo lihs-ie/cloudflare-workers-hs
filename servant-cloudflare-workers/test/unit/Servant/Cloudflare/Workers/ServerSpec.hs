@@ -10,7 +10,7 @@ import Cloudflare.Workers.Streaming (ReadableStream)
 import Servant.API qualified as API
 import Servant.Cloudflare.Workers.Handler (Handler, askExecutionContext)
 import Servant.Cloudflare.Workers.Server.Internal.Delayed (Delayed, emptyDelayed)
-import Servant.Cloudflare.Workers.Server.Internal.Core qualified as InternalCore
+import Servant.Cloudflare.Workers.Server.Internal qualified as Internal
 import Servant.Cloudflare.Workers.Server.Internal.RouteResult (RouteResult(..))
 import Cloudflare.Workers.HTTP
 import Servant.API (Get, PlainText)
@@ -35,9 +35,9 @@ spec = do
     response <- serveWithContext (Proxy @(Get '[PlainText] Text)) EmptyContext (throwError err404) request context ()
     responseStatus response `shouldBe` Status 404
   it "returns route errors without invoking the response continuation" $ do
-    let respond _ = expectationFailure "unexpected response continuation" >> pure (Fail err500)
-    recoverable <- InternalCore.runHandlerAction context () (emptyDelayed (Fail err400) :: DelayedHandler) () request respond
-    fatal <- InternalCore.runHandlerAction context () (emptyDelayed (FailFatal err401) :: DelayedHandler) () request respond
+    let continue _ = expectationFailure "unexpected response continuation" >> pure (Fail err500)
+    recoverable <- Internal.runHandlerAction context () (emptyDelayed (Fail err400) :: DelayedHandler) () request continue
+    fatal <- Internal.runHandlerAction context () (emptyDelayed (FailFatal err401) :: DelayedHandler) () request continue
     case recoverable of
       Fail e -> e `shouldBe` err400
       _ -> expectationFailure "expected recoverable failure"
@@ -67,7 +67,7 @@ spec = do
     bodyBytes response `shouldBe` ""
     headerLookup "Location" (responseHeaders response) `shouldBe` Just "https://example.com/target"
     headerLookup "Cache-Control" (responseHeaders response) `shouldBe` Just "no-store"
-    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Nothing
+    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json;charset=utf-8"
   it "retains typed response headers while suppressing a HEAD response body" $ do
     response <- serveWithContext
       (Proxy @(API.Get '[API.PlainText] (API.Headers '[API.Header "X-Result" Text] Text)))

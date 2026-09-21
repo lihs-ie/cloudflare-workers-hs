@@ -3,8 +3,18 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{- |
+Workers server interpreter adapted in part from @servant-server-0.20.3.0@
+@Servant.Server.Internal@ and @Servant.Server.UVerb@.
+
+Copyright (c) 2014-2016, Zalora South East Asia Pte Ltd,
+2016-2018 Servant Contributors. Distributed under BSD-3-Clause.
+The port replaces WAI responses and routing with Cloudflare Workers-native
+types and keeps the package independent of @servant-server@.
+-}
 module Servant.Cloudflare.Workers.Server.Internal (
     EmptyServer (..),
+    runHandlerAction,
     Dict (..),
     AsWorkerT,
     GWorkerServerConstraints,
@@ -29,7 +39,9 @@ import Cloudflare.Workers.Reactor (WorkersExecutionContext)
 import Cloudflare.Workers.Streaming (ReadableStream, readableStreamCancel)
 import Cloudflare.Workers.URL (percentDecode, urlQueryStringVerbatim)
 import Control.Monad (when)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Reader (runReaderT)
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Lazy qualified as LazyByteString
 import Data.CaseInsensitive qualified as CI
@@ -37,12 +49,14 @@ import Data.Either (partitionEithers)
 import Data.Kind (Constraint, Type)
 import Data.Maybe qualified as Maybe
 import Data.Proxy (Proxy (Proxy))
+import Data.SOP.Constraint (All)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TextEncoding
 import Data.Text.Encoding.Error (lenientDecode)
 import Data.Typeable (Typeable, typeRep)
 import GHC.TypeLits (KnownNat, KnownSymbol, natVal, symbolVal)
 import Network.HTTP.Media qualified as HTTPMedia
+import Network.HTTP.Types.Status qualified as HTTPStatus
 import Servant.API (
     Capture,
     CaptureAll,
@@ -76,16 +90,15 @@ import Servant.API.ContentTypes (
 import Servant.API.Generic (GServantProduct, Generic (Rep), GenericMode (type (:-)), ToServant, ToServantApi, toServant)
 import Servant.API.ResponseHeaders (GetHeaders (getHeaders), Headers, getResponse)
 import Servant.API.TypeErrors (ErrorIfNoGeneric)
+import Servant.API.UVerb (HasStatus, HasStatuses (Statuses), UVerb, Union, Unique, WithStatus (WithStatus), foldMapUnion, statusOf)
 import Servant.Cloudflare.Workers.ContentType (acceptCheck, getAcceptHeader, getContentTypeHeader)
-import Servant.Cloudflare.Workers.Error (ServerError (serverErrorHeaders), err400, err405, err406, err413, err415, withDetail)
-import Servant.Cloudflare.Workers.Handler (Handler)
-import Servant.Cloudflare.Workers.Server.Internal.Core (
+import Servant.Cloudflare.Workers.Error (ServerError (serverErrorHeaders), err400, err405, err406, err413, err415, serverErrorToResponse, withDetail)
+import Servant.Cloudflare.Workers.Handler (Handler (unHandler))
+import Servant.Cloudflare.Workers.Server.Internal.Context (
     Context,
     HasContextEntry,
-    HasWorkerServer (ServerT, route),
     NamedContext,
     descendIntoNamedContext,
-    runHandlerAction,
  )
 import Servant.Cloudflare.Workers.Server.Internal.Delayed (
     Delayed,
@@ -98,6 +111,7 @@ import Servant.Cloudflare.Workers.Server.Internal.Delayed (
     runDelayed,
  )
 import Servant.Cloudflare.Workers.Server.Internal.DelayedIO (DelayedIO, delayedFail, delayedFailFatal, withRequest)
+import Servant.Cloudflare.Workers.Server.Internal.HasWorkerServer (HasWorkerServer (ServerT, route))
 import Servant.Cloudflare.Workers.Server.Internal.RouteResult (RouteResult (Fail, FailFatal, Route))
 import Servant.Cloudflare.Workers.Server.Internal.Router (
     CaptureHint (CaptureHint),
@@ -108,6 +122,25 @@ import Servant.Cloudflare.Workers.Server.Internal.Router (
     pathRouter,
  )
 import Web.HttpApiData (parseUrlPieces)
+
+runHandlerAction ::
+    WorkersExecutionContext ->
+    bindingEnv ->
+    Delayed captureEnv (Handler bindingEnv a) ->
+    captureEnv ->
+    Request ->
+    (a -> IO (RouteResult Response)) ->
+    IO (RouteResult Response)
+runHandlerAction cloudflareContext bindingEnv delayed captureEnv request toResponse = do
+    delayedResult <- runDelayed delayed captureEnv request
+    case delayedResult of
+        Fail err -> pure (Fail err)
+        FailFatal err -> pure (FailFatal err)
+        Route handlerAction -> do
+            handlerResult <- runExceptT (runReaderT (runReaderT (unHandler handlerAction) bindingEnv) cloudflareContext)
+            case handlerResult of
+                Left err -> pure (Route (serverErrorToResponse request err))
+                Right value -> toResponse value
 
 instance (HasWorkerServer a context, HasWorkerServer b context) => HasWorkerServer (a :<|> b) context where
     type ServerT (a :<|> b) m = ServerT a m :<|> ServerT b m
@@ -150,20 +183,23 @@ methodCheck reflectedMethod request
 -- Response wrappers describe HTTP metadata rather than a serializable body.
 -- Peel them before content negotiation, preserving every supplied header.
 class (AllMime ctypes) => WorkerRender ctypes a where
-    renderWorker :: Proxy ctypes -> AcceptHeader -> a -> Maybe ([(Text.Text, Text.Text)], LazyByteString.ByteString)
+    renderWorker :: Proxy ctypes -> AcceptHeader -> a -> Maybe (LazyByteString.ByteString, [(Text.Text, Text.Text)], LazyByteString.ByteString)
 
 instance {-# OVERLAPPABLE #-} (AllMime ctypes, AllCTRender ctypes a) => WorkerRender ctypes a where
     renderWorker proxy accept value = do
-        (contentTypeBytes, body) <- handleAcceptH proxy accept value
-        pure ([("Content-Type", TextEncoding.decodeUtf8 (LazyByteString.toStrict contentTypeBytes))], body)
-
-instance {-# OVERLAPPING #-} (AllMime ctypes) => WorkerRender ctypes NoContent where
-    renderWorker _ _ _ = Just ([], LazyByteString.empty)
+        (contentTypeBytes, bodyBytes) <- handleAcceptH proxy accept value
+        pure (contentTypeBytes, [], bodyBytes)
 
 instance {-# OVERLAPPING #-} (WorkerRender ctypes a, GetHeaders (Headers hs a)) => WorkerRender ctypes (Headers hs a) where
     renderWorker proxy accept value = do
-        (headers, body) <- renderWorker proxy accept (getResponse value)
-        pure (headers <> workerResponseHeaders value, body)
+        (contentTypeBytes, headers, bodyBytes) <- renderWorker proxy accept (getResponse value)
+        pure (contentTypeBytes, workerResponseHeaders value <> headers, bodyBytes)
+
+instance {-# OVERLAPPING #-} (WorkerRender ctypes a) => WorkerRender ctypes (WithStatus status a) where
+    renderWorker proxy accept (WithStatus value) = renderWorker proxy accept value
+
+class (WorkerRender ctypes a, HasStatus a) => WorkerResponse ctypes a
+instance (WorkerRender ctypes a, HasStatus a) => WorkerResponse ctypes a
 
 workerResponseHeaders :: (GetHeaders a) => a -> [(Text.Text, Text.Text)]
 workerResponseHeaders =
@@ -196,14 +232,14 @@ renderVerbResult ::
 renderVerbResult ctypesProxy acceptHeader reflectedMethod status request value =
     case renderWorker ctypesProxy acceptHeader value of
         Nothing -> FailFatal err406 -- should not happen (acceptCheck already checked); fatal if it does
-        Just (responseHeaders, bodyBytes) ->
+        Just (contentTypeBytes, responseHeaders, bodyBytes) ->
             let responseBody
                     | allowedMethodHead reflectedMethod request = LazyByteString.empty
                     | otherwise = bodyBytes
              in Route
                     ( createResponse
                         status
-                        (headersFromList responseHeaders)
+                        (headersFromList (("Content-Type", TextEncoding.decodeUtf8 (LazyByteString.toStrict contentTypeBytes)) : responseHeaders))
                         (ResponseBodyLazyBytes responseBody)
                     )
 
@@ -239,6 +275,31 @@ instance
         methodRouter (reflectMethod (Proxy :: Proxy method)) (Proxy :: Proxy (ct ': cts)) status
       where
         status = Status (fromInteger (natVal (Proxy :: Proxy statusCode)))
+
+instance
+    (ReflectMethod method, AllMime ctypes, All (WorkerResponse ctypes) as, Unique (Statuses as)) =>
+    HasWorkerServer (UVerb method ctypes as) context
+    where
+    type ServerT (UVerb method ctypes as) m = m (Union as)
+    route Proxy _context action = leafRouter dispatch
+      where
+        reflectedMethod = reflectMethod (Proxy :: Proxy method)
+        ctypesProxy = Proxy :: Proxy ctypes
+        dispatch captureEnv _residualSegments request cloudflareContext bindingEnv =
+            let acceptHeader = getAcceptHeader request
+             in runHandlerAction
+                    cloudflareContext
+                    bindingEnv
+                    ( action
+                        `addMethodCheck` methodCheck reflectedMethod request
+                        `addMethodCheck` acceptCheck ctypesProxy acceptHeader
+                    )
+                    captureEnv
+                    request
+                    (pure . foldMapUnion (Proxy :: Proxy (WorkerResponse ctypes)) (renderSelected acceptHeader request))
+        renderSelected :: forall a. (WorkerResponse ctypes a) => AcceptHeader -> Request -> a -> RouteResult Response
+        renderSelected acceptHeader =
+            renderVerbResult ctypesProxy acceptHeader reflectedMethod (Status (HTTPStatus.statusCode (statusOf (Proxy :: Proxy a))))
 
 -- Native Workers streams pass through unchanged; NoFraming avoids buffering or
 -- pretending an arbitrary framing encoder can operate on an opaque JS stream.

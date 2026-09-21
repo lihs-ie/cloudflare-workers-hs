@@ -28,10 +28,10 @@ spec = do
       readMaybe (show [observation, changed]) `shouldBe` Just [observation, changed]
       readList (show [observation, changed] <> " next") `shouldBe` [([observation, changed], " next")]
   describe "Reference interpreter" $ do
-    it "contains exactly 50 unique named cases" $ do
-      length fixedCases `shouldBe` 50
+    it "contains exactly 54 unique named cases" $ do
+      length fixedCases `shouldBe` 54
       let names = map caseName fixedCases
-      length (nub names) `shouldBe` 50
+      length (nub names) `shouldBe` 54
     it "regenerates the checked-in golden without drift" $ do
       fixture <- getDataFileName "test/Support/Golden/reference.json"
       bytes <- LBS.readFile fixture

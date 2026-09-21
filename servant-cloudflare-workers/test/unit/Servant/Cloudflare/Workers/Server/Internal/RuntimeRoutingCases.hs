@@ -19,7 +19,7 @@ spec = describe "host/WASM routing matrix" $ do
     responseStatus response `shouldBe` Status 200
     case Aeson.eitherDecode (bodyBytes response) :: Either String [Text] of
       Left failure -> expectationFailure failure
-      Right names -> length names `shouldBe` 24
+      Right names -> length names `shouldBe` 27
   mapM_ (\(mode, method, path, status, body, contentType, allow) ->
     it (show (mode, method, path)) $ do
       response <- routingFixture mode (atPath path){requestMethodField = method} context

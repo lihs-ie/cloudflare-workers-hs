@@ -1,0 +1,26 @@
+# NOTICE — ported code in `servant-cloudflare-workers`
+
+This package contains portions ported or adapted from `servant-server`
+version 0.20.3.0:
+
+    Copyright (c) 2014-2016, Zalora South East Asia Pte Ltd,
+                  2016-2018 Servant Contributors
+    BSD-3-Clause — https://hackage.haskell.org/package/servant-server-0.20.3.0
+
+The package replaces `servant-server`'s WAI-facing implementation and does
+not depend on `servant-server`, `wai`, `warp`, or `network`.
+
+## Files containing ported or adapted code
+
+| File | Upstream module | Ported / adapted |
+| --- | --- | --- |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/Context.hs` | `Servant.Server.Internal.Context` | `Context`, `HasContextEntry`, `NamedContext`, and context descent |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/HasWorkerServer.hs` | `Servant.Server.Internal.HasServer` | Server interpreter class contract, adapted to Workers types |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal.hs` | `Servant.Server.Internal`, `Servant.Server.UVerb` | Worker-native routing, typed union dispatch, status selection, response rendering, and handler execution |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs` | `Servant.Server.Internal.Delayed` | `Delayed` and its combinators |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs` | `Servant.Server.Internal.DelayedIO` | `DelayedIO`, without the upstream `ResourceT` layer |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs` | `Servant.Server.Internal.Router` | Router data types and dispatch helpers |
+| `internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs` | `Servant.Server.Internal.RouteResult` | Route result data types |
+| `src/Servant/Cloudflare/Workers/Server.hs` | `Servant.Server.UVerb` | Public `respond` helper adapted to the Workers interpreter |
+
+Each newly ported module also carries its attribution in the module Haddock.
