@@ -183,23 +183,46 @@ methodCheck reflectedMethod request
 -- Response wrappers describe HTTP metadata rather than a serializable body.
 -- Peel them before content negotiation, preserving every supplied header.
 class (AllMime ctypes) => WorkerRender ctypes a where
-    renderWorker :: Proxy ctypes -> AcceptHeader -> a -> Maybe (LazyByteString.ByteString, [(Text.Text, Text.Text)], LazyByteString.ByteString)
+    renderWorker :: Proxy ctypes -> AcceptHeader -> a -> Maybe ([(Text.Text, Text.Text)], LazyByteString.ByteString)
 
 instance {-# OVERLAPPABLE #-} (AllMime ctypes, AllCTRender ctypes a) => WorkerRender ctypes a where
     renderWorker proxy accept value = do
         (contentTypeBytes, bodyBytes) <- handleAcceptH proxy accept value
-        pure (contentTypeBytes, [], bodyBytes)
+        pure ([contentTypeHeader contentTypeBytes], bodyBytes)
+
+instance {-# OVERLAPPING #-} (AllMime ctypes) => WorkerRender ctypes NoContent where
+    renderWorker _proxy _accept _value = Just ([], LazyByteString.empty)
 
 instance {-# OVERLAPPING #-} (WorkerRender ctypes a, GetHeaders (Headers hs a)) => WorkerRender ctypes (Headers hs a) where
     renderWorker proxy accept value = do
-        (contentTypeBytes, headers, bodyBytes) <- renderWorker proxy accept (getResponse value)
-        pure (contentTypeBytes, workerResponseHeaders value <> headers, bodyBytes)
+        (headers, bodyBytes) <- renderWorker proxy accept (getResponse value)
+        pure (workerResponseHeaders value <> headers, bodyBytes)
 
 instance {-# OVERLAPPING #-} (WorkerRender ctypes a) => WorkerRender ctypes (WithStatus status a) where
     renderWorker proxy accept (WithStatus value) = renderWorker proxy accept value
 
-class (WorkerRender ctypes a, HasStatus a) => WorkerResponse ctypes a
-instance (WorkerRender ctypes a, HasStatus a) => WorkerResponse ctypes a
+class (AllMime ctypes) => WorkerResponseRender ctypes a where
+    renderWorkerResponse :: Proxy ctypes -> AcceptHeader -> a -> Maybe (LazyByteString.ByteString, [(Text.Text, Text.Text)], LazyByteString.ByteString)
+
+instance {-# OVERLAPPABLE #-} (AllMime ctypes, AllCTRender ctypes a) => WorkerResponseRender ctypes a where
+    renderWorkerResponse proxy accept value = do
+        (contentTypeBytes, bodyBytes) <- handleAcceptH proxy accept value
+        pure (contentTypeBytes, [], bodyBytes)
+
+instance {-# OVERLAPPING #-} (WorkerResponseRender ctypes a, GetHeaders (Headers hs a)) => WorkerResponseRender ctypes (Headers hs a) where
+    renderWorkerResponse proxy accept value = do
+        (contentTypeBytes, headers, bodyBytes) <- renderWorkerResponse proxy accept (getResponse value)
+        pure (contentTypeBytes, workerResponseHeaders value <> headers, bodyBytes)
+
+instance {-# OVERLAPPING #-} (WorkerResponseRender ctypes a) => WorkerResponseRender ctypes (WithStatus status a) where
+    renderWorkerResponse proxy accept (WithStatus value) = renderWorkerResponse proxy accept value
+
+class (WorkerResponseRender ctypes a, HasStatus a) => WorkerResponse ctypes a
+instance (WorkerResponseRender ctypes a, HasStatus a) => WorkerResponse ctypes a
+
+contentTypeHeader :: LazyByteString.ByteString -> (Text.Text, Text.Text)
+contentTypeHeader contentTypeBytes =
+    ("Content-Type", TextEncoding.decodeUtf8 (LazyByteString.toStrict contentTypeBytes))
 
 workerResponseHeaders :: (GetHeaders a) => a -> [(Text.Text, Text.Text)]
 workerResponseHeaders =
@@ -232,14 +255,14 @@ renderVerbResult ::
 renderVerbResult ctypesProxy acceptHeader reflectedMethod status request value =
     case renderWorker ctypesProxy acceptHeader value of
         Nothing -> FailFatal err406 -- should not happen (acceptCheck already checked); fatal if it does
-        Just (contentTypeBytes, responseHeaders, bodyBytes) ->
+        Just (responseHeaders, bodyBytes) ->
             let responseBody
                     | allowedMethodHead reflectedMethod request = LazyByteString.empty
                     | otherwise = bodyBytes
              in Route
                     ( createResponse
                         status
-                        (headersFromList (("Content-Type", TextEncoding.decodeUtf8 (LazyByteString.toStrict contentTypeBytes)) : responseHeaders))
+                        (headersFromList responseHeaders)
                         (ResponseBodyLazyBytes responseBody)
                     )
 
@@ -298,8 +321,19 @@ instance
                     request
                     (pure . foldMapUnion (Proxy :: Proxy (WorkerResponse ctypes)) (renderSelected acceptHeader request))
         renderSelected :: forall a. (WorkerResponse ctypes a) => AcceptHeader -> Request -> a -> RouteResult Response
-        renderSelected acceptHeader =
-            renderVerbResult ctypesProxy acceptHeader reflectedMethod (Status (HTTPStatus.statusCode (statusOf (Proxy :: Proxy a))))
+        renderSelected acceptHeader request value =
+            case renderWorkerResponse ctypesProxy acceptHeader value of
+                Nothing -> FailFatal err406 -- should not happen (acceptCheck already checked); fatal if it does
+                Just (contentTypeBytes, responseHeaders, bodyBytes) ->
+                    let responseBody
+                            | allowedMethodHead reflectedMethod request = LazyByteString.empty
+                            | otherwise = bodyBytes
+                     in Route
+                            ( createResponse
+                                (Status (HTTPStatus.statusCode (statusOf (Proxy :: Proxy a))))
+                                (headersFromList (contentTypeHeader contentTypeBytes : responseHeaders))
+                                (ResponseBodyLazyBytes responseBody)
+                            )
 
 -- Native Workers streams pass through unchanged; NoFraming avoids buffering or
 -- pretending an arbitrary framing encoder can operate on an opaque JS stream.

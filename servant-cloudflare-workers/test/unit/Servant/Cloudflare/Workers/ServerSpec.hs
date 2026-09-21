@@ -67,7 +67,7 @@ spec = do
     bodyBytes response `shouldBe` ""
     headerLookup "Location" (responseHeaders response) `shouldBe` Just "https://example.com/target"
     headerLookup "Cache-Control" (responseHeaders response) `shouldBe` Just "no-store"
-    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Just "application/json;charset=utf-8"
+    headerLookup "Content-Type" (responseHeaders response) `shouldBe` Nothing
   it "retains typed response headers while suppressing a HEAD response body" $ do
     response <- serveWithContext
       (Proxy @(API.Get '[API.PlainText] (API.Headers '[API.Header "X-Result" Text] Text)))
