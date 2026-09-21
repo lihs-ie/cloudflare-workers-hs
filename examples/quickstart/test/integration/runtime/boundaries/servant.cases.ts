@@ -58,7 +58,7 @@ export function registerServantCases(): void {
       expect(response.status).toBe(200);
       const names: unknown = await response.json();
       expect(Array.isArray(names)).toBe(true);
-      expect(names).toHaveLength(24);
+      expect(names).toHaveLength(27);
     });
   });
   describe("Access public verification metadata and native failure paths", () => {
