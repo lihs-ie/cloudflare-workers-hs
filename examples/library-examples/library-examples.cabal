@@ -143,6 +143,7 @@ executable library-examples-fixtures
       "-optl-Wl,--export=cachePurgeExample"
       "-optl-Wl,--export=socketBoundary"
       "-optl-Wl,--export=queueContract"
+      "-optl-Wl,--export=workersAIProbe"
 
   else
     build-depends: cloudflare-workers:ghc-wasm-shim

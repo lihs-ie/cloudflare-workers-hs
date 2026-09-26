@@ -4,6 +4,7 @@ import {
 } from "./r2-example-extra.js";
 import { miscExampleFixture } from "./misc-example-fixture.js";
 import { inspectJobsFailure } from "./jobs-failures.js";
+import { inspectWorkersAI } from "./workers-ai-fixture.js";
 import { archiveFixture } from "./archive-fixture";
 export { JobsState } from "./jobs-state.js";
 import { consumeObservedJobs, jobsQueueFixture } from "./jobs-queue.js";
@@ -68,6 +69,10 @@ export default {
 
     if (url.pathname === "/__fixture/client-option-diagnostics") {
       return Response.json(JSON.parse(await reactor.clientOptionDiagnostics()));
+    }
+
+    if (url.pathname.startsWith("/__fixture/workers-ai/")) {
+      return inspectWorkersAI(request, ctx);
     }
 
     if (url.pathname === "/__fixture/misc-storage-unknown") {

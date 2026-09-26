@@ -16,6 +16,14 @@ export async function inspectWorkersAI(
       if (url.searchParams.get("failure") === "malformed")
         return { invalid: true };
 
+      if (typeof input === "object" && input !== null && "prompt" in input) {
+        return {
+          id: "completion-1",
+          object: "text_completion",
+          choices: [{ index: 0, text: "answer" }],
+        };
+      }
+
       return {
         id: "completion-1",
         object: "chat.completion",

@@ -17,11 +17,19 @@ spec = do
                 ["messages" .= [object ["role" .= ("system" :: String), "content" .= ("brief" :: String)], object ["role" .= ("user" :: String), "content" .= ("hello" :: String)], object ["role" .= ("assistant" :: String), "content" .= ("hi" :: String)]], "stream" .= False]
 
     it "decodes multiple choices and preserves a null body" $ do
-        let result = eitherDecode @GemmaOutput "{\"id\":\"completion-1\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"hello\"}},{\"index\":1,\"message\":{\"role\":\"assistant\",\"content\":null}}]}"
-        result `shouldBe` Right (GemmaOutput "completion-1" (GemmaChoice 0 (GemmaResponseMessage (Just "hello")) :| [GemmaChoice 1 (GemmaResponseMessage Nothing)]))
+        let result = eitherDecode @GemmaOutput "{\"id\":\"completion-1\",\"object\":\"chat.completion\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"hello\"}},{\"index\":1,\"message\":{\"role\":\"assistant\",\"content\":null}}]}"
+        result `shouldBe` Right (GemmaChatOutput "completion-1" (GemmaChatChoice 0 (GemmaResponseMessage (Just "hello")) :| [GemmaChatChoice 1 (GemmaResponseMessage Nothing)]))
+
+    it "decodes a prompt as Cloudflare's text_completion with text choices" $ do
+        let result = eitherDecode @GemmaOutput "{\"id\":\"cmpl-1\",\"object\":\"text_completion\",\"choices\":[{\"index\":0,\"text\":\"hello world\",\"finish_reason\":\"stop\"}]}"
+        result `shouldBe` Right (GemmaTextOutput "cmpl-1" (GemmaTextChoice 0 "hello world" :| []))
 
     it "rejects a result without choices" $
-        (eitherDecode @GemmaOutput "{\"id\":\"completion-1\",\"choices\":[]}" :: Either String GemmaOutput)
+        (eitherDecode @GemmaOutput "{\"id\":\"completion-1\",\"object\":\"chat.completion\",\"choices\":[]}" :: Either String GemmaOutput)
+            `shouldSatisfy` either (const True) (const False)
+
+    it "rejects an unsupported completion object" $
+        (eitherDecode @GemmaOutput "{\"id\":\"completion-1\",\"object\":\"other\",\"choices\":[{\"index\":0,\"text\":\"hello\"}]}" :: Either String GemmaOutput)
             `shouldSatisfy` either (const True) (const False)
 
     it "fixes the supported model name" $

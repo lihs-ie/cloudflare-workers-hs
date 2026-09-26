@@ -2,7 +2,8 @@ module Cloudflare.Workers.Binding.WorkersAI.Gemma (
     GemmaInput (..),
     GemmaMessage (..),
     GemmaOutput (..),
-    GemmaChoice (..),
+    GemmaChatChoice (..),
+    GemmaTextChoice (..),
     GemmaResponseMessage (..),
 ) where
 
@@ -46,25 +47,44 @@ newtype GemmaResponseMessage = GemmaResponseMessage
     }
     deriving stock (Show, Eq)
 
-data GemmaChoice = GemmaChoice
-    { gemmaChoiceIndex :: Integer
-    , gemmaChoiceMessage :: GemmaResponseMessage
+data GemmaChatChoice = GemmaChatChoice
+    { gemmaChatChoiceIndex :: Integer
+    , gemmaChatChoiceMessage :: GemmaResponseMessage
     }
     deriving stock (Show, Eq)
 
-data GemmaOutput = GemmaOutput
-    { identifier :: Text
-    , gemmaChoices :: NonEmpty GemmaChoice
+data GemmaTextChoice = GemmaTextChoice
+    { gemmaTextChoiceIndex :: Integer
+    , gemmaTextChoiceText :: Text
     }
+    deriving stock (Show, Eq)
+
+data GemmaOutput
+    = GemmaChatOutput
+        { identifier :: Text
+        , gemmaChatChoices :: NonEmpty GemmaChatChoice
+        }
+    | GemmaTextOutput
+        { identifier :: Text
+        , gemmaTextChoices :: NonEmpty GemmaTextChoice
+        }
     deriving stock (Show, Eq)
 
 instance FromJSON GemmaOutput where
-    parseJSON = withObject "GemmaOutput" $ \value ->
-        GemmaOutput <$> value .: "id" <*> value .: "choices"
+    parseJSON = withObject "GemmaOutput" $ \value -> do
+        kind <- value .: "object"
+        case kind :: Text of
+            "chat.completion" -> GemmaChatOutput <$> value .: "id" <*> value .: "choices"
+            "text_completion" -> GemmaTextOutput <$> value .: "id" <*> value .: "choices"
+            _ -> fail "Unsupported Gemma output object"
 
-instance FromJSON GemmaChoice where
-    parseJSON = withObject "GemmaChoice" $ \value ->
-        GemmaChoice <$> value .: "index" <*> value .: "message"
+instance FromJSON GemmaChatChoice where
+    parseJSON = withObject "GemmaChatChoice" $ \value ->
+        GemmaChatChoice <$> value .: "index" <*> value .: "message"
+
+instance FromJSON GemmaTextChoice where
+    parseJSON = withObject "GemmaTextChoice" $ \value ->
+        GemmaTextChoice <$> value .: "index" <*> value .: "text"
 
 instance FromJSON GemmaResponseMessage where
     parseJSON = withObject "GemmaResponseMessage" $ \value -> do

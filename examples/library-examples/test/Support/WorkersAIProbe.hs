@@ -1,7 +1,14 @@
 module Support.WorkersAIProbe (probeWorkersAI) where
 
 import Cloudflare.Workers.Binding.WorkersAI
-import Cloudflare.Workers.Binding.WorkersAI.Gemma (GemmaChoice (gemmaChoiceIndex, gemmaChoiceMessage), GemmaInput (GemmaMessages, GemmaPrompt), GemmaMessage (GemmaAssistant, GemmaSystem, GemmaUser), GemmaOutput (gemmaChoices, identifier), GemmaResponseMessage (gemmaResponseContent))
+import Cloudflare.Workers.Binding.WorkersAI.Gemma (
+    GemmaChatChoice (gemmaChatChoiceIndex, gemmaChatChoiceMessage),
+    GemmaInput (GemmaMessages, GemmaPrompt),
+    GemmaMessage (GemmaAssistant, GemmaSystem, GemmaUser),
+    GemmaOutput (GemmaChatOutput, GemmaTextOutput),
+    GemmaResponseMessage (gemmaResponseContent),
+    GemmaTextChoice (gemmaTextChoiceIndex, gemmaTextChoiceText),
+ )
 import Cloudflare.Workers.Entrypoint.Fetch (FetchHandler, createFetchHandler)
 import Cloudflare.Workers.Env (BindingEnv, getBinding)
 import Cloudflare.Workers.HTTP (Response, ResponseBody (ResponseBodyLazyBytes), Status (Status), createResponse, requestPath)
@@ -24,15 +31,21 @@ handleProbe request env _context = do
         command = Text.drop (Text.length "/__fixture/workers-ai/") (requestPath request)
         input = case command of
             "prompt" -> GemmaPrompt "hello"
-            "messages" -> GemmaMessages (GemmaSystem "Be brief" :| [GemmaUser "hello", GemmaAssistant "h1"])
+            "messages" -> GemmaMessages (GemmaSystem "Be brief" :| [GemmaUser "hello", GemmaAssistant "hi"])
             _ -> GemmaPrompt "hello"
     outcome <- try @WorkersAIError (workersAIRun binding Gemma4 input defaultAIOptions)
     pure $ json $ case outcome of
-        Right output -> object ["ok" .= True, "identifier" .= identifier output, "choice" .= fmap choiceValue (gemmaChoices output)]
+        Right (GemmaChatOutput outputIdentifier choices) ->
+            object ["ok" .= True, "identifier" .= outputIdentifier, "object" .= ("chat.completion" :: Text.Text), "choices" .= fmap chatChoiceValue choices]
+        Right (GemmaTextOutput outputIdentifier choices) ->
+            object ["ok" .= True, "identifier" .= outputIdentifier, "object" .= ("text_completion" :: Text.Text), "choices" .= fmap textChoiceValue choices]
         Left failure -> object ["ok" .= False, "failure" .= show failure]
 
-choiceValue :: GemmaChoice -> Value
-choiceValue choice = object ["index" .= gemmaChoiceIndex choice, "content" .= gemmaResponseContent (gemmaChoiceMessage choice)]
+chatChoiceValue :: GemmaChatChoice -> Value
+chatChoiceValue choice = object ["index" .= gemmaChatChoiceIndex choice, "content" .= gemmaResponseContent (gemmaChatChoiceMessage choice)]
+
+textChoiceValue :: GemmaTextChoice -> Value
+textChoiceValue choice = object ["index" .= gemmaTextChoiceIndex choice, "text" .= gemmaTextChoiceText choice]
 
 json :: Value -> Response
 json value =

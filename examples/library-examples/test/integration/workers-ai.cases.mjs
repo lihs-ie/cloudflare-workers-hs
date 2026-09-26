@@ -5,7 +5,7 @@ export function registerWorkersAICases({ request }) {
   const run = (command, query = "") =>
     request(`/__fixture/workers-ai/${command}${query}`);
 
-  test("Workers AI runs a Gemma prompt and keeps every choice", async () => {
+  test("Workers AI returns Gemma prompt text as a text completion", async () => {
     const result = await run("prompt");
     assert.deepEqual(result.calls, [
       {
@@ -17,10 +17,8 @@ export function registerWorkersAICases({ request }) {
     assert.deepEqual(result.outcome, {
       ok: true,
       identifier: "completion-1",
-      choices: [
-        { index: 0, content: "answer" },
-        { index: 1, content: null },
-      ],
+      object: "text_completion",
+      choices: [{ index: 0, text: "answer" }],
     });
   });
 
@@ -33,6 +31,15 @@ export function registerWorkersAICases({ request }) {
         { role: "assistant", content: "hi" },
       ],
       stream: false,
+    });
+    assert.deepEqual(result.outcome, {
+      ok: true,
+      identifier: "completion-1",
+      object: "chat.completion",
+      choices: [
+        { index: 0, content: "answer" },
+        { index: 1, content: null },
+      ],
     });
   });
 

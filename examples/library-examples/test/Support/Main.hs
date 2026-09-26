@@ -6,7 +6,6 @@ import Support.AttachmentRequest qualified as AttachmentRequest
 import Support.ClientDefaults qualified as ClientDefaults
 import Support.JobsFailures qualified as JobsFailures
 import Support.LibraryExamples.Misc qualified as Misc
-import Support.WorkersAIProbe qualified as WorkersAIProbe
 #ifdef WASM_COVERAGE
 import Trace.Hpc.Reflect (examineTix)
 import Data.Text qualified as CoverageText
