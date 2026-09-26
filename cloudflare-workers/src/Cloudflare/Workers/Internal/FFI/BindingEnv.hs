@@ -17,6 +17,7 @@ import Cloudflare.Workers.Binding.Var (Var (Var))
 import Cloudflare.Workers.Binding.Workflow (Workflow (Workflow))
 import Cloudflare.Workers.Env (BindingMissingError (BindingMissingError))
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText)
+import Cloudflare.Workers.Internal.WorkersAI (WorkersAI (WorkersAI))
 import Control.Exception (throwIO)
 import Data.Dynamic (Dynamic, Typeable, toDyn)
 import Data.Kind (Type)
@@ -68,6 +69,9 @@ instance FromBindingJSVal ServiceBinding where
 
 instance FromBindingJSVal Images where
     fromBindingJSVal = pure . Images
+
+instance FromBindingJSVal WorkersAI where
+    fromBindingJSVal = pure . WorkersAI
 
 instance FromBindingJSVal (Maybe Var) where
     fromBindingJSVal rawJSValue = do

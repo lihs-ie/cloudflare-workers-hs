@@ -19,6 +19,7 @@ module Cloudflare.Workers.HTTP (
 ) where
 
 import Cloudflare.Workers.Headers (Headers)
+import Cloudflare.Workers.Internal.NativeResponse (NativeResponse)
 import Cloudflare.Workers.Streaming (ReadableStream, ReadableStreamReadError)
 import Cloudflare.Workers.URL (URL, urlPath)
 import Data.ByteString (ByteString)
@@ -79,10 +80,9 @@ data ResponseBody
     = ResponseBodyBytes ByteString
     | ResponseBodyLazyBytes LazyByteString.ByteString
     | ResponseBodyStream ReadableStream
-    -- | An opaque native response returned unchanged to the Worker runtime.
-    -- Its status, headers, and request-scoped body remain platform-owned.
     | ResponseBodyPassthrough PassthroughResponse
     | ResponseBodyWebSocket PassthroughResponse
+    | ResponseBodyNative NativeResponse
 
 newtype PassthroughResponse = PassthroughResponse JSVal
 

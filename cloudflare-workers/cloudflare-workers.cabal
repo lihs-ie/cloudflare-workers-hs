@@ -22,7 +22,7 @@ common warnings
 
 library
   import:             warnings
-  hs-source-dirs:     src, internal-pure
+  hs-source-dirs:     src internal-pure
   default-language:   GHC2024
   default-extensions:
     MultilineStrings
@@ -42,6 +42,8 @@ library
     Cloudflare.Workers.Binding.Secret
     Cloudflare.Workers.Binding.ServiceBinding
     Cloudflare.Workers.Binding.Var
+    Cloudflare.Workers.Binding.WorkersAI
+    Cloudflare.Workers.Binding.WorkersAI.Gemma
     Cloudflare.Workers.Binding.Workflow
     Cloudflare.Workers.Bundle
     Cloudflare.Workers.Cache
@@ -66,7 +68,9 @@ library
     Cloudflare.Workers.WebCrypto
 
   other-modules:
+    Cloudflare.Workers.Internal.Abort
     Cloudflare.Workers.Internal.ByteArray
+    Cloudflare.Workers.Internal.FFI.Abort
     Cloudflare.Workers.Internal.FFI.BindingEnv
     Cloudflare.Workers.Internal.FFI.Bytes
     Cloudflare.Workers.Internal.FFI.Cache
@@ -78,11 +82,8 @@ library
     Cloudflare.Workers.Internal.FFI.Fetch
     Cloudflare.Workers.Internal.FFI.Headers
     Cloudflare.Workers.Internal.FFI.Images
-    Cloudflare.Workers.Internal.Images
-    Cloudflare.Workers.Internal.Images.FFITypes
-    Cloudflare.Workers.Internal.R2Range
-    Cloudflare.Workers.Internal.Streaming
     Cloudflare.Workers.Internal.FFI.KV
+    Cloudflare.Workers.Internal.FFI.NativeResponse
     Cloudflare.Workers.Internal.FFI.Queue
     Cloudflare.Workers.Internal.FFI.R2
     Cloudflare.Workers.Internal.FFI.Reactor
@@ -96,7 +97,14 @@ library
     Cloudflare.Workers.Internal.FFI.Text
     Cloudflare.Workers.Internal.FFI.URL
     Cloudflare.Workers.Internal.FFI.WebCrypto
+    Cloudflare.Workers.Internal.FFI.WorkersAI
     Cloudflare.Workers.Internal.FFI.Workflow
+    Cloudflare.Workers.Internal.Images
+    Cloudflare.Workers.Internal.Images.FFITypes
+    Cloudflare.Workers.Internal.NativeResponse
+    Cloudflare.Workers.Internal.R2Range
+    Cloudflare.Workers.Internal.Streaming
+    Cloudflare.Workers.Internal.WorkersAI
 
   build-depends:
     , aeson                             >=2.1  && <2.3
@@ -180,10 +188,6 @@ test-suite unit
   hs-source-dirs:     test/unit test internal-pure
   main-is:            Spec.hs
   other-modules:
-    Cloudflare.Workers.Internal.ByteArray
-    Cloudflare.Workers.Internal.Images
-    Cloudflare.Workers.Internal.Images.FFITypes
-    Cloudflare.Workers.Internal.R2Range
     Cloudflare.Workers.Binding.D1.QuerySpec
     Cloudflare.Workers.Binding.DurableObject.SQLSpec
     Cloudflare.Workers.Binding.ImagesSpec
@@ -192,13 +196,18 @@ test-suite unit
     Cloudflare.Workers.Binding.R2Spec
     Cloudflare.Workers.Binding.SecretSpec
     Cloudflare.Workers.Binding.VarSpec
+    Cloudflare.Workers.Binding.WorkersAISpec
     Cloudflare.Workers.BundleSpec
     Cloudflare.Workers.Entrypoint.Queue.TypedSpec
     Cloudflare.Workers.HeadersSpec
     Cloudflare.Workers.HTTP.RequestCases
     Cloudflare.Workers.HTTP.ResponseCases
     Cloudflare.Workers.HTTPSpec
+    Cloudflare.Workers.Internal.ByteArray
     Cloudflare.Workers.Internal.FFI.BytesSpec
+    Cloudflare.Workers.Internal.Images
+    Cloudflare.Workers.Internal.Images.FFITypes
+    Cloudflare.Workers.Internal.R2Range
     Cloudflare.Workers.MiddlewareSpec
     Cloudflare.Workers.ObservabilitySpec
     Cloudflare.Workers.SocketSpec
