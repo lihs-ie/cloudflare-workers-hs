@@ -1,58 +1,149 @@
 cabal-version: 3.0
-name: library-examples
-version: 0.1.0.0
-synopsis: Comprehensive examples for the Cloudflare Workers libraries
+name:          library-examples
+version:       0.1.0.0
+synopsis:      Comprehensive examples for the Cloudflare Workers libraries
 description:
   Demonstrates the public APIs provided by the Cloudflare Workers Haskell
   packages, including storage, queues, outbound clients, logging, background
   jobs, WebSockets, configuration, and failure handling. The executable is
   built for @wasm32-wasi@ and includes dedicated fixtures for runtime tests.
-build-type: Simple
-license: BSD-3-Clause
+
+build-type:    Simple
+license:       BSD-3-Clause
 
 flag wasm-coverage
   description: Export test-only HPC snapshots
-  default: False
-  manual: True
+  default:     False
+  manual:      True
 
 executable library-examples
   if flag(wasm-coverage)
     if os(wasi)
       build-depends: hpc
-      cpp-options: -DWASM_COVERAGE
-      ghc-options: -fhpc -hpcdir .hpc/wasm-app "-optl-Wl,--export=coverage"
-  hs-source-dirs: app, src, ../support/src
-  main-is: Main.hs
-  other-modules: ExampleSupport.Interop, LibraryExamples.Logging, LibraryExamples.QueueExamples, LibraryExamples.Database, LibraryExamples.Jobs, LibraryExamples.Attachments, LibraryExamples.Archives, LibraryExamples.R2Archive, LibraryExamples.API, LibraryExamples.Application, LibraryExamples.R2, LibraryExamples.Storage, LibraryExamples.SocketExamples, LibraryExamples.Client, LibraryExamples.Configuration
-  default-language: GHC2024
+      cpp-options:   -DWASM_COVERAGE
+      ghc-options:   -fhpc -hpcdir .hpc/wasm-app "-optl-Wl,--export=coverage"
+
+  hs-source-dirs:     app src ../support/src
+  main-is:            Main.hs
+  other-modules:
+    ExampleSupport.Interop
+    LibraryExamples.API
+    LibraryExamples.Application
+    LibraryExamples.Archives
+    LibraryExamples.Attachments
+    LibraryExamples.Client
+    LibraryExamples.Configuration
+    LibraryExamples.Database
+    LibraryExamples.Jobs
+    LibraryExamples.Logging
+    LibraryExamples.QueueExamples
+    LibraryExamples.R2
+    LibraryExamples.R2Archive
+    LibraryExamples.SocketExamples
+    LibraryExamples.Storage
+
+  default-language:   GHC2024
   default-extensions: OverloadedStrings
-  ghc-options: -Wall
-  build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, servant-cloudflare-workers-client, servant-client-core, http-types, text, time
+  ghc-options:        -Wall
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cloudflare-workers
+    , http-types
+    , mtl
+    , servant
+    , servant-client-core
+    , servant-cloudflare-workers
+    , servant-cloudflare-workers-client
+    , text
+    , time
+
   if os(wasi)
-    build-depends: ghc-experimental >=9.1401 && <9.1500
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI
-    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=tail" "-optl-Wl,--export=jobsInitialize" "-optl-Wl,--export=jobsCommit" "-optl-Wl,--export=jobsStatus" "-optl-Wl,--export=jobsSaveSettings" "-optl-Wl,--export=jobsSettingsHistory" "-optl-Wl,--export=processJob" "-optl-Wl,--export=queue"
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch"
+      "-optl-Wl,--export=tail" "-optl-Wl,--export=jobsInitialize"
+      "-optl-Wl,--export=jobsCommit" "-optl-Wl,--export=jobsStatus"
+      "-optl-Wl,--export=jobsSaveSettings"
+      "-optl-Wl,--export=jobsSettingsHistory"
+      "-optl-Wl,--export=processJob" "-optl-Wl,--export=queue"
+
   else
     build-depends: cloudflare-workers:ghc-wasm-shim
-    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin
 
 executable library-examples-fixtures
   if flag(wasm-coverage)
     if os(wasi)
       build-depends: hpc
-      cpp-options: -DWASM_COVERAGE
-      ghc-options: -fhpc -hpcdir .hpc/wasm-fixtures "-optl-Wl,--export=coverage"
-  hs-source-dirs: test, src, ../support/src
-  main-is: Support/Main.hs
-  other-modules: ExampleSupport.Interop, Support.AttachmentRequest, Support.LibraryExamples.Misc, Support.ClientDefaults, Support.JobsFailures, Support.QueueContracts, LibraryExamples.CachePurge, LibraryExamples.Configuration, Support.ClientStream, Support.Database, Support.Storage, Support.SocketFailures, Support.LibraryExamples.R2Failures
-  default-language: GHC2024
-  default-extensions: OverloadedStrings
-  ghc-options: -Wall
-  build-depends: base, aeson, bytestring, cloudflare-workers, text, servant, servant-client-core, servant-cloudflare-workers, servant-cloudflare-workers-client, http-types, transformers
+      cpp-options:   -DWASM_COVERAGE
+      ghc-options:
+        -fhpc -hpcdir .hpc/wasm-fixtures "-optl-Wl,--export=coverage"
+
+  hs-source-dirs:     test src ../support/src
+  main-is:            Support/Main.hs
+  other-modules:
+    ExampleSupport.Interop
+    LibraryExamples.CachePurge
+    LibraryExamples.Configuration
+    Support.AttachmentRequest
+    Support.ClientDefaults
+    Support.ClientStream
+    Support.Database
+    Support.JobsFailures
+    Support.LibraryExamples.Misc
+    Support.LibraryExamples.R2Failures
+    Support.QueueContracts
+    Support.SocketFailures
+    Support.Storage
+    Support.WorkersAIProbe
+
+  default-language:   GHC2024
+  default-extensions:
+    DataKinds
+    OverloadedStrings
+
+  ghc-options:        -Wall
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cloudflare-workers
+    , http-types
+    , servant
+    , servant-client-core
+    , servant-cloudflare-workers
+    , servant-cloudflare-workers-client
+    , text
+    , transformers
+
   if os(wasi)
-    build-depends: ghc-experimental >=9.1401 && <9.1500
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI
-    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=drainStream" "-optl-Wl,--export=clientOptionDiagnostics" "-optl-Wl,--export=miscStorageUnknown" "-optl-Wl,--export=miscSocketFailure" "-optl-Wl,--export=attachmentMissingReader" "-optl-Wl,--export=loggingUnknownRecovery" "-optl-Wl,--export=clientDefaultOptions" "-optl-Wl,--export=jobsFailure" "-optl-Wl,--export=socketFailure" "-optl-Wl,--export=emptyResponse" "-optl-Wl,--export=configurationFailure" "-optl-Wl,--export=kvMalformedJSONRecovery" "-optl-Wl,--export=clientStreamLifecycle" "-optl-Wl,--export=clientHTTPStreamLifecycle" "-optl-Wl,--export=clientUploadLifecycle" "-optl-Wl,--export=databaseFailureRecovery" "-optl-Wl,--export=r2Failure" "-optl-Wl,--export=storageValidation" "-optl-Wl,--export=cachePurgeExample" "-optl-Wl,--export=socketBoundary" "-optl-Wl,--export=queueContract"
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor
+      "-optl-Wl,--export=drainStream"
+      "-optl-Wl,--export=clientOptionDiagnostics"
+      "-optl-Wl,--export=miscStorageUnknown"
+      "-optl-Wl,--export=miscSocketFailure"
+      "-optl-Wl,--export=attachmentMissingReader"
+      "-optl-Wl,--export=loggingUnknownRecovery"
+      "-optl-Wl,--export=clientDefaultOptions"
+      "-optl-Wl,--export=jobsFailure" "-optl-Wl,--export=socketFailure"
+      "-optl-Wl,--export=emptyResponse"
+      "-optl-Wl,--export=configurationFailure"
+      "-optl-Wl,--export=kvMalformedJSONRecovery"
+      "-optl-Wl,--export=clientStreamLifecycle"
+      "-optl-Wl,--export=clientHTTPStreamLifecycle"
+      "-optl-Wl,--export=clientUploadLifecycle"
+      "-optl-Wl,--export=databaseFailureRecovery"
+      "-optl-Wl,--export=r2Failure" "-optl-Wl,--export=storageValidation"
+      "-optl-Wl,--export=cachePurgeExample"
+      "-optl-Wl,--export=socketBoundary"
+      "-optl-Wl,--export=queueContract"
+
   else
     build-depends: cloudflare-workers:ghc-wasm-shim
-    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin

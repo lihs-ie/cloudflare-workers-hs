@@ -1,4 +1,7 @@
-import { r2ExampleExtraFixture, r2FailureExtraFixture } from "./r2-example-extra.js";
+import {
+  r2ExampleExtraFixture,
+  r2FailureExtraFixture,
+} from "./r2-example-extra.js";
 import { miscExampleFixture } from "./misc-example-fixture.js";
 import { inspectJobsFailure } from "./jobs-failures.js";
 import { archiveFixture } from "./archive-fixture";
@@ -14,9 +17,10 @@ import makeImports from "../../worker/library-examples-jsffi.mjs";
 import wasmModule from "../../worker/library-examples.wasm";
 // Invalid binding fixtures intentionally enter the real WASM decoder with unknown values.
 const fixture = await createReactor(wasmModule, makeImports, (table) => ({
-  coverage: typeof table.coverage === "function"
-    ? bindExport<[], string>(table, "coverage", decodeString)
-    : undefined,
+  coverage:
+    typeof table.coverage === "function"
+      ? bindExport<[], string>(table, "coverage", decodeString)
+      : undefined,
   fetch: bindExport<
     [Request, Record<string, unknown>, ExecutionContext],
     Response
@@ -40,19 +44,36 @@ export default {
     };
     const url = new URL(request.url);
     if (url.pathname === "/__fixture/tail-no-script") {
-      await application.tail([{
-        event: null, eventTimestamp: 123456, logs: [], exceptions: [], diagnosticsChannelEvents: [],
-        scriptName: null, outcome: "fixture-no-script", executionModel: "stateless", truncated: false,
-        cpuTime: 0, wallTime: 0,
-      }], env, ctx);
+      await application.tail(
+        [
+          {
+            event: null,
+            eventTimestamp: 123456,
+            logs: [],
+            exceptions: [],
+            diagnosticsChannelEvents: [],
+            scriptName: null,
+            outcome: "fixture-no-script",
+            executionModel: "stateless",
+            truncated: false,
+            cpuTime: 0,
+            wallTime: 0,
+          },
+        ],
+        env,
+        ctx,
+      );
       return new Response(null, { status: 204 });
     }
+
     if (url.pathname === "/__fixture/client-option-diagnostics") {
       return Response.json(JSON.parse(await reactor.clientOptionDiagnostics()));
     }
+
     if (url.pathname === "/__fixture/misc-storage-unknown") {
       return Response.json(JSON.parse(await reactor.miscStorageUnknown()));
     }
+
     if (url.pathname === "/__fixture/process-job") {
       try {
         await application.processJob(env, await request.text());
@@ -61,51 +82,94 @@ export default {
         return Response.json({ processed: false }, { status: 400 });
       }
     }
+
     if (url.pathname === "/__fixture/misc-logging") {
       return Response.json(JSON.parse(await reactor.loggingUnknownRecovery()));
     }
+
     if (url.pathname === "/__fixture/attachment-missing-reader") {
       return reactor.attachmentMissingReader(bindings.EXAMPLE_BUCKET);
     }
-    const r2FailureExtra = await r2FailureExtraFixture(request, env, (bucket, mode) => reactor.r2Failure(bucket, mode));
+
+    const r2FailureExtra = await r2FailureExtraFixture(
+      request,
+      env,
+      (bucket, mode) => reactor.r2Failure(bucket, mode),
+    );
     if (r2FailureExtra) {
       return r2FailureExtra;
     }
-    const r2Extra = await r2ExampleExtraFixture(request, env, (target, overrides) =>
-      fixture.fetch(target, { ...overrides, SOCKET_CONNECT: connect }, ctx));
+
+    const r2Extra = await r2ExampleExtraFixture(
+      request,
+      env,
+      (target, overrides) =>
+        fixture.fetch(target, { ...overrides, SOCKET_CONNECT: connect }, ctx),
+    );
     if (r2Extra) {
       return r2Extra;
     }
-    const miscExtra = await miscExampleFixture(request, env, (target, overrides) =>
-      fixture.fetch(target, { ...overrides, SOCKET_CONNECT: overrides.SOCKET_CONNECT ?? connect }, ctx),
+    const miscExtra = await miscExampleFixture(
+      request,
+      env,
+      (target, overrides) =>
+        fixture.fetch(
+          target,
+          { ...overrides, SOCKET_CONNECT: overrides.SOCKET_CONNECT ?? connect },
+          ctx,
+        ),
       (connector, scenario) => reactor.miscSocketFailure(connector, scenario),
-      (namespace, mode) => reactor.storageValidation(namespace, mode));
+      (namespace, mode) => reactor.storageValidation(namespace, mode),
+    );
     if (miscExtra) {
       return miscExtra;
     }
+
     if (url.pathname.startsWith("/__fixture/jobs/failure/")) {
-      return inspectJobsFailure(url.pathname.slice("/__fixture/jobs/failure/".length));
+      return inspectJobsFailure(
+        url.pathname.slice("/__fixture/jobs/failure/".length),
+      );
     }
+
     if (url.pathname === "/__fixture/client-default-options") {
       const origin: unknown = Reflect.get(bindings, "CLIENT_ORIGIN");
       if (typeof origin !== "string") {
         return new Response("Missing HTTP fixture origin", { status: 500 });
       }
-      return Response.json(JSON.parse(await reactor.clientDefaultOptions(origin)));
+      return Response.json(
+        JSON.parse(await reactor.clientDefaultOptions(origin)),
+      );
     }
+
     if (url.pathname.startsWith("/__fixture/queue-example-metrics/")) {
-      const mode = url.pathname.slice("/__fixture/queue-example-metrics/".length);
-      const producer = mode === "unsupported" ? {} : {
-        async metrics() {
-          if (mode === "failed") {
-            throw new Error("synthetic metrics failure");
-          }
-          return { backlogCount: 7, backlogBytes: 8192, oldestMessageTimestamp: new Date(1234) };
-        },
-      };
-      const forwarded = new Request(new URL("/queue-examples/diagnostics/metrics", request.url));
-      return fixture.fetch(forwarded, { ...env, JOBS_QUEUE: producer, SOCKET_CONNECT: connect }, ctx);
+      const mode = url.pathname.slice(
+        "/__fixture/queue-example-metrics/".length,
+      );
+      const producer =
+        mode === "unsupported"
+          ? {}
+          : {
+              async metrics() {
+                if (mode === "failed") {
+                  throw new Error("synthetic metrics failure");
+                }
+                return {
+                  backlogCount: 7,
+                  backlogBytes: 8192,
+                  oldestMessageTimestamp: new Date(1234),
+                };
+              },
+            };
+      const forwarded = new Request(
+        new URL("/queue-examples/diagnostics/metrics", request.url),
+      );
+      return fixture.fetch(
+        forwarded,
+        { ...env, JOBS_QUEUE: producer, SOCKET_CONNECT: connect },
+        ctx,
+      );
     }
+
     if (url.pathname === "/__fixture/coverage") {
       if (!application.coverage || !reactor.coverage || !fixture.coverage) {
         return new Response("Coverage build required", { status: 503 });
@@ -116,7 +180,13 @@ export default {
         await fixture.coverage(),
       ]);
     }
-    const archiveResponse = await archiveFixture(request, env, (target, configured) => fixture.fetch(target, { ...configured, SOCKET_CONNECT: connect }, ctx));
+
+    const archiveResponse = await archiveFixture(
+      request,
+      env,
+      (target, configured) =>
+        fixture.fetch(target, { ...configured, SOCKET_CONNECT: connect }, ctx),
+    );
     if (archiveResponse) {
       return archiveResponse;
     }

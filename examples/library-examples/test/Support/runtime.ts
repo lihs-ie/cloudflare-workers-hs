@@ -18,16 +18,45 @@ export const reactor = await createReactor(
     }
     return {
       memory: exports.memory,
-      clientOptionDiagnostics: bindExport<[], string>(exports, "clientOptionDiagnostics", decodeString),
-      miscStorageUnknown: bindExport<[], string>(exports, "miscStorageUnknown", decodeString),
-      miscSocketFailure: bindExport<[() => object, string], string>(exports, "miscSocketFailure", decodeString),
-      attachmentMissingReader: bindExport<[R2Bucket], Response>(exports, "attachmentMissingReader", decodeResponse),
-      loggingUnknownRecovery: bindExport<[], string>(exports, "loggingUnknownRecovery", decodeString),
-      clientDefaultOptions: bindExport<[string], string>(exports, "clientDefaultOptions", decodeString),
-      jobsFailure: bindExport<[string, object, string], string>(exports, "jobsFailure", decodeString),
-      coverage: typeof exports.coverage === "function"
-        ? bindExport<[], string>(exports, "coverage", decodeString)
-        : undefined,
+      clientOptionDiagnostics: bindExport<[], string>(
+        exports,
+        "clientOptionDiagnostics",
+        decodeString,
+      ),
+      miscStorageUnknown: bindExport<[], string>(
+        exports,
+        "miscStorageUnknown",
+        decodeString,
+      ),
+      miscSocketFailure: bindExport<[() => object, string], string>(
+        exports,
+        "miscSocketFailure",
+        decodeString,
+      ),
+      attachmentMissingReader: bindExport<[R2Bucket], Response>(
+        exports,
+        "attachmentMissingReader",
+        decodeResponse,
+      ),
+      loggingUnknownRecovery: bindExport<[], string>(
+        exports,
+        "loggingUnknownRecovery",
+        decodeString,
+      ),
+      clientDefaultOptions: bindExport<[string], string>(
+        exports,
+        "clientDefaultOptions",
+        decodeString,
+      ),
+      jobsFailure: bindExport<[string, object, string], string>(
+        exports,
+        "jobsFailure",
+        decodeString,
+      ),
+      coverage:
+        typeof exports.coverage === "function"
+          ? bindExport<[], string>(exports, "coverage", decodeString)
+          : undefined,
       queueContract: bindExport<
         [string, object, object, ExecutionContext],
         string
@@ -95,6 +124,10 @@ export const reactor = await createReactor(
         [Request, Env, ExecutionContext],
         Response
       >(exports, "configurationFailure", decodeResponse),
+      workersAIProbe: bindExport<
+        [Request, Record<string, unknown>, ExecutionContext],
+        Response
+      >(exports, "workersAIProbe", decodeResponse),
     };
   },
 );
