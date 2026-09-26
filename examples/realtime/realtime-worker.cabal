@@ -22,11 +22,21 @@ executable realtime-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-realtime-worker
-  hs-source-dirs: app, src, test, ../support/src
+  hs-source-dirs: app, src, test, ../support/src, ../../cloudflare-workers/test/feature
   main-is: Main.hs
-  other-modules: ExampleSupport.Interop, Support.RoomFixture, Realtime.API, Realtime.Application, Realtime.Room, Support.SQLFixture
+  other-modules:
+    ExampleSupport.Interop
+    Support.RoomFixture
+    Realtime.API
+    Realtime.Application
+    Realtime.Room
+    Support.SQLFixture
+    DurableObject.TransactionFixture
+    DurableObject.TransactionLifecycle
+    DurableObject.SQLExecFixture
+    DurableObject.Wait
   default-language: GHC2024
-  default-extensions: OverloadedStrings
+  default-extensions: OverloadedStrings, MultilineStrings
   ghc-options: -Wall
   build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text
   if os(wasi)

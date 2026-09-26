@@ -59,6 +59,14 @@ routingFixture mode request context = case mode of
   "empty-prefix" -> serveWithContext (Proxy @(EmptyAPI :> Get '[JSON] Int)) EmptyContext (pure 42) request context ()
   "named-context" -> serveWithContext (Proxy @(WithNamedContext "nested" '[Int] (Get '[JSON] Int)))
     (NamedContext @"nested" ((42 :: Int) :. EmptyContext) :. EmptyContext) (pure 42) request context ()
+  "uverb" -> serveWithContext
+    (Proxy @(Capture "outcome" Text :> ReqBody '[JSON] Text :> UVerb 'POST '[JSON] '[WithStatus 201 (Headers '[Header "Location" Text] Text), WithStatus 200 Int, WithStatus 409 Bool]))
+    EmptyContext
+    (\outcome payload -> case outcome of
+      "created" -> respond (WithStatus @201 (addHeader @"Location" ("/claims/created" :: Text) payload))
+      "done" -> respond (WithStatus @200 (Text.length payload))
+      _ -> respond (WithStatus @409 True))
+    request context ()
   _ -> fail "Unknown routing fixture mode"
 
 
@@ -85,6 +93,9 @@ runRoutingMatrix seed context = do
     , check "capture-first" "capture-choice" "/42" HTTP.GET [] Nothing 200 (Just "integer") []
     , check "capture-fallback" "capture-choice" "/text" HTTP.GET [] Nothing 200 (Just "text") []
     , check "capture-missing" "capture-choice" "/" HTTP.GET [] Nothing 404 Nothing []
+    , check "uverb-created" "uverb" "/created" HTTP.POST jsonHeaders (Just (Right "\"payload\"")) 201 (Just "\"payload\"") [("Location", Just "/claims/created")]
+    , check "uverb-done" "uverb" "/done" HTTP.POST jsonHeaders (Just (Right "\"four\"")) 200 (Just "4") []
+    , check "uverb-conflict" "uverb" "/conflict" HTTP.POST jsonHeaders (Just (Right "\"ignored\"")) 409 Nothing []
     , check "cache-all-directives" "cache-all" "/" HTTP.GET [] Nothing 200 (Just "cache") [("Cache-Control", Just "public, max-age=60, s-maxage=120, stale-while-revalidate=30"), ("Vary", Just "Accept")]
     , check "cache-empty-directives" "cache-empty" "/" HTTP.GET [] Nothing 200 (Just "cache") [("Cache-Control", Just "private")]
     , check "cache-last-directive" "cache-private" "/" HTTP.GET [] Nothing 200 (Just "cache") [("Cache-Control", Just "private, max-age=20")]

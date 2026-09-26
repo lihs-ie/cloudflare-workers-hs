@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { resolve, relative } from "node:path";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const inputs = ["tsconfig.json", "../../scripts/testing/typecheck.mjs", "worker/wasm.d.ts", "../../pnpm-lock.yaml", "../../pnpm-workspace.yaml", "../../package.json", "package.json", "app", "src", "scripts", "test", "worker/index.ts", "worker/runtime.ts", "realtime-worker.cabal", "../../cabal.project", "../../cabal-wasm.project", "../../cabal-wasm-coverage.project", "wrangler.jsonc",
-  "../quickstart/package.json",
+  "../quickstart/package.json", "../../cloudflare-workers/test/feature",
   "../../cloudflare-workers/src", "../../cloudflare-workers/shim", "../../cloudflare-workers/cloudflare-workers.cabal",
   "../../servant-cloudflare-workers/src", "../../servant-cloudflare-workers/servant-cloudflare-workers.cabal"];
 function digest(path) { return createHash("sha256").update(readFileSync(path)).digest("hex"); }

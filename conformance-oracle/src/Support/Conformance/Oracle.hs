@@ -9,12 +9,14 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.CaseInsensitive as CI
+import Data.SOP.BasicFunctors (I (I))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Network.HTTP.Types (hContentType, statusCode)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Test as Wai
 import Servant
+import Servant.API.UVerb qualified as U
 
 type ReferenceAPI =
        "hello" :> Get '[JSON] Text
@@ -23,6 +25,11 @@ type ReferenceAPI =
   :<|> "header" :> Header "X-Value" Int :> Get '[JSON] (Maybe Int)
   :<|> "echo" :> ReqBody '[JSON] Text :> Post '[JSON] Text
   :<|> "plain" :> Get '[PlainText] Text
+  :<|> "union" :> Capture "outcome" Text :> ReqBody '[JSON] Text :> U.UVerb 'POST '[JSON, PlainText]
+        '[ U.WithStatus 201 (Headers '[Header "Location" Text] Text)
+         , U.WithStatus 200 Text
+         , U.WithStatus 409 Text
+         ]
 
 data RequestCase = RequestCase
   { caseName :: Text
@@ -42,7 +49,12 @@ referenceVersion :: Text
 referenceVersion = "servant-server-0.20.3.0"
 
 referenceServer :: Server ReferenceAPI
-referenceServer = pure "hello" :<|> pure :<|> pure :<|> pure :<|> pure :<|> pure "plain"
+referenceServer = pure "hello" :<|> pure :<|> pure :<|> pure :<|> pure :<|> pure "plain" :<|> unionHandler
+  where
+    unionHandler outcome payload = pure $ case outcome of
+      "created" -> U.inject (I (U.WithStatus @201 (addHeader @"Location" ("/objects/new" :: Text) payload)))
+      "done" -> U.inject (I (U.WithStatus @200 payload))
+      _ -> U.inject (I (U.WithStatus @409 payload))
 
 evaluateReference :: RequestCase -> IO Observation
 evaluateReference c = do
@@ -94,6 +106,10 @@ fixedCases =
   , RequestCase "echo-empty" "POST" "/echo" [("Content-Type", "application/json")] ""
   , RequestCase "echo-unacceptable" "POST" "/echo" [("Content-Type", "application/json"), ("Accept", "image/png")] "\"hello\""
   , RequestCase "echo-json-number" "POST" "/echo" [("Content-Type", "application/json")] "42"
+  , RequestCase "uverb-created" "POST" "/union/created" [("Content-Type", "application/json")] "\"new-object\""
+  , RequestCase "uverb-done-plaintext" "POST" "/union/done" [("Content-Type", "application/json"), ("Accept", "text/plain")] "\"four\""
+  , RequestCase "uverb-conflict" "POST" "/union/conflict" [("Content-Type", "application/json")] "\"ignored\""
+  , RequestCase "uverb-accept-before-body" "POST" "/union/created" [("Content-Type", "application/json"), ("Accept", "application/xml")] "not-json"
   ]
 
 -- Byte arrays keep arbitrary request/response bytes lossless and deterministic.

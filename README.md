@@ -11,7 +11,7 @@ The libraries are in a pre-release trial stage. They are not published to Hackag
 | Path | Role | Status |
 | --- | --- | --- |
 | [`cloudflare-workers/`](cloudflare-workers/) | Requests, responses, event entrypoints, streaming, observability, and bindings for KV, D1, R2, Queues, Durable Objects, Workflows, Cache, Assets, service bindings, and sockets | Pre-release library, `0.1.0.0` |
-| [`servant-cloudflare-workers/`](servant-cloudflare-workers/) | Servant server interpreter and `NamedRoutes` integration | Pre-release library, `0.1.0.0` |
+| [`servant-cloudflare-workers/`](servant-cloudflare-workers/) | Servant server interpreter with `NamedRoutes` and typed `UVerb` responses | Pre-release library, `0.1.0.0` |
 | [`servant-cloudflare-workers-client/`](servant-cloudflare-workers-client/) | Servant client backed by Workers `fetch` | Pre-release library, `0.1.0.0` |
 | [`servant-cloudflare-workers-access/`](servant-cloudflare-workers-access/) | Cloudflare Access JWT verification through Web Crypto | Pre-release library, `0.1.0.0` |
 | [`examples/`](examples/) | Deployable examples and integration tests | Private repository applications |
@@ -94,6 +94,9 @@ The library family provides typed Haskell interfaces to the Cloudflare bindings 
 A Cloudflare binding is configured by Cloudflare or Wrangler and supplied through the Worker's `env` as a platform resource or capability. Request, Response, `fetch`, Cache, streams, sockets, and Web Crypto are Workers runtime APIs, not bindings.
 
 External npm packages and SDKs, application domain models, schemas, authorization, retries, and compositions of multiple operations are outside the library's scope. For example, `aws4fetch` is documented by Cloudflare for R2 but remains an application-owned npm dependency rather than a binding. R2 read -> Images transform -> R2 write is also an application workflow. See [ADR-0027](docs/adr/0027-define-consumer-library-boundary.md) for the decision boundary.
+
+Servant's standard `UVerb` contract is part of the server interpreter rather
+than an application workflow. See the [typed response guide](docs/specs/uverb-support.md).
 
 ## Consumer Agent Skill
 
