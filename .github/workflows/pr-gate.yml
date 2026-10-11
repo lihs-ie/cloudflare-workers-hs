@@ -27,7 +27,7 @@ jobs:
           python3 scripts/testing/internal-module-boundaries.py manifest
           python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
           python3 scripts/testing/Support/mutation_checks.py
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-registration
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
-      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
+      - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
@@ -132,7 +132,7 @@ jobs:
       - name: Representative mutation checks
         if: github.event_name == 'schedule' && (success() || failure())
         run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: host-test-evidence
@@ -148,7 +148,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
-      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
+      - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
@@ -222,7 +222,7 @@ jobs:
         run: nix develop --command python3 scripts/testing/run.py docker
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: wasm-test-evidence
@@ -240,7 +240,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Python test dependencies
         run: python3 -m pip install --requirement scripts/testing/requirements.txt
-      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
+      - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
           cabal-version: '3.16.1.0'
@@ -311,7 +311,7 @@ jobs:
         run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: state-model-evidence
