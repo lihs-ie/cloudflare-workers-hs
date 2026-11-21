@@ -12,5 +12,5 @@
     "no-underscore-dangle": ["error", { "allow": ["_initialize"] }],
     "typescript/no-unnecessary-type-parameters": "off"
   },
-  "ignorePatterns": ["dist/**", "coverage/**", "scripts/**/*.mjs", "test/**/*.mjs"]
+  "ignorePatterns": ["dist/**", "coverage/**"]
 }

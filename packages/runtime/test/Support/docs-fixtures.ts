@@ -17,7 +17,7 @@ export function factory(options: { /** Enables serialization. */ serialize?: boo
 }
 function internal() {}
 `;
-export const invalid = [
+export const invalid: readonly [name: string, source: string, expected: string][] = [
   ['declaration', 'export function missing() {}', 'missing TSDoc'],
   [
     'field',

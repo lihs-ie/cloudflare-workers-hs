@@ -22,7 +22,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --type-aware --tsconfig tsconfig.json --deny-warnings .",
-    "docs:check": "node scripts/check-docs.mjs",
+    "docs:check": "node scripts/check-docs.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "package:check": "pnpm build && publint && attw --pack --profile esm-only .",

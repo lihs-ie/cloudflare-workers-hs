@@ -1,11 +1,28 @@
-const text = (value) => [...new TextEncoder().encode(value)];
-const name = (value) => [text(value).length, ...text(value)];
-const section = (identifier, contents) => [identifier, contents.length, ...contents];
+const text = (value: string): number[] => [...new TextEncoder().encode(value)];
+const name = (value: string): number[] => [text(value).length, ...text(value)];
+const section = (identifier: number, contents: readonly number[]): number[] => [
+  identifier,
+  contents.length,
+  ...contents,
+];
+
+const writeLine = (descriptor: number): number[] => [
+  0x41,
+  descriptor,
+  0x41,
+  0,
+  0x41,
+  1,
+  0x41,
+  20,
+  0x10,
+  0,
+  0x1a,
+];
 
 // A real WASI reactor: _initialize writes one line to each output descriptor.
-export function outputReactor() {
-  const write = (descriptor) => [0x41, descriptor, 0x41, 0, 0x41, 1, 0x41, 20, 0x10, 0, 0x1a];
-  const body = [0, ...write(1), ...write(2), 0x0b];
+export function outputReactor(): Uint8Array<ArrayBuffer> {
+  const body = [0, ...writeLine(1), ...writeLine(2), 0x0b];
   const data = [8, 0, 0, 0, 4, 0, 0, 0, ...text('out\n')];
   return Uint8Array.from([
     0,
@@ -26,9 +43,17 @@ export function outputReactor() {
   ]);
 }
 
+interface SchedulerOptions {
+  loopKind?: 'function' | 'memory';
+  start?: boolean;
+}
+
 // A real WASM reactor whose initialization schedules its exported RTS loop.
 // The loop reports execution through an independent JSFFI callback.
-export function schedulingReactor({ loopKind = 'function', start = false } = {}) {
+export function schedulingReactor({
+  loopKind = 'function',
+  start = false,
+}: SchedulerOptions = {}): Uint8Array<ArrayBuffer> {
   const exports = [
     ...name('memory'),
     2,

@@ -4,8 +4,8 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'vitest';
-import { checkSource } from '../scripts/check-docs.mjs';
-import { valid, invalid } from './Support/docs-fixtures.mjs';
+import { checkSource } from '../scripts/check-docs.ts';
+import { valid, invalid } from './Support/docs-fixtures.ts';
 
 test('documented public API passes while internal and private members are ignored', () => {
   assert.deepEqual(checkSource(valid), []);
@@ -22,8 +22,8 @@ test('CLI reports a path and line and fails for a negative fixture', () => {
   const directory = mkdtempSync(join(tmpdir(), 'runtime-docs-'));
   try {
     const filename = join(directory, 'bad.ts');
-    writeFileSync(filename, invalid[0][1]);
-    const result = spawnSync(process.execPath, ['scripts/check-docs.mjs', filename], {
+    writeFileSync(filename, 'export function missing() {}');
+    const result = spawnSync(process.execPath, ['scripts/check-docs.ts', filename], {
       cwd: new URL('..', import.meta.url),
       encoding: 'utf8',
     });
@@ -36,7 +36,7 @@ test('CLI reports a path and line and fails for a negative fixture', () => {
 
 test('CLI accepts the default public source and an explicitly selected valid file', () => {
   for (const args of [[], ['src/index.ts']]) {
-    const result = spawnSync(process.execPath, ['scripts/check-docs.mjs', ...args], {
+    const result = spawnSync(process.execPath, ['scripts/check-docs.ts', ...args], {
       cwd: new URL('..', import.meta.url),
       encoding: 'utf8',
     });
@@ -88,7 +88,7 @@ export declare function declared(): void;
 test('a parser diagnostic without a source label is reported on the first line', () => {
   const result = spawnSync(
     process.execPath,
-    ['--experimental-test-module-mocks', 'test/Support/parser-diagnostic.mjs'],
+    ['--experimental-test-module-mocks', 'test/Support/parser-diagnostic.ts'],
     { cwd: new URL('..', import.meta.url), encoding: 'utf8' },
   );
   assert.equal(result.status, 0, result.stderr);
