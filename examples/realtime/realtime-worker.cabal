@@ -22,19 +22,13 @@ executable realtime-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-realtime-worker
-  hs-source-dirs: app, src, test, ../support/src, ../../cloudflare-workers/test/feature
+  hs-source-dirs: app, src, ../../support/interop/src
   main-is: Main.hs
   other-modules:
-    ExampleSupport.Interop
-    Support.RoomFixture
+    WorkersSupport.Interop
     Realtime.API
     Realtime.Application
     Realtime.Room
-    Support.SQLFixture
-    DurableObject.TransactionFixture
-    DurableObject.TransactionLifecycle
-    DurableObject.SQLExecFixture
-    DurableObject.Wait
   default-language: GHC2024
   default-extensions: OverloadedStrings, MultilineStrings
   ghc-options: -Wall
@@ -42,7 +36,48 @@ executable realtime-worker
   if os(wasi)
     build-depends: ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI
-    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=roomFetch" "-optl-Wl,--export=initializeRoom" "-optl-Wl,--export=roomMessage" "-optl-Wl,--export=roomClose" "-optl-Wl,--export=sqlChecks" "-optl-Wl,--export=roomOversizeCheck" "-optl-Wl,--export=upgradeChecks"
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch" "-optl-Wl,--export=roomFetch" "-optl-Wl,--export=initializeRoom" "-optl-Wl,--export=roomMessage" "-optl-Wl,--export=roomClose"
   else
     build-depends: cloudflare-workers:ghc-wasm-shim
     ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+executable realtime-fixtures
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      hs-source-dirs: test
+      other-modules: Support.Coverage
+      cpp-options: -DWASM_COVERAGE
+      ghc-options: -fhpc -hpcdir .hpc/wasm-realtime-worker
+  hs-source-dirs: test, src, ../../support/interop/src
+  main-is: Support/Main.hs
+  other-modules:
+    WorkersSupport.Interop
+    Support.RoomFixture
+    Realtime.API
+    Realtime.Application
+    Realtime.Room
+  default-language: GHC2024
+  default-extensions: OverloadedStrings, MultilineStrings
+  ghc-options: -Wall
+  build-depends: base, aeson, bytestring, cloudflare-workers, mtl, servant, servant-cloudflare-workers, text
+  if os(wasi)
+    build-depends: ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=roomOversizeCheck"
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, src
+  main-is: Spec.hs
+  other-modules: APIContractsSpec, Realtime.API
+  default-language: GHC2024
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends: base, aeson, text, time, servant, sydtest
+  if os(wasi)
+    buildable: False

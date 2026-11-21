@@ -137,7 +137,7 @@ JS 側 `try`/`catch` で封筒化する）。当初この型は `WebSocketIncomi
 `WebSocketMessagePayload` へ改名した（構築子・フィールドの変更は無い、単純な rename。A4 close
 reviewer fix #5）。
 
-**実測 footgun**: ローカル test harness（`@cloudflare/vitest-pool-workers`）が生成する `WebSocket`
+**実測 footgun**: ローカル test harness（`@cloudflare/vitest-plugin`）が生成する `WebSocket`
 client は `binaryType` のデフォルトが `"blob"`（Fetch 標準自体のデフォルト）であるため、未設定のまま
 バイナリフレームを受信すると `event.data` は `ArrayBuffer` ではなく `Blob` として届く。`client.binaryType
 = "arraybuffer"` をメッセージ到達前に明示設定することで、通常のブラウザ/workerd の WebSocket client と
@@ -158,7 +158,7 @@ Haskell 側に対応するエントリポイントは無い（`101` 応答の `w
 
 ### 実測で確定した挙動（記録）
 
-- ローカル harness（`@cloudflare/vitest-pool-workers`）では client 側の close event が発火しない —
+- ローカル harness（`@cloudflare/vitest-plugin`）では client 側の close event が発火しない —
   `client.close(code, reason)` の呼び出しはクローズフレームの送信のみを行い、実際のクローズ
   ハンドシェイク完了（server 側で `webSocketClose` が実行され副作用が書き込まれる）はその呼び出しの
   return までに完了せず、1 マクロタスクぶんの yield を挟んでも確実には完了しない。2 つの同期戦略を

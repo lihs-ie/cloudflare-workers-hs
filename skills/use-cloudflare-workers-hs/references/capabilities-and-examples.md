@@ -17,8 +17,8 @@ Use this map to select a starting point. It is a guide for the skill revision, n
 | Application need | Canonical example |
 | --- | --- |
 | Small HTTP Worker and application skeleton | `examples/minimal` |
-| Multi-Worker application with Access, D1, R2, Queue, Scheduled, and Durable Objects | `examples/quickstart` |
-| Individual KV, Cache, D1, R2, client, Queue, socket, configuration, and logging operations | `examples/library-examples` |
+| Multi-Worker application with Access, D1, R2, Queue, Scheduled, and Durable Objects | `examples/url-shortener` |
+| Individual KV, Cache, D1, R2, client, Queue, socket, configuration, and logging operations | `examples/api-catalog` |
 | Static files and Haskell API in one Worker | `examples/static-assets` |
 | WebSocket and Durable Object SQL | `examples/realtime` |
 | Durable Workflow steps, retries, waits, events, and lifecycle control | `examples/workflows` |

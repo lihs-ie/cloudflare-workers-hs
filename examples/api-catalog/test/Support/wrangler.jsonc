@@ -1,0 +1,45 @@
+{
+  "name": "api-catalog",
+  "main": "entry.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ]
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "00000000000000000000000000000001"
+    }
+  ],
+  "services": [
+    {
+      "binding": "GUIDE",
+      "service": "library-guide"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EXAMPLE_BUCKET",
+      "bucket_name": "api-catalog"
+    }
+  ],
+  "vars": {
+    "EXAMPLE_MODE": "fixture"
+  },
+  "d1_databases": [
+    {
+      "binding": "CATALOG_DB",
+      "database_name": "catalog",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

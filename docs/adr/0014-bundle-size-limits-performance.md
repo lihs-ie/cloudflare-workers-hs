@@ -121,7 +121,7 @@ item 13 スコープであり、本追補の対象外）。
 now.` を出力した時点で即終了、実機確認済み）、実際にアップロードされる artifact（esbuild による
 bundling 後）をそのまま生成する。手元の `.wasm`/`.mjs` ファイルサイズの単純合算では wrangler 側の
 bundling を反映しないため、計測はこの artifact に対して行う（`skeleton/justfile` の `measure-bundle`
-recipe、実装は `examples/quickstart/scripts/measure-bundle-size.mjs`）。
+recipe、実装は `examples/url-shortener/scripts/measure-bundle-size.mjs`）。
 
 ### 決定 2: gzip 近似は node `zlib.gzipSync`、budget は Free プランの 3 MiB（gzip 後）/ 64 MiB（圧縮前）
 

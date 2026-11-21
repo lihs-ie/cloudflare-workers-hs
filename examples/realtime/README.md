@@ -7,9 +7,9 @@ TypeScriptはWASM初期化、DO constructor／fetch／message／close／errorの
 ```sh
 just setup-js
 bash examples/realtime/scripts/build.sh
-node --test examples/realtime/test/integration/realtime.spec.mjs
+node --test examples/realtime/test/integration/realtime.spec.mts
 cd examples/realtime
-../quickstart/node_modules/.bin/wrangler dev --local
+../../node_modules/.bin/wrangler dev --local
 ```
 
 ブラウザのコンソール等から接続できます。
@@ -27,7 +27,7 @@ socket.onopen = () => {
 `GET /rooms/general/history` は最新100件を新しい順で返します。
 `GET /rooms/general/connections` は接続数、復元可能なattachment、constructor実行回数を返します。
 テキスト・バイナリを保存して参加者へ配信し、4096バイトを超えるフレームはWASMへコピーする前に拒否します。
-この公開チャット例には管理認証を設けていません。転送用Quickstartの認証APIとは別アプリです。
+この公開チャット例には管理認証を設けていません。転送用UrlShortenerの認証APIとは別アプリです。
 
 ## 同期SQLの契約
 

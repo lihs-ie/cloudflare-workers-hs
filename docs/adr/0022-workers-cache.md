@@ -10,7 +10,7 @@
 ## 背景と課題 (Context)
 
 Phase A theme A7 の要求（`phase-a-acceptance-checklist.md` 項目 15）は「型付き Cache-Control combinator
-+ Cache-Tag ヘッダー + `ctx.cache.purge` adapter + quickstart 組込 + RE（hit/miss/purge）」を要求する。
++ Cache-Tag ヘッダー + `ctx.cache.purge` adapter + url-shortener 組込 + RE（hit/miss/purge）」を要求する。
 この文言は「型付き」を「servant 型レベル combinator」と読めるが、A7 着手時点でこの codebase にカスタム
 servant 型レベル combinator の実装例は `servant-cloudflare-workers-access` の `ZeroTrust`（ADR-0009）
 1 件のみで、Cache 領域では値レベル・型レベルいずれの実装も存在しなかった。
@@ -49,7 +49,7 @@ A7 の要裁定 2（lihs 裁定 2026-07-24）は「値レベル typed builder」
 - 型レベル combinator と値レベル builder が Cache-Control 文字列レンダリングを二重実装しないこと
   （combinator は builder の `renderCacheControl` を型レベル→値レベルの demote 後に再利用する）
 - `ctx.cache` がローカルで存在しない（Step 0 probe (i)）という制約下でも、cachePurge の型シグネチャ・
-  T1 テスト・quickstart 組込の設計だけは完了できること（実 hit/miss/purge の実証は RE に委譲）
+  T1 テスト・url-shortener 組込の設計だけは完了できること（実 hit/miss/purge の実証は RE に委譲）
 - 「宣言的な combinator のデフォルト」と「レスポンスを実際に構築した側が持つ、より具体的な意図」が
   衝突したときに、後者が勝つという HTTP ヘッダー全般の直感と整合する優先順位を持つこと
   （orchestrator レビューで指摘された設計穴 — 後述）
@@ -58,7 +58,7 @@ A7 の要裁定 2（lihs 裁定 2026-07-24）は「値レベル typed builder」
 
 ### Cache-Control combinator の実装層（要裁定 2 の原案）
 
-1. 値レベルの typed builder のみ（`CacheControlDirective` ADT + `renderCacheControl` + quickstart で
+1. 値レベルの typed builder のみ（`CacheControlDirective` ADT + `renderCacheControl` + url-shortener で
    手動適用）
 2. servant 型レベル combinator のみ（`CacheControlled '[MaxAge 3600, Public] :> api`）
 3. **両方**（1 を土台に、2 は 1 の `renderCacheControl` を型レベルから demote して再利用する — 二重
@@ -121,7 +121,7 @@ Y. **combinator は「値が不在のときだけ」ヘッダーを設定する�
   ない**値として扱う。この dispatch ロジック（`Either Text (Bool, [(Int,Text)]) -> IO CachePurgeResult`）
   は `handleCachePurgeOutcome` として独立させ、host GHC 上で実 FFI なしに直接ユニットテストできるように
   した。
-- quickstart 組込: `GET /r/:code`（短縮 URL リダイレクト）に `CacheControlled '[MaxAge 3600, Public]`
+- url-shortener 組込: `GET /r/:code`（短縮 URL リダイレクト）に `CacheControlled '[MaxAge 3600, Public]`
   を適用（型レベル combinator の実演）。同じルートへ、捕捉した `code` を使って `Cache-Tag: url:<code>`
   を `FetchHandler` 層（`fetchHandler` 自身、既存の `x-probe-request-query` 前例と同じ層）で付与する
   （値レベル builder の `cacheTagHeader` の実演 — 型レベル combinator では捕捉値にアクセスできないため、
@@ -139,7 +139,7 @@ Y. **combinator は「値が不在のときだけ」ヘッダーを設定する�
   新規のルーティング機構やレスポンス表現の変更を要さない（低リスク）。
 - `cachePurge` の封筒化は A6 で確立したパターンをそのまま横展開でき、既存の FFI boundary allowlist・
   `verify-ffi-boundary.sh` に一切変更を要さない。
-- ローカルで `ctx.cache` が存在しなくても（Step 0 probe (i)）、型シグネチャ・T1 テスト・quickstart
+- ローカルで `ctx.cache` が存在しなくても（Step 0 probe (i)）、型シグネチャ・T1 テスト・url-shortener
   配線は全て完了できる ── real API の有無に実装の完成度が左右されない設計。
 - combinator の優先順位規約（明示値が勝つ）により、将来 `Headers h a` 拡張 `Verb` instance を追加
   した場合でも、ハンドラが明示的に設定した値が黙って上書きされるという事故を防げる。
@@ -250,7 +250,7 @@ Y. **combinator は「値が不在のときだけ」ヘッダーを設定する�
   miss に戻った" のか "そもそも一度も hit していない" のかを区別できない）。
 - **総括**: `Cache-Control` emit と purge 呼び出し自体（500 にならないこと）は実 edge で実証できたが、
   本 ADR の中核機能である cache hit は実証できなかった。この ADR の「実装済み」ステータスは
-  型シグネチャ・T1/T2・quickstart 配線について変わらず有効だが、**実 edge での hit 挙動は未実証の
+  型シグネチャ・T1/T2・url-shortener 配線について変わらず有効だが、**実 edge での hit 挙動は未実証の
   まま theme A7 を close する**ことを正直に記録する。原因切り分け（Access 相互作用 vs Free plan
   store 制限）は A8 送り。
 
@@ -279,4 +279,4 @@ Y. **combinator は「値が不在のときだけ」ヘッダーを設定する�
 - `cloudflare-workers/src/Cloudflare/Workers/Cache.hs`（値レベル builder 実装）
 - `servant-cloudflare-workers/src/Servant/Cloudflare/Workers/CacheControl.hs`（型レベル combinator 実装）
 - `cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Cache.hs`（`ctx.cache.purge` FFI adapter）
-- `examples/quickstart/test/integration/cache-control.spec.ts`（T2）
+- `examples/url-shortener/test/integration/cache-control.spec.ts`（T2）

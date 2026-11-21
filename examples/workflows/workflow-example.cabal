@@ -22,9 +22,9 @@ executable workflow-example
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example
-  hs-source-dirs: app, src, ../support/src
+  hs-source-dirs: app, src, ../../support/interop/src
   main-is: Main.hs
-  other-modules: ExampleSupport.Interop, WorkflowExample.API, WorkflowExample.Domain, WorkflowExample.Application
+  other-modules: WorkersSupport.Interop, WorkflowExample.API, WorkflowExample.Domain, WorkflowExample.Application
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
@@ -45,9 +45,9 @@ executable workflow-example-fixture
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-workflow-example-fixture
-  hs-source-dirs: test/Support, src, test, ../support/src
+  hs-source-dirs: test/Support, src, test, ../../support/interop/src
   main-is: Main.hs
-  other-modules: ExampleSupport.Interop, WorkflowExample.Domain, Support.WorkflowFixture, Support.D1QueryFixture
+  other-modules: WorkersSupport.Interop, WorkflowExample.Domain, Support.WorkflowFixture
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
@@ -55,7 +55,7 @@ executable workflow-example-fixture
   if os(wasi)
     build-depends: ghc-experimental >=9.1401 && <9.1500
     default-extensions: JavaScriptFFI
-    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=workflowFixture" "-optl-Wl,--export=d1QueryFixture"
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=workflowFixture"
   else
     build-depends: cloudflare-workers:ghc-wasm-shim
     ghc-options: -fplugin GHC.Wasm.FFI.Plugin
@@ -65,9 +65,12 @@ test-suite unit
   type: exitcode-stdio-1.0
   hs-source-dirs: test/unit, src
   main-is: Spec.hs
-  other-modules: WorkflowExample.Domain, WorkflowExample.DomainSpec
+  other-modules: WorkflowExample.Domain, WorkflowExample.DomainSpec, APIContractsSpec, WorkflowExample.API
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
-  build-depends: base, aeson, text, time, sydtest
+  build-depends: base, aeson, text, time, servant, sydtest
   build-tool-depends: testing-support:sydtest-discover-layer
+
+  if os(wasi)
+    buildable: False

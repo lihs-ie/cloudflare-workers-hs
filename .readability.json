@@ -1,0 +1,15 @@
+{
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/dist-*/**",
+    "**/build/**",
+    "**/.git/**",
+    "**/vendor/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/.wrangler/**",
+    "**/*-jsffi.mjs",
+    "**/worker-configuration.d.ts"
+  ]
+}

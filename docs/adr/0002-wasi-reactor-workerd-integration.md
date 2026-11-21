@@ -123,7 +123,7 @@ shim）へ移行する」という方針を、本追補は次のとおり置き�
   のみ**を提供する。reactor ABI が要求する `initialize()`（本文の `_initialize` 呼び出しに相当する
   WASI 側の初期化エントリ）には対応していない。
 - `@bjorn3/browser_wasi_shim` は pure-JS 実装で、reactor の `initialize()` を直接提供する。
-  実機（workerd 1.20260721.1 + `@cloudflare/vitest-pool-workers` 0.18.7 + `wrangler dev`）で
+  実機（workerd 1.20260721.1 + `@cloudflare/vitest-plugin` 0.18.7 + `wrangler dev`）で
   動作検証済み。
 
 ### 注意（foot-gun）

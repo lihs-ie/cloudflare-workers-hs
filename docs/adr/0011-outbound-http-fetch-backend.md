@@ -220,11 +220,11 @@ Capture 等の encoding が異なる combinator を任意追加）を対象に *
 
 ### 実測で確定した挙動（記録）
 
-- **`fetchMock`（`import { fetchMock } from "cloudflare:test"`）は `@cloudflare/vitest-pool-workers`
+- **`fetchMock`（`import { fetchMock } from "cloudflare:test"`）は `@cloudflare/vitest-plugin`
   0.13.0 で撤去済み**であり、本リポジトリの pin（0.18.7）には存在しない。当初 A4b 計画は旧 API
   （`fetchMock.activate()` + `disableNetConnect()` + `intercept().reply()`）を前提としていたが、これは
   実行時点で既に stale だった。**公式代替は `vi.spyOn(globalThis, 'fetch')`**（本リポジトリの
-  `@cloudflare/vitest-pool-workers` fixture 例と同じパターン）。テスト実務上の注意点として、
+  `@cloudflare/vitest-plugin` fixture 例と同じパターン）。テスト実務上の注意点として、
   **`afterEach(vi.restoreAllMocks())` が必須**である — assert の throw は trailing の `mockRestore` を
   飛ばし、isolate は `it` 間でリセットされないため、spy が次のテストへ漏れる。
 - retry backoff の実時間は本サンドボックスでは観測不能（時間凍結 artifact の 6 例目）。期待

@@ -55,8 +55,8 @@ The [minimal example](examples/minimal/README.md) explains the Haskell entrypoin
 | Example | What it demonstrates | Command |
 | --- | --- | --- |
 | [Minimal](examples/minimal/README.md) | One `GET /health` API with no platform bindings | `just test-minimal` |
-| [Quickstart](examples/quickstart/README.md) | A multi-Worker URL shortener using Access, D1, R2, Queues, Scheduled events, and Durable Objects | `just test-dev` |
-| [Library examples](examples/library-examples/README.md) | KV, Cache, D1, R2, typed clients, Queues, sockets, configuration, and logging | `just test-library-examples` |
+| [UrlShortener](examples/url-shortener/README.md) | A multi-Worker URL shortener using Access, D1, R2, Queues, Scheduled events, and Durable Objects | `just test-dev` |
+| [Library examples](examples/api-catalog/README.md) | KV, Cache, D1, R2, typed clients, Queues, sockets, configuration, and logging | `just test-api-catalog` |
 | [Static Assets](examples/static-assets/README.md) | Static files and a Haskell API in one Worker | `just test-static-assets` |
 | [Realtime](examples/realtime/README.md) | WebSockets with Durable Object SQL | `just test-realtime` |
 | [Workflows](examples/workflows/README.md) | Durable steps, retries, waits, events, and lifecycle controls | `just test-workflows` |

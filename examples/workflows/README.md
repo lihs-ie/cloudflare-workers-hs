@@ -4,17 +4,17 @@ A named Servant root API starts an approval Workflow. The TypeScript entrypoint 
 
 ```sh
 bash examples/workflows/scripts/build.sh
-node --test examples/workflows/test/integration/workflow.spec.mjs
+node --test examples/workflows/test/integration/workflow.spec.mts
 ```
 
-Tests run actual `wrangler dev --local`, apply the D1 migration in isolated storage, and restart the Wrangler process to verify durable step replay. The installed Wrangler comes from `examples/quickstart/node_modules`. Install that project's pinned dependencies first. Generated WASM/glue and the build proof must match all source inputs; stale artifacts fail before startup.
+Tests run actual `wrangler dev --local`, apply the D1 migration in isolated storage, and restart the Wrangler process to verify durable step replay. The installed Wrangler comes from `node_modules`. Install that project's pinned dependencies first. Generated WASM/glue and the build proof must match all source inputs; stale artifacts fail before startup.
 
 For an interactive session:
 
 ```sh
 cd examples/workflows
-../quickstart/node_modules/.bin/wrangler d1 execute AUDIT --local --file migrations/0001_audit.sql
-../quickstart/node_modules/.bin/wrangler dev --local
+../../node_modules/.bin/wrangler d1 execute AUDIT --local --file migrations/0001_audit.sql
+../../node_modules/.bin/wrangler dev --local
 ```
 
 ```sh

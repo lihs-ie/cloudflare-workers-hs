@@ -1,0 +1,100 @@
+cabal-version: 3.0
+name:          queued-jobs
+version:       0.1.0.0
+synopsis:      Comprehensive examples for the Cloudflare Workers libraries
+description:
+  Demonstrates the public APIs provided by the Cloudflare Workers Haskell
+  packages, including storage, queues, outbound clients, logging, background
+  jobs, WebSockets, configuration, and failure handling. The executable is
+  built for @wasm32-wasi@ and includes dedicated fixtures for runtime tests.
+
+build-type:    Simple
+license:       BSD-3-Clause
+
+flag wasm-coverage
+  description: Export test-only HPC snapshots
+  default:     False
+  manual:      True
+
+executable queued-jobs
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      cpp-options:   -DWASM_COVERAGE
+      ghc-options:   -fhpc -hpcdir .hpc/wasm-app "-optl-Wl,--export=coverage"
+
+  hs-source-dirs:     app src ../../support/interop/src
+  main-is:            Main.hs
+  other-modules: WorkersSupport.Interop, QueuedJobs.API, QueuedJobs.Application, QueuedJobs.Jobs, QueuedJobs.QueueExamples
+
+  default-language:   GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options:        -Wall
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cloudflare-workers
+    , http-types
+    , mtl
+    , servant
+    , servant-client-core
+    , servant-cloudflare-workers
+    , servant-cloudflare-workers-client
+    , text
+    , time
+
+  if os(wasi)
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=fetch"
+      "-optl-Wl,--export=jobsInitialize"
+      "-optl-Wl,--export=jobsCommit" "-optl-Wl,--export=jobsStatus"
+      "-optl-Wl,--export=jobsSaveSettings"
+      "-optl-Wl,--export=jobsSettingsHistory"
+      "-optl-Wl,--export=processJob" "-optl-Wl,--export=queue"
+
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin
+
+executable queued-jobs-fixtures
+  if flag(wasm-coverage)
+    if os(wasi)
+      build-depends: hpc
+      cpp-options:   -DWASM_COVERAGE
+      ghc-options:
+        -fhpc -hpcdir .hpc/wasm-fixtures "-optl-Wl,--export=coverage"
+
+  hs-source-dirs:     test src ../../support/interop/src
+  main-is:            Support/Main.hs
+  other-modules: WorkersSupport.Interop, QueuedJobs.Jobs, Support.JobsFailures, Support.QueueContracts
+
+  default-language:   GHC2024
+  default-extensions:
+    DataKinds
+    OverloadedStrings
+
+  ghc-options:        -Wall
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cloudflare-workers
+    , http-types
+    , servant
+    , servant-client-core
+    , servant-cloudflare-workers
+    , servant-cloudflare-workers-client
+    , text
+    , transformers
+
+  if os(wasi)
+    build-depends:      ghc-experimental >=9.1401 && <9.1500
+    default-extensions: JavaScriptFFI
+    ghc-options: -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=jobsFailure" "-optl-Wl,--export=queueContract"
+
+  else
+    build-depends: cloudflare-workers:ghc-wasm-shim
+    ghc-options:   -fplugin GHC.Wasm.FFI.Plugin

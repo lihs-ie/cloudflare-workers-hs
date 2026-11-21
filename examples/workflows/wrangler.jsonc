@@ -1,5 +1,5 @@
 {
-  "$schema": "../quickstart/node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "haskell-workflow-example",
   "main": "worker/entry.ts",
   "compatibility_date": "2026-07-21",

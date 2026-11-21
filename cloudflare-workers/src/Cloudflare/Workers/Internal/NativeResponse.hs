@@ -10,6 +10,6 @@ import GHC.Wasm.Prim (JSVal)
 newtype NativeResponse = NativeResponse (Int -> Headers -> IO JSVal)
 
 data ResponseEncoding
-    = ResposneAutomatic
+    = ResponseAutomatic
     | ResponseManual
     deriving stock (Show, Eq)

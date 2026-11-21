@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "policy": "Pure Haskell host; Cloudflare runtime dependency closure WASM; explicit WASI CPP implementation differences host and WASM; Worker entries WASM. Only explicitly fingerprinted generated provenance exclusions; no zero-tick exemptions. New paths retain conservative defaults pending review.",
+  "policy": "Reviewed runtime, compiler-interface and test-discovery contracts. Constant guards retain original counters and source-pinned unreachable-outcome evidence. No inferred runtime exclusions or unproven zero-tick completion.",
   "runtimes": [
     {
       "path": "cloudflare-workers/host-testkit/src/Cloudflare/Workers/HostTestKit.hs",
@@ -9,6 +9,14 @@
       ],
       "reason": "Native test/oracle component, not a deployed Worker.",
       "evidence": "cloudflare-workers/host-testkit/src/Cloudflare/Workers/HostTestKit.hs"
+    },
+    {
+      "path": "cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "The host shim defines hostPhantomJSVal, an executable value measured by native HPC; this is not a reexport-only module.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs"
     },
     {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Assets.hs",
@@ -49,6 +57,14 @@
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/DurableObject/SQL.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Images.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
     },
     {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/KV.hs",
@@ -99,20 +115,20 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Var.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/WorkersAI.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Workflow.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Binding/Workflow.hs"
-    },
-    {
-      "path": "cloudflare-workers/src/Cloudflare/Workers/Bundle.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "cloudflare-workers/src/Cloudflare/Workers/Bundle.hs"
     },
     {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Cache.hs",
@@ -195,6 +211,14 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Env.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Fetch.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/src/Cloudflare/Workers/HTTP.hs",
       "required": [
         "wasm"
@@ -251,6 +275,14 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/DurableObject.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/DurableObject/Transaction.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Env.hs",
       "required": [
         "wasm"
@@ -267,12 +299,28 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Envelope.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Fetch.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Headers.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Headers.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Images.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
     },
     {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/KV.hs",
@@ -379,12 +427,36 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/URL.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/WebCrypto.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/WorkersAI.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Workflow.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Workflow.hs"
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/Streaming.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
     },
     {
       "path": "cloudflare-workers/src/Cloudflare/Workers/Middleware.hs",
@@ -437,13 +509,237 @@
       "evidence": "cloudflare-workers/src/Cloudflare/Workers/URL.hs"
     },
     {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/WebCrypto.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "The host compiler replaces JavaScript FFI with non-executable stubs. Validate binding behavior in real WASM; pure models/conversions have separate host contracts.",
+      "evidence": "cloudflare-workers/shim/compat/GHC/Wasm/FFI/Plugin.hs"
+    },
+    {
       "path": "cloudflare-workers/test/Support/Cloudflare/Workers/ObservabilityContracts.hs",
       "required": [
         "host",
         "wasm"
       ],
       "reason": "Shared diagnostic and JSON contract consumed by native unit tests and the workerd runtime fixture.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/BindingEnv.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/CachePurge.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/CacheServiceErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/CoreEntrypoints.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/D1QueryFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/DurableObject/SQLChecks.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/DurableObject/SQLExecFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/DurableObject/TransactionFixture.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/DurableObject/TransactionLifecycle.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/DurableObject/Wait.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/EntrypointErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/EntrypointLifecycleErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/Envelope.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/Images.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Library binding contract fixture executed by the independent real WASM reactor.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/MiddlewareExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/PlatformChecks.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/SQLBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/SocketStream.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/StorageBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/StorageErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/StorageObjectErrors.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/StoragePublicContracts.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/Streaming.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Public Streaming API contracts execute in real workerd/WASM.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/TransportExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/TypedQueueBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/WorkersAI.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/WorkflowBoundaryExtra.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     },
     {
       "path": "conformance-oracle/src/Support/Conformance/Generators.hs",
@@ -462,220 +758,172 @@
       "evidence": "conformance-oracle/src/Support/Conformance/Oracle.hs"
     },
     {
-      "path": "examples/library-examples/app/Main.hs",
+      "path": "examples/api-catalog/app/Main.hs",
       "required": [
         "wasm"
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
-      "evidence": "examples/library-examples/app/Main.hs"
+      "evidence": "examples/api-catalog/app/Main.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/API.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Application.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/API.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Application.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Application.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Archives.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Application.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Archives.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Archives.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Attachments.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Archives.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Attachments.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Attachments.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Client.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Attachments.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Client.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/CachePurge.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Configuration.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/CachePurge.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Configuration.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Client.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Database.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Client.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Database.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Configuration.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Logging.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Configuration.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Logging.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Database.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/R2.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Database.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/R2.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Jobs.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/R2Archive.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Jobs.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/R2Archive.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/Logging.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/SocketExamples.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Logging.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/SocketExamples.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/QueueExamples.hs",
+      "path": "examples/api-catalog/src/ApiCatalog/Storage.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/QueueExamples.hs"
+      "evidence": "examples/api-catalog/src/ApiCatalog/Storage.hs"
     },
     {
-      "path": "examples/library-examples/src/LibraryExamples/R2.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/R2.hs"
-    },
-    {
-      "path": "examples/library-examples/src/LibraryExamples/R2Archive.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/R2Archive.hs"
-    },
-    {
-      "path": "examples/library-examples/src/LibraryExamples/SocketExamples.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/SocketExamples.hs"
-    },
-    {
-      "path": "examples/library-examples/src/LibraryExamples/Storage.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/library-examples/src/LibraryExamples/Storage.hs"
-    },
-    {
-      "path": "examples/library-examples/test/Support/AttachmentRequest.hs",
+      "path": "examples/api-catalog/test/Support/ApiCatalog/Misc.hs",
       "required": [
         "wasm"
       ],
       "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/library-examples/test/Support/AttachmentRequest.hs"
+      "evidence": "examples/api-catalog/test/Support/ApiCatalog/Misc.hs"
     },
     {
-      "path": "examples/library-examples/test/Support/ClientDefaults.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/library-examples/test/Support/ClientDefaults.hs"
-    },
-    {
-      "path": "examples/library-examples/test/Support/ClientStream.hs",
+      "path": "examples/api-catalog/test/Support/ApiCatalog/R2Failures.hs",
       "required": [
         "wasm"
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
+      "evidence": "examples/api-catalog/api-catalog.cabal"
     },
     {
-      "path": "examples/library-examples/test/Support/Database.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
-    },
-    {
-      "path": "examples/library-examples/test/Support/JobsFailures.hs",
+      "path": "examples/api-catalog/test/Support/AttachmentRequest.hs",
       "required": [
         "wasm"
       ],
       "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/library-examples/test/Support/JobsFailures.hs"
+      "evidence": "examples/api-catalog/test/Support/AttachmentRequest.hs"
     },
     {
-      "path": "examples/library-examples/test/Support/LibraryExamples/Misc.hs",
+      "path": "examples/api-catalog/test/Support/ClientDefaults.hs",
       "required": [
         "wasm"
       ],
       "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/library-examples/test/Support/LibraryExamples/Misc.hs"
+      "evidence": "examples/api-catalog/test/Support/ClientDefaults.hs"
     },
     {
-      "path": "examples/library-examples/test/Support/LibraryExamples/R2Failures.hs",
+      "path": "examples/api-catalog/test/Support/ClientStream.hs",
       "required": [
         "wasm"
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
+      "evidence": "examples/api-catalog/api-catalog.cabal"
     },
     {
-      "path": "examples/library-examples/test/Support/Main.hs",
+      "path": "examples/api-catalog/test/Support/Database.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/api-catalog/api-catalog.cabal"
+    },
+    {
+      "path": "examples/api-catalog/test/Support/Main.hs",
       "required": [
         "wasm"
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
-      "evidence": "examples/library-examples/test/Support/Main.hs"
+      "evidence": "examples/api-catalog/test/Support/Main.hs"
     },
     {
-      "path": "examples/library-examples/test/Support/QueueContracts.hs",
+      "path": "examples/api-catalog/test/Support/SocketFailures.hs",
       "required": [
         "wasm"
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
+      "evidence": "examples/api-catalog/api-catalog.cabal"
     },
     {
-      "path": "examples/library-examples/test/Support/SocketFailures.hs",
+      "path": "examples/api-catalog/test/Support/Storage.hs",
       "required": [
         "wasm"
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
-    },
-    {
-      "path": "examples/library-examples/test/Support/Storage.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/library-examples/library-examples.cabal"
+      "evidence": "examples/api-catalog/api-catalog.cabal"
     },
     {
       "path": "examples/minimal/app/Main.hs",
@@ -684,14 +932,6 @@
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
       "evidence": "examples/minimal/app/Main.hs"
-    },
-    {
-      "path": "examples/minimal/src/Minimal/API.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "examples/minimal/src/Minimal/API.hs"
     },
     {
       "path": "examples/minimal/src/Minimal/Application.hs",
@@ -710,309 +950,60 @@
       "evidence": "examples/minimal/test/Support/Coverage.hs"
     },
     {
-      "path": "examples/quickstart/app/Main.hs",
+      "path": "examples/queued-jobs/app/Main.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
-      "evidence": "examples/quickstart/app/Main.hs"
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/apps/export/src/Quickstart/Export/Application.hs",
+      "path": "examples/queued-jobs/src/QueuedJobs/Application.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/apps/export/src/Quickstart/Export/Application.hs"
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/apps/management/src/Quickstart/Management.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/apps/management/src/Quickstart/Management.hs"
-    },
-    {
-      "path": "examples/quickstart/apps/recovery/src/Quickstart/Recovery/Application.hs",
+      "path": "examples/queued-jobs/src/QueuedJobs/Jobs.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/apps/recovery/src/Quickstart/Recovery/Application.hs"
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/apps/redirect/src/Quickstart/Redirect.hs",
+      "path": "examples/queued-jobs/src/QueuedJobs/QueueExamples.hs",
       "required": [
         "wasm"
       ],
       "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/apps/redirect/src/Quickstart/Redirect.hs"
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/packages/domain/src/URLShortener/Domain.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "examples/quickstart/packages/domain/src/URLShortener/Domain.hs"
-    },
-    {
-      "path": "examples/quickstart/packages/infrastructure/src/Quickstart/Database.hs",
+      "path": "examples/queued-jobs/test/Support/JobsFailures.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/packages/infrastructure/src/Quickstart/Database.hs"
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/src/Quickstart/Runtime.hs",
+      "path": "examples/queued-jobs/test/Support/Main.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/src/Quickstart/Runtime.hs"
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
-      "path": "examples/quickstart/test/Support/Coverage.hs",
+      "path": "examples/queued-jobs/test/Support/QueueContracts.hs",
       "required": [
         "wasm"
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/BindingEnv.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASM regression fixture in the Quickstart runtime-tests component.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/CacheServiceErrors.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/EntrypointErrors.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/EntrypointLifecycleErrors.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI-only JSVal lifecycle error fixture, exercised through workerd runtime-tests.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/Envelope.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/ExportProducer.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Development reactor invokes the same internal CSV producer with controlled valid stream outcomes.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/ExportRequestCodec.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Runtime-only fixture is linked into the Quickstart WASM test reactor and invoked by the boundary suite.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/GenerationAsync.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/quickstart/test/Support/Runtime/GenerationAsync.hs"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/Main.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/MiddlewareExtra.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI-only runtime-tests fixture executed through the workerd harness; native shim compilation is not a runtime contract.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/QuickstartBoundaries.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASM regression fixture in the Quickstart runtime-tests component.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/QuickstartDatabase.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
-      "evidence": "examples/quickstart/test/Support/Runtime/QuickstartDatabase.hs"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/SQLBoundaries.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI-only runtime-tests fixture executed through the workerd harness; native shim compilation is not a runtime contract.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/SocketStream.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/StorageBoundaries.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/StorageErrors.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/StorageObjectErrors.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/StoragePublicContracts.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Runtime-only fixture is linked into the Quickstart WASM test reactor and invoked by the boundary suite.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/TransportExtra.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/TypedQueueBoundaries.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI-only runtime-tests fixture using JSVal command and result conversion, executed in the workerd harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/Support/Runtime/WorkflowBoundaryExtra.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/test/unit/Quickstart/ExportGeneration/ProducerSpec.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Native unit contract for the shared internal CSV producer; the same producer also has a separate workerd fixture.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/workers/aggregation/src/Quickstart/Aggregation/Application.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/aggregation/src/Quickstart/Aggregation/Application.hs"
-    },
-    {
-      "path": "examples/quickstart/workers/common/src/Quickstart/Background/Environment.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/common/src/Quickstart/Background/Environment.hs"
-    },
-    {
-      "path": "examples/quickstart/workers/export-coordinator/src/Quickstart/Background/Coordinator.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/export-coordinator/src/Quickstart/Background/Coordinator.hs"
-    },
-    {
-      "path": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Application.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Application.hs"
-    },
-    {
-      "path": "examples/quickstart/workers/export-generation/src/Quickstart/ExportGeneration/Producer.hs",
-      "required": [
-        "host",
-        "wasm"
-      ],
-      "reason": "Shared internal CSV producer exercised by native deterministic contracts and workerd production/runtime contracts.",
-      "evidence": "examples/quickstart/quickstart.cabal"
-    },
-    {
-      "path": "examples/quickstart/workers/maintenance/src/Quickstart/Maintenance/Application.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/maintenance/src/Quickstart/Maintenance/Application.hs"
-    },
-    {
-      "path": "examples/quickstart/workers/recovery-ingest/src/Quickstart/RecoveryIngest/Application.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "examples/quickstart/workers/recovery-ingest/src/Quickstart/RecoveryIngest/Application.hs"
+      "evidence": "examples/queued-jobs/queued-jobs.cabal"
     },
     {
       "path": "examples/realtime/app/Main.hs",
@@ -1021,14 +1012,6 @@
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
       "evidence": "examples/realtime/app/Main.hs"
-    },
-    {
-      "path": "examples/realtime/src/Realtime/API.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "examples/realtime/src/Realtime/API.hs"
     },
     {
       "path": "examples/realtime/src/Realtime/Application.hs",
@@ -1055,6 +1038,14 @@
       "evidence": "examples/realtime/test/Support/Coverage.hs"
     },
     {
+      "path": "examples/realtime/test/Support/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "examples/realtime/realtime-worker.cabal"
+    },
+    {
       "path": "examples/realtime/test/Support/RoomFixture.hs",
       "required": [
         "wasm"
@@ -1063,28 +1054,12 @@
       "evidence": "examples/realtime/test/Support/RoomFixture.hs"
     },
     {
-      "path": "examples/realtime/test/Support/SQLFixture.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/realtime/realtime-worker.cabal"
-    },
-    {
       "path": "examples/static-assets/app/Main.hs",
       "required": [
         "wasm"
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
       "evidence": "examples/static-assets/app/Main.hs"
-    },
-    {
-      "path": "examples/static-assets/src/StaticAssets/API.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "examples/static-assets/src/StaticAssets/API.hs"
     },
     {
       "path": "examples/static-assets/src/StaticAssets/Application.hs",
@@ -1103,20 +1078,197 @@
       "evidence": "examples/static-assets/test/Support/Coverage.hs"
     },
     {
+      "path": "examples/url-shortener/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
+      "evidence": "examples/url-shortener/app/Main.hs"
+    },
+    {
+      "path": "examples/url-shortener/apps/export/src/UrlShortener/Export/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/apps/export/src/UrlShortener/Export/Application.hs"
+    },
+    {
+      "path": "examples/url-shortener/apps/management/src/UrlShortener/Management.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/apps/management/src/UrlShortener/Management.hs"
+    },
+    {
+      "path": "examples/url-shortener/apps/recovery/src/UrlShortener/Recovery/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/apps/recovery/src/UrlShortener/Recovery/Application.hs"
+    },
+    {
+      "path": "examples/url-shortener/apps/redirect/src/UrlShortener/Redirect.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/apps/redirect/src/UrlShortener/Redirect.hs"
+    },
+    {
+      "path": "examples/url-shortener/packages/domain/src/URLShortener/Domain.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
+      "evidence": "examples/url-shortener/packages/domain/src/URLShortener/Domain.hs"
+    },
+    {
+      "path": "examples/url-shortener/packages/infrastructure/src/UrlShortener/Database.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/packages/infrastructure/src/UrlShortener/Database.hs"
+    },
+    {
+      "path": "examples/url-shortener/src/UrlShortener/Runtime.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/src/UrlShortener/Runtime.hs"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Coverage.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/ExportProducer.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Development reactor invokes the same internal CSV producer with controlled valid stream outcomes.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/ExportRequestCodec.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Runtime-only fixture is linked into the UrlShortener WASM test reactor and invoked by the boundary suite.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/GenerationAsync.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/url-shortener/test/Support/Runtime/GenerationAsync.hs"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Included in url-shortener runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/UrlShortenerBoundaries.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASM regression fixture in the UrlShortener runtime-tests component.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/Support/Runtime/UrlShortenerDatabase.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Example runtime regression fixture uses native binding/JSVal behavior and is executed through workerd.",
+      "evidence": "examples/url-shortener/test/Support/Runtime/UrlShortenerDatabase.hs"
+    },
+    {
+      "path": "examples/url-shortener/test/unit/UrlShortener/ExportGeneration/ProducerSpec.hs",
+      "required": [
+        "host"
+      ],
+      "reason": "Native unit contract for the shared internal CSV producer; the same producer also has a separate workerd fixture.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/workers/aggregation/src/UrlShortener/Aggregation/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/aggregation/src/UrlShortener/Aggregation/Application.hs"
+    },
+    {
+      "path": "examples/url-shortener/workers/common/src/UrlShortener/Background/Environment.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/common/src/UrlShortener/Background/Environment.hs"
+    },
+    {
+      "path": "examples/url-shortener/workers/export-coordinator/src/UrlShortener/Background/Coordinator.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/export-coordinator/src/UrlShortener/Background/Coordinator.hs"
+    },
+    {
+      "path": "examples/url-shortener/workers/export-generation/src/UrlShortener/ExportGeneration/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/export-generation/src/UrlShortener/ExportGeneration/Application.hs"
+    },
+    {
+      "path": "examples/url-shortener/workers/export-generation/src/UrlShortener/ExportGeneration/Producer.hs",
+      "required": [
+        "host",
+        "wasm"
+      ],
+      "reason": "Shared internal CSV producer exercised by native deterministic contracts and workerd production/runtime contracts.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/workers/maintenance/src/UrlShortener/Maintenance/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/maintenance/src/UrlShortener/Maintenance/Application.hs"
+    },
+    {
+      "path": "examples/url-shortener/workers/recovery-ingest/src/UrlShortener/RecoveryIngest/Application.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "examples/url-shortener/workers/recovery-ingest/src/UrlShortener/RecoveryIngest/Application.hs"
+    },
+    {
       "path": "examples/workflows/app/Main.hs",
       "required": [
         "wasm"
       ],
       "reason": "Worker/reactor entry or instrumented WASI fixture; exercised in workerd. Native shim is not this component runtime.",
       "evidence": "examples/workflows/app/Main.hs"
-    },
-    {
-      "path": "examples/workflows/src/WorkflowExample/API.hs",
-      "required": [
-        "host"
-      ],
-      "reason": "Pure Haskell implementation with no repository runtime-dependent import closure; native tests measure the same implementation.",
-      "evidence": "examples/workflows/src/WorkflowExample/API.hs"
     },
     {
       "path": "examples/workflows/src/WorkflowExample/Application.hs",
@@ -1143,14 +1295,6 @@
       "evidence": "examples/workflows/test/Support/Coverage.hs"
     },
     {
-      "path": "examples/workflows/test/Support/D1QueryFixture.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
-      "evidence": "examples/workflows/workflow-example.cabal"
-    },
-    {
       "path": "examples/workflows/test/Support/Main.hs",
       "required": [
         "wasm"
@@ -1165,22 +1309,6 @@
       ],
       "reason": "Cabal Worker/reactor component includes this execution fixture; its purpose is exercising the real Cloudflare runtime or recording WASM coverage. Native shim compilation is not an additional runtime contract.",
       "evidence": "examples/workflows/workflow-example.cabal"
-    },
-    {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs"
     },
     {
       "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Base64URL.hs",
@@ -1232,6 +1360,22 @@
       "evidence": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs"
     },
     {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/Combinator.hs"
+    },
+    {
       "path": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/SubtleCrypto.hs",
       "required": [
         "wasm"
@@ -1240,29 +1384,38 @@
       "evidence": "servant-cloudflare-workers-access/src/Servant/Cloudflare/Workers/Access/SubtleCrypto.hs"
     },
     {
+      "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessEntrypoints.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
       "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessRoutes.hs",
       "required": [
         "host",
         "wasm"
       ],
       "reason": "Shared native unit runner with a WASI-specific wrapper; CPP implementations differ and both native and WASM execution are required.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "evidence": "examples/url-shortener/url-shortener.cabal"
     },
     {
-      "path": "examples/quickstart/test/Support/Runtime/AccessVerification.hs",
+      "path": "servant-cloudflare-workers-access/test/Support/Runtime/AccessVerification.hs",
       "required": [
         "wasm"
       ],
-      "reason": "WASM runtime regression fixture uses native CryptoKey and FFI callbacks. Native -fno-code only checks compilation, not runtime behavior.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     },
     {
       "path": "servant-cloudflare-workers-access/test/Support/Runtime/JWKSCache.hs",
       "required": [
+        "host",
         "wasm"
       ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "The same 11 behavioral scenarios execute on host and in the test-only real WASM reactor.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     },
     {
       "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch.hs",
@@ -1289,20 +1442,60 @@
       "evidence": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Internal/FFI/Fetch.hs"
     },
     {
-      "path": "examples/quickstart/test/Support/Runtime/Client.hs",
+      "path": "servant-cloudflare-workers-client/test/Support/Runtime/Client.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     },
     {
-      "path": "examples/quickstart/test/Support/Runtime/ClientRetryExtra.hs",
+      "path": "servant-cloudflare-workers-client/test/Support/Runtime/ClientRetryExtra.hs",
       "required": [
         "wasm"
       ],
-      "reason": "WASI runtime-tests fixture uses JSVal input/output and is executed through workerd.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
+      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs"
     },
     {
       "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Assets.hs",
@@ -1377,46 +1570,6 @@
       "evidence": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server.hs"
     },
     {
-      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Delayed.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/DelayedIO.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/RouteResult.hs"
-    },
-    {
-      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
-      "required": [
-        "wasm"
-      ],
-      "reason": "Module imports the Cloudflare/GHC.Wasm execution dependency closure; measure runtime behavior in workerd, with no distinct native CPP implementation in this file.",
-      "evidence": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs"
-    },
-    {
       "path": "servant-cloudflare-workers/test/Support/Runtime/RouterInternals.hs",
       "required": [
         "host"
@@ -1429,16 +1582,32 @@
       "required": [
         "wasm"
       ],
-      "reason": "Included in quickstart runtime-tests executable other-modules/source directories. Cabal marks this component buildable: False outside os(wasi); exercised by the workerd runtime harness.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     },
     {
       "path": "servant-cloudflare-workers/test/Support/Runtime/RoutingCoverage.hs",
       "required": [
         "wasm"
       ],
-      "reason": "Dedicated fixture observes native HTTP stream cancellation through workerd runtime-tests.",
-      "evidence": "examples/quickstart/quickstart.cabal"
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Runtime/ServantEntrypoints.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "Linked into the WASI-only library-runtime reactor; exercised through the real workerd library contracts.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "support/interop/src/WorkersSupport/Interop.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "support/interop/src/WorkersSupport/Interop.hs"
     },
     {
       "path": "testing-support/src/Support/Discovery.hs",
@@ -1447,21 +1616,136 @@
       ],
       "reason": "Native test/oracle component, not a deployed Worker.",
       "evidence": "testing-support/src/Support/Discovery.hs"
+    },
+    {
+      "path": "tests/runtime/app/Main.hs",
+      "required": [
+        "wasm"
+      ],
+      "reason": "WASI reactor entry, runtime fixture or JavaScript binding dependency; the host shim does not execute this implementation. Cabal component and real workerd HPC determine the runtime.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
     }
   ],
   "exclusions": [],
   "validations": [
     {
-      "path": "examples/library-examples/worker/library-examples-fixtures-jsffi.d.mts",
-      "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/library-examples/worker/library-examples-fixtures-jsffi.d.mts"
+      "path": "cloudflare-workers/internal-pure/Cloudflare/Workers/Internal/Images/FFITypes.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "2ded77656163c48ffee4182d9f6852ad541746a93ac6b40f2ec355a65f29a3bb",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
     },
     {
-      "path": "examples/library-examples/worker/library-examples-jsffi.d.mts",
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Bundle.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "0b887edee7f452bc7a4cd1dd59f089b23808575b0558019d3cc32fab1d057811",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/Abort.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "7d475996a6af96e5cb87fe799d7a3a517cb18b2dd1d502507374c688c36faaa8",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/NativeResponse.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "a6a7b97890f587cb01e8a745e63f7e60c013265286a9fce76d1b991082025516",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/WorkersAI.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "af36ca92108f939f574f8be8e92a3861758112b81465913284e977fbfbd73b00",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "cloudflare-workers/test/host-testkit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "cloudflare-workers:test:host-testkit-unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal"
+    },
+    {
+      "path": "cloudflare-workers/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "cloudflare-workers:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "cloudflare-workers/cloudflare-workers.cabal"
+    },
+    {
+      "path": "conformance-oracle/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "conformance-oracle:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "conformance-oracle/conformance-oracle.cabal"
+    },
+    {
+      "path": "examples/api-catalog/src/ApiCatalog/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "f0b7fe72e1757fd5b1b24b8052bc22d2ff054980dbf2c498f5020ee98a368eac",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/api-catalog/api-catalog.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
+    },
+    {
+      "path": "examples/api-catalog/worker/api-catalog-fixtures-jsffi.d.mts",
       "kind": "declaration",
       "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/library-examples/worker/library-examples-jsffi.d.mts"
+      "evidence": "examples/api-catalog/worker/api-catalog-fixtures-jsffi.d.mts"
+    },
+    {
+      "path": "examples/api-catalog/worker/api-catalog-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/api-catalog/worker/api-catalog-jsffi.d.mts"
+    },
+    {
+      "path": "examples/minimal/src/Minimal/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "17fea5ff1a5166a6c7e1cd5a3498ffc80bb5f7780795ed985869f35d021eee57",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/minimal/minimal-worker.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
+    },
+    {
+      "path": "examples/minimal/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "minimal-worker:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/minimal/minimal-worker.cabal"
     },
     {
       "path": "examples/minimal/worker/minimal-worker-jsffi.d.mts",
@@ -1470,40 +1754,50 @@
       "evidence": "examples/minimal/worker/minimal-worker-jsffi.d.mts"
     },
     {
-      "path": "examples/quickstart/test/env.d.ts",
-      "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/test/env.d.ts"
+      "path": "examples/queued-jobs/src/QueuedJobs/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "699917ea1b834f39305c1a18f93f899a9f54cc8fc00ae6c598b2d502836a4a03",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/queued-jobs/queued-jobs.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
     },
     {
-      "path": "examples/quickstart/worker-configuration.d.ts",
+      "path": "examples/queued-jobs/worker/queued-jobs-fixtures-jsffi.d.mts",
       "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/worker-configuration.d.ts"
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "examples/queued-jobs/tsconfig.json"
     },
     {
-      "path": "examples/quickstart/worker/quickstart-jsffi.d.mts",
+      "path": "examples/queued-jobs/worker/queued-jobs-jsffi.d.mts",
       "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/worker/quickstart-jsffi.d.mts"
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "examples/queued-jobs/tsconfig.json"
     },
     {
-      "path": "examples/quickstart/worker/runtime-tests-jsffi.d.mts",
-      "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/worker/runtime-tests-jsffi.d.mts"
+      "path": "examples/realtime/src/Realtime/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "f87536575e5480d1b92fb327948b7ffe3aba040835a3b1d129c6e24223083219",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/realtime/realtime-worker.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
     },
     {
-      "path": "examples/quickstart/worker/wasm-exports.d.ts",
-      "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/worker/wasm-exports.d.ts"
+      "path": "examples/realtime/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "realtime-worker:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/realtime/realtime-worker.cabal"
     },
     {
-      "path": "examples/quickstart/worker/wasm-module.d.ts",
+      "path": "examples/realtime/worker/realtime-fixtures-jsffi.d.mts",
       "kind": "declaration",
-      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
-      "evidence": "examples/quickstart/worker/wasm-module.d.ts"
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "examples/realtime/tsconfig.json"
     },
     {
       "path": "examples/realtime/worker/wasm.d.ts",
@@ -1512,10 +1806,106 @@
       "evidence": "examples/realtime/worker/wasm.d.ts"
     },
     {
+      "path": "examples/static-assets/src/StaticAssets/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "d4f760f2e07c978b36942b7cee86a46bbf90d2b1d441503edb462dfd92976c66",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/static-assets/static-assets-worker.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
+    },
+    {
+      "path": "examples/static-assets/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "static-assets-worker:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/static-assets/static-assets-worker.cabal"
+    },
+    {
       "path": "examples/static-assets/worker/wasm.d.ts",
       "kind": "declaration",
       "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
       "evidence": "examples/static-assets/worker/wasm.d.ts"
+    },
+    {
+      "path": "examples/url-shortener/apps/management/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "url-shortener-management:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/url-shortener/apps/management/url-shortener-management.cabal"
+    },
+    {
+      "path": "examples/url-shortener/packages/domain/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "url-shortener-domain:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/url-shortener/packages/domain/url-shortener-domain.cabal"
+    },
+    {
+      "path": "examples/url-shortener/test/env.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/test/env.d.ts"
+    },
+    {
+      "path": "examples/url-shortener/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "url-shortener:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/url-shortener/url-shortener.cabal"
+    },
+    {
+      "path": "examples/url-shortener/worker-configuration.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/worker-configuration.d.ts"
+    },
+    {
+      "path": "examples/url-shortener/worker/runtime-tests-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/worker/runtime-tests-jsffi.d.mts"
+    },
+    {
+      "path": "examples/url-shortener/worker/url-shortener-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/worker/url-shortener-jsffi.d.mts"
+    },
+    {
+      "path": "examples/url-shortener/worker/wasm-exports.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/worker/wasm-exports.d.ts"
+    },
+    {
+      "path": "examples/url-shortener/worker/wasm-module.d.ts",
+      "kind": "declaration",
+      "reason": "Ambient TypeScript declaration: validate compiler integration separately from executable branch coverage. Not an automatic generated-source exclusion.",
+      "evidence": "examples/url-shortener/worker/wasm-module.d.ts"
+    },
+    {
+      "path": "examples/workflows/src/WorkflowExample/API.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "4c9f058d8ce334248a7f2c0e2301c0b3e005f32a7e9ea273909f34651db2a767",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "examples/workflows/workflow-example.cabal",
+      "compiler_runtimes": [
+        "wasm"
+      ]
+    },
+    {
+      "path": "examples/workflows/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "workflow-example:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "examples/workflows/workflow-example.cabal"
     },
     {
       "path": "examples/workflows/worker/wasm.d.ts",
@@ -1524,17 +1914,982 @@
       "evidence": "examples/workflows/worker/wasm.d.ts"
     },
     {
-      "path": "cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs",
-      "kind": "haskell-reexport",
-      "reason": "Only reexports JSVal from Host.Internal; fresh GHC compilation/interface proof must show no local executable declarations except compiler module metadata.",
-      "evidence": "cloudflare-workers/cloudflare-workers.cabal"
+      "path": "servant-cloudflare-workers-access/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "servant-cloudflare-workers-access:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "servant-cloudflare-workers-access/servant-cloudflare-workers-access.cabal"
     },
     {
-      "path": "scripts/testing/Support/readiness.d.mts",
+      "path": "servant-cloudflare-workers-client/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "servant-cloudflare-workers-client:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "servant-cloudflare-workers-client/servant-cloudflare-workers-client.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/HasWorkerServer.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "050aa9cd88c5ddba5508b9f6464811c9c2b6f6099bbb86fcdfde8e412148f167",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "servant-cloudflare-workers/servant-cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Server/Extension.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "f4af8cea372c2865618504cb548c7b3ba8af6382dcc60a0110fba1a0aeff206f",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "servant-cloudflare-workers/servant-cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host",
+        "wasm"
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Generic/Routes.hs",
+      "kind": "haskell-interface",
+      "source_sha256": "b390cba6c7ca689bc489ca56e86bdf6029398a9476573e62ba9a6d41463a48ff",
+      "reason": "Reviewed declaration/reexport module. Validate compiler interface and consumer contracts; do not invent execution percentages for types or generated accessors.",
+      "evidence": "servant-cloudflare-workers/servant-cloudflare-workers.cabal",
+      "compiler_runtimes": [
+        "host"
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/test/conformance/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "servant-cloudflare-workers:test:conformance",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "servant-cloudflare-workers/servant-cloudflare-workers.cabal"
+    },
+    {
+      "path": "servant-cloudflare-workers/test/unit/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "servant-cloudflare-workers:test:unit",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "servant-cloudflare-workers/servant-cloudflare-workers.cabal"
+    },
+    {
+      "path": "testing-support/test/integration/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "testing-support:test:integration",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "testing-support/testing-support.cabal"
+    },
+    {
+      "path": "tests/runtime/env.d.ts",
       "kind": "declaration",
-      "reason": "Shared readiness ambient API is imported by Quickstart Dev/run.mts. Validate against that actual TypeScript project input list; implementation/readiness specs remain executable JS coverage targets.",
-      "evidence": "examples/quickstart/tsconfig.json",
-      "compiler_project": "examples/quickstart"
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "tests/runtime/tsconfig.json"
+    },
+    {
+      "path": "tests/runtime/test/model/Spec.hs",
+      "kind": "haskell-test-entry",
+      "source_sha256": "7e5faac20ac0ba96c5f1021c065b59da2ba5dfff161297d047df71d19ca0f009",
+      "target": "runtime-contracts:test:model",
+      "reason": "The authored entry contains only the test discovery pragma. Require a current successful nonempty suite execution, not zero-tick coverage.",
+      "evidence": "tests/runtime/runtime-contracts.cabal"
+    },
+    {
+      "path": "tests/runtime/worker/library-runtime-jsffi.d.mts",
+      "kind": "declaration",
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "tests/runtime/tsconfig.json"
+    },
+    {
+      "path": "tests/runtime/worker/wasm-module.d.ts",
+      "kind": "declaration",
+      "reason": "Authored compiler contract for the owning reactor; validate with strict TypeScript and compiler input provenance, not runtime statement percentages.",
+      "evidence": "tests/runtime/tsconfig.json"
+    }
+  ],
+  "constant_guards": [
+    {
+      "path": "cloudflare-workers/internal-pure/Cloudflare/Workers/Internal/ByteArray.hs",
+      "source_sha256": "1b1655737bfc95f1f46cf202b79a2d95979cf39089a49693ba7908627dad6a29",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            23,
+            7,
+            23,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/internal-pure/Cloudflare/Workers/Internal/Images.hs",
+      "source_sha256": "dba1f7812eb376511e8a1f51ea252aac0814f248fb93c5c22e3f63844ecb217c",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            39,
+            7,
+            39,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/internal-pure/Cloudflare/Workers/Internal/R2Range.hs",
+      "source_sha256": "501ce88be6690a2c932b2d8629bc2f03bc5ee7bfaeee5fbb1c495da425a2da05",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            29,
+            7,
+            29,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1.hs",
+      "source_sha256": "dbb298043a0872a10d5a41735a44798d00b27d48269da961a0e82c112b2e95e8",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            130,
+            7,
+            130,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/D1/Query.hs",
+      "source_sha256": "e5c3260d5b685bca7e3b33e35960506c07a922913caecbe11780ff065ef03799",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            86,
+            24,
+            86,
+            32
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            97,
+            21,
+            97,
+            29
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            99,
+            24,
+            99,
+            32
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            110,
+            11,
+            110,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/KV.hs",
+      "source_sha256": "f2dca8c05a7e2bc5685666b909ad773d109d3939ad816959ecd49ffeb2e108ba",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            217,
+            7,
+            217,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Queue.hs",
+      "source_sha256": "670efc772aad2fcace2c94a1b50206b5f0f9ee5c9efa8ae34b6b2448008ac6f7",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            159,
+            11,
+            159,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            199,
+            7,
+            199,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            213,
+            7,
+            213,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            228,
+            11,
+            228,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/R2.hs",
+      "source_sha256": "0aa5bd199f3fb16f2e30ab1db855b6075e565ef712d60696a0118e16cadcf79e",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            168,
+            7,
+            168,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            313,
+            7,
+            313,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Binding/Workflow.hs",
+      "source_sha256": "f56d8ba743acf584695b248d1b738b227c64be5b03e8f2b30a74cdb1871d16b5",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            194,
+            7,
+            194,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Cache.hs",
+      "source_sha256": "a241ad064a92a1873e4cd1745c3f0689109cddd4a7c5664ffca6967516e628d2",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            116,
+            5,
+            116,
+            13
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/D1.hs",
+      "source_sha256": "4240c2dd10e19e9d8ab3a72c518aa10336a2691b87dc64960f33103d0effec5a",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            41,
+            7,
+            41,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/DurableObject.hs",
+      "source_sha256": "98a54e0130b10c8439e721e75aca84fdfc4e5c6fbda414530aa5ab1c2423be0e",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            108,
+            11,
+            108,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            423,
+            7,
+            423,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Response.hs",
+      "source_sha256": "71b8a50a9e10a132152219889c862cbb8aa1de68bf2636dc02094e53ae427dde",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            56,
+            15,
+            56,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Internal/FFI/Stream.hs",
+      "source_sha256": "9b498a1f937b1939f4112b0bd77a6651eb68b5d6ff8a9c870b064e3d72e212c8",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            351,
+            7,
+            351,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/src/Cloudflare/Workers/Socket.hs",
+      "source_sha256": "fbc8d64d5f716454329e15cb1c282ca99014d6fde8ba1a3c19db4bfbd92a9b81",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            59,
+            7,
+            59,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            124,
+            11,
+            124,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            189,
+            11,
+            189,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/CacheServiceErrors.hs",
+      "source_sha256": "2021b7c131bb157c35d02fb7aa7038a02dff96a36a6a6a69bf4c85a283a03eb4",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            126,
+            7,
+            126,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "cloudflare-workers/test/Support/Runtime/EntrypointErrors.hs",
+      "source_sha256": "e04ac574cd4f3dd880f9ccf750021ae6441d39fb2f3fd4ca01255bf7e34c0006",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            119,
+            15,
+            119,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/api-catalog/src/ApiCatalog/Archives.hs",
+      "source_sha256": "fa3e99bfe82e9eb47ff8a7552dbc54a931d56b8a7f0ea9b325ba72b29441c7c1",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            44,
+            11,
+            44,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/api-catalog/src/ApiCatalog/Client.hs",
+      "source_sha256": "afdab0b1f7f23857f08c9c70d543315f4064336e7030683bcbffae402f7f68fa",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            98,
+            7,
+            98,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/api-catalog/src/ApiCatalog/R2.hs",
+      "source_sha256": "116bd46b4acde0da83383a92c4b07c25c617589f683e516b0eba6b039fc1ae5b",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            151,
+            9,
+            151,
+            17
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/api-catalog/test/Support/SocketFailures.hs",
+      "source_sha256": "279f8ffaac0b0029e97c33754c62d333d2b5e5dcf110200c923dd1727a55a8b0",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            45,
+            7,
+            45,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/realtime/src/Realtime/Room.hs",
+      "source_sha256": "3cccd26eb65314747defcad41a8959de4e517c9efe5fc01e2c738cc454e44a3b",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            61,
+            11,
+            61,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/url-shortener/packages/domain/src/URLShortener/Domain.hs",
+      "source_sha256": "027802a2ecb8090628a766e2da78325f5ee1dce5e375b11892b58c6691a8152b",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            59,
+            7,
+            59,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            92,
+            11,
+            92,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            125,
+            7,
+            125,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            206,
+            11,
+            206,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/url-shortener/src/UrlShortener/Runtime.hs",
+      "source_sha256": "9af6252c5894dc0cc9cff017f7b1899c80f56896dc34491a732504555ba17f1c",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            129,
+            9,
+            129,
+            17
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/url-shortener/workers/aggregation/src/UrlShortener/Aggregation/Application.hs",
+      "source_sha256": "dfb634305ed2596e86632f1d8dde9bdc4427e0a091e9b697a2e0b14fa86e105c",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            17,
+            5,
+            17,
+            13
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "examples/url-shortener/workers/export-coordinator/src/UrlShortener/Background/Coordinator.hs",
+      "source_sha256": "ef3040ea7570b7df511cea4c8155be4ce116099b34fffea9a93489cf91cc6fdb",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            38,
+            11,
+            38,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            81,
+            7,
+            81,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            173,
+            11,
+            173,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/Claims.hs",
+      "source_sha256": "359cd42390f26557b59fddf91a68cbabd4c981e1d9f36622f59c29964afa1786",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            61,
+            7,
+            61,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            72,
+            7,
+            72,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers-access/internal-src/Servant/Cloudflare/Workers/Access/Internal/JWKSCache.hs",
+      "source_sha256": "76a24fcce13e40a37bf887e08952c6d02d1c9eff73c65430b8ba1d7481c8c605",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            67,
+            31,
+            67,
+            39
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            112,
+            19,
+            112,
+            27
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Fetch.hs",
+      "source_sha256": "4cfcdc238a36e3ad4dc6ef7f16aed5d8cf3f173ba253c9e7a74e3ce87458dc19",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            123,
+            11,
+            123,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            214,
+            7,
+            214,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            225,
+            11,
+            225,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            243,
+            7,
+            243,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            283,
+            19,
+            283,
+            27
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers-client/src/Servant/Cloudflare/Workers/Client/Internal/FFI/Fetch.hs",
+      "source_sha256": "faf8d525fbb2cbdab9a0b0b191b9843f0b0bdfc34eeadd93c1e3f9e55e381b98",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            186,
+            15,
+            186,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal.hs",
+      "source_sha256": "2677e4a2bd14e99997f29f67200a264b7276c0beb97ef172a54cd69f10257035",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            165,
+            7,
+            165,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            179,
+            7,
+            179,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            261,
+            23,
+            261,
+            31
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            330,
+            31,
+            330,
+            39
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            483,
+            7,
+            483,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            486,
+            15,
+            486,
+            23
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            553,
+            15,
+            553,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/internal-src/Servant/Cloudflare/Workers/Server/Internal/Router.hs",
+      "source_sha256": "63fccee5af4839139927ad3d0624cedaeca72c8fbf62549d25b32b6c18e81d35",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            70,
+            7,
+            70,
+            15
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            107,
+            11,
+            107,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Assets.hs",
+      "source_sha256": "87b20c9b262e09052440d06d00ef359c3f5e57c8069e9501f8eb996c09712a72",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            28,
+            7,
+            28,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/CacheControl.hs",
+      "source_sha256": "228654ee659bdf89b98ef7d26533d92ea184a82590c3f3f4778ad53a5cde9c3e",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            158,
+            15,
+            158,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/ContentType.hs",
+      "source_sha256": "853bf666c9af9accd346af04d46f729400dca05ee6a030ad0ca31ccaacaf1958",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            43,
+            7,
+            43,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/src/Servant/Cloudflare/Workers/Error.hs",
+      "source_sha256": "eca45a1298fda78a50968f6ca17cf381e57f3c5e8dfec5e561959ac84f1a5589",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            45,
+            11,
+            45,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            80,
+            11,
+            80,
+            19
+          ],
+          "token": "otherwise"
+        },
+        {
+          "span": [
+            94,
+            11,
+            94,
+            19
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "servant-cloudflare-workers/test/Support/Runtime/RoutingCoverage.hs",
+      "source_sha256": "2e04ea4bd0a366dfe3247827dac2b916090decc8cef5efe934411957da5b3e29",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            164,
+            7,
+            164,
+            15
+          ],
+          "token": "otherwise"
+        }
+      ]
+    },
+    {
+      "path": "support/interop/src/WorkersSupport/Interop.hs",
+      "source_sha256": "18e079dfd7d8f218a247da4ca7a881f2ae5dfd727d3f4c72681499ea81865b54",
+      "reason": "Reviewed unshadowed Prelude.otherwise guard. False is unreachable; retain the original metric alongside normalization.",
+      "guards": [
+        {
+          "span": [
+            99,
+            15,
+            99,
+            23
+          ],
+          "token": "otherwise"
+        }
+      ]
     }
   ]
 }

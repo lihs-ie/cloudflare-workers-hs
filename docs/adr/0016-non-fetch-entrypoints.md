@@ -231,7 +231,7 @@ Double }` は削除、`JSScheduledExport`（一度も実際に構築されなか
 
 **実測**: `scheduledControllerScheduledTime` は素の JS `number` として届く（実
 `ScheduledController#scheduledTime`）。これは Queue の `Message#timestamp`（ネイティブ `Date`、
-`.getTime()` 経由で読む）と非対称 — `@cloudflare/vitest-pool-workers` 0.18.7 の
+`.getTime()` 経由で読む）と非対称 — `@cloudflare/vitest-plugin` 0.18.7 の
 `ScheduledController`/`createScheduledController` 自身のソースを直接確認して確定した（ドキュメントからの
 推測ではない）。値は `Integer`（絶対時刻は `Integer` とする裁定、後述の決定 6 参照）— `Double` で
 FFI 境界を読んでから `round` する。
@@ -327,14 +327,14 @@ Durable Object のクラス自体（`extends DurableObject`）は JS 側の薄�
   （`foreign export javascript` 関数は明示的な `--export=<name>` を要求しないという既存の知見が
   queue/scheduled/tail でも再確認された）。
 - 自己参照の `[[services]]`（同一 Worker 自身を `service` とする Service Binding）は
-  `@cloudflare/vitest-pool-workers` 0.18.7 上で補助 Worker 無しに解決可能（miniflare は
+  `@cloudflare/vitest-plugin` 0.18.7 上で補助 Worker 無しに解決可能（miniflare は
   `wrangler.toml` の `name` で 1 つの worker インスタンスを登録し、同名を指す `[[services]]` は
   その実行中インスタンスへ解決する）。
 - ローカル harness（vitest サンドボックス）では実 Queues の producer→consumer 自動配信が観測不能
   （時間凍結アーティファクト）。`wrangler dev` でも `/cdn-cgi/handler/*` は `scheduled`/`email` のみ
   対応しており Queue の手動トリガ経路が無いため代替不可 — 2 つの独立した否定的確認（`wrangler`
   自身の CLI ソースの静的解析 + 実 `curl` 往復）で結論した。
-- `retry(delaySeconds)` の実効値は `@cloudflare/vitest-pool-workers` 0.18.7 の `getQueueResult` が
+- `retry(delaySeconds)` の実効値は `@cloudflare/vitest-plugin` 0.18.7 の `getQueueResult` が
   追跡しない（retry が要求されたことは検証できるが、渡した `delaySeconds` の値そのものは検証不能）。
 
 ### 遵守事項への影響（本文 override）

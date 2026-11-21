@@ -55,8 +55,8 @@ just test-minimal
 | Example | 確認できる内容 | コマンド |
 | --- | --- | --- |
 | [Minimal](examples/minimal/README.md) | Platform Bindingを使わない1つの `GET /health` API | `just test-minimal` |
-| [Quickstart](examples/quickstart/README.md) | Access、D1、R2、Queue、Scheduled、Durable Objectsを使う複数Worker構成のURL短縮アプリ | `just test-dev` |
-| [Library examples](examples/library-examples/README.md) | KV、Cache、D1、R2、型付きClient、Queue、Socket、設定、ログ | `just test-library-examples` |
+| [UrlShortener](examples/url-shortener/README.md) | Access、D1、R2、Queue、Scheduled、Durable Objectsを使う複数Worker構成のURL短縮アプリ | `just test-dev` |
+| [Library examples](examples/api-catalog/README.md) | KV、Cache、D1、R2、型付きClient、Queue、Socket、設定、ログ | `just test-api-catalog` |
 | [Static Assets](examples/static-assets/README.md) | 1つのWorkerによる静的ファイルとHaskell APIの配信 | `just test-static-assets` |
 | [Realtime](examples/realtime/README.md) | WebSocketとDurable Object SQL | `just test-realtime` |
 | [Workflows](examples/workflows/README.md) | 永続step、retry、wait、event、lifecycle control | `just test-workflows` |

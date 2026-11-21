@@ -39,7 +39,7 @@
    両追補とも「plan確定」版のあとに「実装確認 (2026-07-24, batch A6-6 U13)」節が追記され、実コードとの突合結果が記録されている。0012 は「差分: なし」、0013 は「差分: 決定1の2点」（=上記4番）。この確認済み/未確認のペア構造自体が今回初出であり、lihs が把握しておくべき運用パターン。
 
 10. **0019 テスト構成節 — ADR-0017 の三層テスト分類を物理配置へ解釈した箇所（新規ファイル初回レビュー）**
-    0019 は新規ファイルであり全体が初回レビュー対象。特に「テスト構成」節（tier1=各パッケージ `unit` スイート、tier3=server パッケージ `compat` スイート、tier2=`examples/quickstart/test/integration/*.ts`）は ADR-0017 が定義した三層テスト分類を初めて物理配置へ落とし込んだ解釈であり、他 ADR からの参照（0017 追補・0020 の検証サイクル）とも整合しているか確認価値あり。
+    0019 は新規ファイルであり全体が初回レビュー対象。特に「テスト構成」節（tier1=各パッケージ `unit` スイート、tier3=server パッケージ `compat` スイート、tier2=`examples/url-shortener/test/integration/*.ts`）は ADR-0017 が定義した三層テスト分類を初めて物理配置へ落とし込んだ解釈であり、他 ADR からの参照（0017 追補・0020 の検証サイクル）とも整合しているか確認価値あり。
 
 ---
 
@@ -78,7 +78,7 @@
 - 決定3: `Internal.FFI.X` は対応する `Binding.X` を import しない（循環回避）、モジュール間ヘルパ共有もしない。
 - 決定4: `JSString` は FFI 境界を越えられない（実測でコンパイル不能）。文字列は Bytes bridge + TextEncoder/TextDecoder 経由。
 - 決定5: ArrayBuffer 系は Uint8Array view 化 + 二段 null 判定。null 判定の厳密さは API 毎に異なる（D1 は `=== null` 厳密、KV/R2 は nullish 許容）。
-- 決定6: `_probe*` foreign export は `examples/quickstart` 限定（dead-code-elimination対象外のため）。macrotask yield（`setTimeout(...,0)`）がテストハーネス側で必要（ライブラリ実装の問題ではない）。
+- 決定6: `_probe*` foreign export は `examples/url-shortener` 限定（dead-code-elimination対象外のため）。macrotask yield（`setTimeout(...,0)`）がテストハーネス側で必要（ライブラリ実装の問題ではない）。
 - **判断要素なし**（すべて実機検証済みの確定事項として記録）。
 
 ### 0006-servant-execution-engine.md（M）
@@ -202,9 +202,9 @@
 
 本文（4パッケージ分割の骨格決定）+ 2つの追補（07-22, 07-24）が一体で新規ファイルとして初出。
 
-- 本文: `cloudflare-workers`（基盤/leaf）/ `servant-cloudflare-workers`（server）/ `servant-cloudflare-workers-client`（client）/ `servant-cloudflare-workers-access`（auth）の4パッケージへ分割。root直下フラット配置（`servant`本家の慣行に一致、`packages/`集約は不採用）。名前空間は複数形`Workers`統一。安定façadeと`*.Internal.*`の2層API。単一examples（`examples/quickstart`）がtier2統合fixture兼用。単一`src`ツリー + 並行`hs-source-dirs`不採用の原則。
-- **テスト構成節（上記一覧#10、要確認）**: ADR-0017の三層テスト分類の物理配置への初回解釈（tier1=各パッケージunit、tier3=serverパッケージcompat、tier2=examples/quickstart統合）。
-- **追補 (2026-07-22)**: stock GHC型検査は`ghc-wasm-compat`不使用、cabal `if os(wasi)` + ソース内CPP方式へ。`Internal/FFI/*`隔離の適用範囲は公開4パッケージ限定（`examples/quickstart`は対象外）。移植コードのBSD-3 attribution。
+- 本文: `cloudflare-workers`（基盤/leaf）/ `servant-cloudflare-workers`（server）/ `servant-cloudflare-workers-client`（client）/ `servant-cloudflare-workers-access`（auth）の4パッケージへ分割。root直下フラット配置（`servant`本家の慣行に一致、`packages/`集約は不採用）。名前空間は複数形`Workers`統一。安定façadeと`*.Internal.*`の2層API。単一examples（`examples/url-shortener`）がtier2統合fixture兼用。単一`src`ツリー + 並行`hs-source-dirs`不採用の原則。
+- **テスト構成節（上記一覧#10、要確認）**: ADR-0017の三層テスト分類の物理配置への初回解釈（tier1=各パッケージunit、tier3=serverパッケージcompat、tier2=examples/url-shortener統合）。
+- **追補 (2026-07-22)**: stock GHC型検査は`ghc-wasm-compat`不使用、cabal `if os(wasi)` + ソース内CPP方式へ。`Internal/FFI/*`隔離の適用範囲は公開4パッケージ限定（`examples/url-shortener`は対象外）。移植コードのBSD-3 attribution。
 - **追補 (2026-07-24)（上記一覧#5、要確認・重要）**: 「spike移行裁定」— 07-22追補のCPP方式がpublic/productionモジュールにまで広がった逸脱を、lihsが2026-07-24 grill（E-Q13）で裁定し、自前vendored module（`data JSVal`のみ~10行）による host型シムへ回帰する方針に確定。CPPは`Internal/FFI/*`限定に縮退。**配置（internal sublibrary か共有packageか）はA6bで実装者が確定、本追補時点では未着手**。移行タイミングはA6 close直後・A7着手前の独立theme A6b。既存コース（cloudflare-workers-hs-build、84章）との構造乖離はPhase Bのコース更新で「進化」narrativeとして吸収予定、既存章の逐次書き換えは対象外。
 
 ### 0020-cloudflare-verification-cycle.md（??新規）
@@ -214,6 +214,6 @@
 
 ### 0021-language-edition-ghc2024.md（??新規）
 
-- 追補なし、新規承認済みADR。全パッケージ（4パッケージ+examples/quickstart+dev-only conformance-oracle）の`default-language`を`GHC2021`から`GHC2024`へ統一。理由はupstream(konn系)との言語版一致 + `default-extensions`重複削除。`MonoLocalBinds`による局所束縛の多相推論制限というトレードオフを明記、実測では既存コードへの型注釈追加ゼロで通過。
+- 追補なし、新規承認済みADR。全パッケージ（4パッケージ+examples/url-shortener+dev-only conformance-oracle）の`default-language`を`GHC2021`から`GHC2024`へ統一。理由はupstream(konn系)との言語版一致 + `default-extensions`重複削除。`MonoLocalBinds`による局所束縛の多相推論制限というトレードオフを明記、実測では既存コードへの型注釈追加ゼロで通過。
 - 中立フォローアップ: 教材側（pschoolコース）は`GHC2021`前提のままで乖離が生じる旨を記録（本ADRは事実記録のみ、教材更新は別途）。
 - **判断要素なし**（新規承認事実として記録するのみ）。

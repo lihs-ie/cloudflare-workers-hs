@@ -24,8 +24,6 @@ module Cloudflare.Workers.Internal.FFI.DurableObject (
     doStorageGetAlarmViaFFI,
     doStorageSetAlarmViaFFI,
     doStorageDeleteAlarmViaFFI,
-    doQueueIdempotencyClaimViaFFI,
-    doQueueIdempotencyTransitionViaFFI,
     doAlarmRetryCountViaFFI,
     doAlarmIsRetryViaFFI,
     doAlarmScheduledTimeMillisViaFFI,
@@ -484,44 +482,6 @@ doStorageDeleteAlarmViaFFI storageJSVal = do
     envelopeJSVal <- jsDoStorageDeleteAlarmEnveloped storageJSVal
     decodeEnveloped (const (pure ())) envelopeJSVal
 
-doQueueIdempotencyClaimViaFFI ::
-    JSVal ->
-    Text ->
-    Text ->
-    Integer ->
-    Integer ->
-    IO (Either Text (Text, Text, Text, Maybe Integer))
-doQueueIdempotencyClaimViaFFI storageJSVal operationIdentifier claimIdentifier observedAt leaseExpiresAt = do
-    operationJSVal <- textToJSVal operationIdentifier
-    claimJSVal <- textToJSVal claimIdentifier
-    envelopeJSVal <-
-        jsDoQueueIdempotencyClaimEnveloped
-            storageJSVal
-            operationJSVal
-            claimJSVal
-            (fromInteger observedAt)
-            (fromInteger leaseExpiresAt)
-    decodeEnveloped decodeQueueIdempotencyResult =<< jsValidateQueueIdempotencyResultEnveloped envelopeJSVal
-
-doQueueIdempotencyTransitionViaFFI ::
-    JSVal -> Text -> Text -> Integer -> Text -> IO (Either Text (Text, Text, Text, Maybe Integer))
-doQueueIdempotencyTransitionViaFFI storageJSVal operationIdentifier claimIdentifier observedAt terminal = do
-    operationJSVal <- textToJSVal operationIdentifier
-    claimJSVal <- textToJSVal claimIdentifier
-    terminalJSVal <- textToJSVal terminal
-    envelopeJSVal <- jsDoQueueIdempotencyTransitionEnveloped storageJSVal operationJSVal claimJSVal (fromInteger observedAt) terminalJSVal
-    decodeEnveloped decodeQueueIdempotencyResult =<< jsValidateQueueIdempotencyResultEnveloped envelopeJSVal
-
-decodeQueueIdempotencyResult :: JSVal -> IO (Text, Text, Text, Maybe Integer)
-decodeQueueIdempotencyResult resultJSVal = do
-    tag <- jsValToText =<< jsQueueIdempotencyResultTag resultJSVal
-    status <- jsValToText =<< jsQueueIdempotencyResultStatus resultJSVal
-    claimIdentifier <- jsValToText =<< jsQueueIdempotencyResultClaimIdentifier resultJSVal
-    leaseJSVal <- jsQueueIdempotencyResultLease resultJSVal
-    leaseIsNullish <- jsIsNullishStorageValue leaseJSVal
-    maybeLease <- if leaseIsNullish then pure Nothing else Just . round <$> jsAlarmTimeMillis leaseJSVal
-    pure (tag, status, claimIdentifier, maybeLease)
-
 doAlarmRetryCountViaFFI :: JSVal -> IO Int
 doAlarmRetryCountViaFFI = jsDoAlarmRetryCount
 
@@ -741,115 +701,6 @@ foreign import javascript safe
     })()
     """
     jsDoStorageDeleteAlarmEnveloped :: JSVal -> IO JSVal
-
-foreign import javascript safe
-    """
-    (async () => {
-      try {
-        const value = await $1.transaction(async (txn) => {
-          const key = `queue-idempotency:${$2}`
-          const existing = await txn.get(key);
-
-          if (existing === undefined || existing.status === 'failed' || (existing.status === 'pending' && existing.leaseExpiresAtMilliseconds <= $4))  {
-            const state = {
-              status: 'pending',
-              claimIdentifier: $3,
-              leaseExpiresAtMilliseconds: $5
-            };
-
-            await txn.put(key, state);
-            return { tag: 'acquired', ...state };
-          }
-
-          if (existing.status === 'completed') {
-              return { tag: 'alreadyCompleted', ...existing };
-          }
-
-          return { tag: 'inProgress', ...existing };
-        });
-        return { ok: true, value };
-      } catch (error) {
-        let message = 'Queue idempotency operation failed with an unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      } 
-    })()
-    """
-    jsDoQueueIdempotencyClaimEnveloped :: JSVal -> JSVal -> JSVal -> Double -> Double -> IO JSVal
-
-foreign import javascript safe
-    """
-    (async () => {
-      try {
-        const value = await $1.transaction(async (txn) => {
-          const key = `queue-idempotency:${$2}`;
-          const existing = await txn.get(key);
-          if (existing === undefined) {
-            return { tag: 'ownershipLost', status: 'missing', claimIdentifier: '', leaseExpiresAtMilliseconds: null };
-          }
-          if (existing.status === 'pending' && existing.claimIdentifier === $3 &&
-              existing.leaseExpiresAtMilliseconds > $4) {
-            const state = { status: $5, claimIdentifier: $3, leaseExpiresAtMilliseconds: null };
-            await txn.put(key, state);
-            return { tag: 'transitioned', ...state };
-          }
-          if (existing.status === $5 && existing.claimIdentifier === $3) {
-            return { tag: 'alreadyTerminal', ...existing };
-          }
-          return { tag: 'ownershipLost', ...existing };
-        });
-        return { ok: true, value };
-      } catch (error) {
-        let message = 'Queue idempotency operation failed with an unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      }
-    })()
-    """
-    jsDoQueueIdempotencyTransitionEnveloped :: JSVal -> JSVal -> JSVal -> Double -> JSVal -> IO JSVal
-
--- Validate before unsafe field readers: a malformed transaction result must
--- become a recoverable envelope failure, not unwind the WASM reactor.
-foreign import javascript unsafe
-    """
-    (() => {
-      try {
-        if (!$1.ok) {
-          return $1;
-        }
-        const result = $1.value;
-        if (result === null || typeof result !== 'object') {
-          throw new TypeError('Invalid queue idempotency result: expected object');
-        }
-        const { tag, status, claimIdentifier, leaseExpiresAtMilliseconds } = result;
-        if (typeof tag !== 'string' || typeof status !== 'string' || typeof claimIdentifier !== 'string') {
-          throw new TypeError('Invalid queue idempotency result: expected string fields');
-        }
-        if (leaseExpiresAtMilliseconds != null &&
-            (!Number.isSafeInteger(leaseExpiresAtMilliseconds) || leaseExpiresAtMilliseconds < 0)) {
-          throw new TypeError('Invalid queue idempotency result: invalid lease timestamp');
-        }
-        return { ok: true, value: { tag, status, claimIdentifier, leaseExpiresAtMilliseconds } };
-      } catch (error) {
-        let message = 'Invalid queue idempotency result: unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      }
-    })()
-    """
-    jsValidateQueueIdempotencyResultEnveloped :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.tag"
-    jsQueueIdempotencyResultTag :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.status"
-    jsQueueIdempotencyResultStatus :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.claimIdentifier"
-    jsQueueIdempotencyResultClaimIdentifier :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.leaseExpiresAtMilliseconds"
-    jsQueueIdempotencyResultLease :: JSVal -> IO JSVal
 
 foreign import javascript unsafe
     """

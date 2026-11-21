@@ -1,0 +1,5 @@
+/worker/*.wasm
+/worker/*-jsffi.mjs
+/worker/build.json
+/.wrangler/
+/test-artifacts/

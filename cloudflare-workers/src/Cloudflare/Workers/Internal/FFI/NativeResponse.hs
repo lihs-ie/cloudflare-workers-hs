@@ -35,32 +35,31 @@ foreign import javascript unsafe
     """
     (() => {
       try {
-      const snapshot = $1;
-      const headers = new Headers(JSON.parse($2));
-      const response = new Response(snapshot.body, snapshot.original);
+        const snapshot = $1;
+        const headers = new Headers(JSON.parse($2));
+        const response = new Response(snapshot.body, snapshot.original);
 
-      for (const name of Array.from(response.headers.keys())) {
-        response.headers.delete(name);
-      }
-
-      for (const [name, value] of headers.entries()) {
-        if (name.toLowerCase() !== 'set-cookie') {
-          response.headers.append(name, value);
+        for (const name of Array.from(response.headers.keys())) {
+          response.headers.delete(name);
         }
-      }
 
-      for (const cookie of headers.getSetCookie()) {
-        response.headers.append('set-cookie', cookie);
-      }
+        for (const [name, value] of headers.entries()) {
+          if (name.toLowerCase() !== 'set-cookie') {
+            response.headers.append(name, value);
+          }
+        }
 
-      return { ok: true, value: response };
+        for (const cookie of headers.getSetCookie()) {
+          response.headers.append('set-cookie', cookie);
+        }
+
+        return { ok: true, value: response };
       } catch (error) {
         let message = 'Native response rendering failed';
-        try { 
-            message = String(error);
+        try {
+          message = String(error);
         } catch (_) {
         }
-
 
         return { ok: false, message };
       }
@@ -72,27 +71,23 @@ foreign import javascript unsafe
     """
     (() => {
       try {
-      const snapshot = $1;
-      const status = $2;
+        const snapshot = $1;
+        const status = $2;
 
-      const response = new Response(
-        snapshot.body,
-        {
+        const response = new Response(snapshot.body, {
           status,
-          headers: new Headers(JSON.parse($2)),
+          headers: new Headers(JSON.parse($3)),
           cf: snapshot.cf,
-          websocket: status === 101 ? snapshot.webSocket : null,
-          encodeBody: $4 ? 'manual' : 'automatic'
-        }
-      );
+          webSocket: status === 101 ? snapshot.webSocket : null,
+          encodeBody: $4 ? 'manual' : 'automatic',
+        });
 
-      return { ok: true, value: response };
+        return { ok: true, value: response };
       } catch (error) {
         let message = 'Native response rendering failed';
-        try { 
-          message = String(error); 
+        try {
+          message = String(error);
         } catch (_) {
-
         }
 
         return { ok: false, message };

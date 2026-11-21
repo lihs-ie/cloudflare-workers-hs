@@ -17,6 +17,7 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          jsToolchain = import ./nix/js-toolchain.nix { inherit pkgs system; };
           fourmolu = pkgs.writeShellApplication {
             name = "fourmolu";
             runtimeInputs = [ pkgs.dotslash ];
@@ -29,8 +30,8 @@
           default = pkgs.mkShell {
             buildInputs = [
               ghc-wasm-meta.packages.${system}.all_9_14
-              pkgs.nodejs_24
-              pkgs.pnpm
+              jsToolchain.node
+              jsToolchain.pnpm
               pkgs.gmp
               fourmolu
               pkgs.hlint
@@ -44,6 +45,7 @@
               if [ -f "$wasm_env" ]; then
                 source "$wasm_env"
               fi
+              export PATH="${jsToolchain.node}/bin:${jsToolchain.pnpm}/bin:$PATH"
             '';
           };
         }

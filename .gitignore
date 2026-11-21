@@ -28,6 +28,9 @@ artifacts/
 /packages/
 *.tix
 __pycache__/
-/.wrangler/
+**/.wrangler/
 _build
 node_modules
+
+**/.dev-test-*
+**/.shared-coverage-*

@@ -7,12 +7,12 @@
     name: Avoid restricted function
     within:
       - Servant.Cloudflare.Workers.Access.Internal.JWKSCache
-      - ExampleSupport.Interop
+      - WorkersSupport.Interop
 - ignore:
     name: Use lambda-case
     within:
       - Cloudflare.Workers.Binding.D1.Query
-      - LibraryExamples.Application
+      - ApiCatalog.Application
       - Main
 - ignore:
     name: Use ==

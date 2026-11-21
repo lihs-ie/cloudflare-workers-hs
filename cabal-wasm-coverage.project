@@ -13,12 +13,12 @@ package servant-cloudflare-workers-access
 package servant-cloudflare-workers-client
   ghc-options: -fhpc -hpcdir .hpc/wasm
 
-package quickstart
+package url-shortener
   flags: +wasm-coverage
   ghc-options: -fhpc -hpcdir .hpc/wasm
 
 
-package library-examples
+package api-catalog
   flags: +wasm-coverage
   ghc-options: -fhpc
 
@@ -38,11 +38,18 @@ package workflow-example
   flags: +wasm-coverage
   ghc-options: -fhpc
 
-package quickstart-domain
+package url-shortener-domain
   ghc-options: -fhpc -hpcdir .hpc/wasm
 
-package quickstart-infrastructure
+package url-shortener-infrastructure
   ghc-options: -fhpc -hpcdir .hpc/wasm
 
-package quickstart-management
+package url-shortener-management
   ghc-options: -fhpc -hpcdir .hpc/wasm
+
+package runtime-contracts
+  ghc-options: -fhpc -hpcdir .hpc/wasm-library-runtime
+
+package queued-jobs
+  flags: +wasm-coverage
+  ghc-options: -fhpc

@@ -2,15 +2,12 @@ module Cloudflare.Workers.Internal.FFI.Stream (
     readableStreamCancelViaFFI,
     readableStreamWithLengthViaFFI,
     readableStreamDrain,
-    readableStreamToLazyByteString,
     StreamDrainOutcome (..),
     StreamDrainFailure (..),
     producerDrivenReadableStreamViaFFI,
     readableStreamGetReaderViaFFI,
     readableStreamReaderReadViaFFI,
     withReadableStreamReaderViaFFI,
-    streamDrainStepDecision,
-    StreamDrainStep (..),
 ) where
 
 import Cloudflare.Workers.Internal.FFI.Bytes (byteStringToJSByteArray, jsByteArrayToByteString)
@@ -23,21 +20,6 @@ import Data.ByteString.Lazy qualified as LazyByteString
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
-
-readableStreamToLazyByteString :: Int -> JSVal -> IO (Maybe LazyByteString.ByteString)
-readableStreamToLazyByteString byteLimit streamJSValue = do
-    outcome <- readableStreamDrain byteLimit streamJSValue
-    case outcome of
-        StreamDrainCompleted lazyByteString -> pure (Just lazyByteString)
-        StreamDrainByteLimitExceeded -> pure Nothing
-        StreamDrainStalled -> pure Nothing
-        StreamDrainFailed failureMessage -> throwIO (StreamDrainFailure failureMessage)
-
-data StreamDrainStep
-    = StreamDrainContinue Integer
-    | StreamDrainStopByteLimitExceeded
-    | StreamDrainStopStalled
-    deriving stock (Show, Eq)
 
 data StreamDrainOutcome
     = StreamDrainCompleted LazyByteString.ByteString
@@ -135,14 +117,6 @@ foreign import javascript unsafe "$1.completed === true"
 
 foreign import javascript unsafe "(() => { try { $1.releaseLock(); } catch (_) {} })()"
     jsReleaseReader :: JSVal -> IO ()
-
-streamDrainStepDecision :: Integer -> Int -> Int -> StreamDrainStep
-streamDrainStepDecision totalBytesRead byteLimit chunkByteCount
-    | chunkByteCount <= 0 = StreamDrainStopStalled
-    | newTotalBytesRead > toInteger byteLimit = StreamDrainStopByteLimitExceeded
-    | otherwise = StreamDrainContinue newTotalBytesRead
-  where
-    newTotalBytesRead = totalBytesRead + toInteger chunkByteCount
 
 producerDrivenReadableStreamViaFFI ::
     ((ByteString.ByteString -> IO Bool) -> IO (Maybe Text)) ->

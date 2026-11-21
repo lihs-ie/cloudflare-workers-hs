@@ -8,13 +8,18 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["node"],
-    "typeRoots": ["../quickstart/node_modules/@types"]
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../../node_modules/@types"
+    ]
   },
   "include": [
     "worker/**/*.ts",
     "worker/**/*.d.mts",
     "test/**/*.ts",
-    ".wrangler/types/worker-configuration.d.ts"
+    ".wrangler/types/worker-configuration.d.ts",
+    "test/**/*.mts"
   ]
 }

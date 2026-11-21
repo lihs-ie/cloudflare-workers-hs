@@ -1,7 +1,7 @@
-module Support.Coverage (withCoverage) where
+module Support.Coverage (withCoverage, withDeferredCoverage) where
 
 import Control.Exception (finally, throwIO)
-import ExampleSupport.Interop (decodeEnveloped, textToJSVal)
+import WorkersSupport.Interop (decodeEnveloped, textToJSVal)
 import Trace.Hpc.Reflect (examineTix)
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)
@@ -17,6 +17,17 @@ withCoverage action = action `finally` collect
       -- discard the promise instead of waiting for upload completion.
       result <- upload snapshot
       decodeEnveloped (const (pure ())) result >>= either (throwIO . userError . Text.unpack) pure
+
+-- Workflow cancellation ends its I/O scope before finalizers can finish a fetch.
+-- Keep these counters in memory; the host drains them from a fresh HTTP request.
+withDeferredCoverage :: IO a -> IO a
+withDeferredCoverage action = action `finally` collect
+  where
+    collect = examineTix >>= textToJSVal . Text.pack . show >>= saveSnapshot
+
+foreign import javascript unsafe
+  "(snapshot => { (globalThis.workflowCoverageSnapshots ??= []).push(snapshot); })($1)"
+  saveSnapshot :: JSVal -> IO ()
 
 foreign import javascript safe
   "(async()=>{try{const response=await fetch(WASM_COVERAGE_ENDPOINT,{method:'POST',body:$1});if(!response.ok){throw new Error('Coverage upload failed: '+response.status);}return {ok:true,value:null};}catch(error){return {ok:false,message:String(error)};}})()"
