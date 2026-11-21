@@ -7,4 +7,4 @@ set -euo pipefail
 hlint . --ignore='Parse error'
 
 rg -l -0 '"""' --glob '*.hs' |
-    xargs -0 -r -n 1 -P 4 sh -c 'scripts/hlint-multiline-javascript-ffi --no-summary < "$1"' _
+    xargs -0 -r -n 1 -P 4 sh -c 'node scripts/testing/hlint-multiline-javascript-ffi.mts --no-summary < "$1"' _

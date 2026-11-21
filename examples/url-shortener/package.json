@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test:runtime:coverage": "vitest run --config vitest.runtime.config.mts --coverage && node test/Support/Runtime/coverage-inventory.mts",
     "test:dev": "node test/Support/Dev/run.mts",
-    "test:docker": "python3 ../../scripts/testing/dev-docker.py"
+    "test:docker": "node ../../scripts/testing/dev-docker.mts"
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "^0.4.2",

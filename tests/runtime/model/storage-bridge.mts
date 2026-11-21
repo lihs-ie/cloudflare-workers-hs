@@ -22,7 +22,10 @@ const timeout = setTimeout(() => {
   process.exit(1);
 }, 60_000);
 try {
-  const modules: Record<string, { type: 'esm' | 'wasm'; contents: string | Uint8Array }> = {};
+  const modules: Record<
+    string,
+    { type: 'esm' | 'wasm'; contents: string | Uint8Array<ArrayBuffer> }
+  > = {};
   for (const filename of readdirSync(dirname(bundle))) {
     if (filename === basename(bundle)) {
       modules[filename] = { type: 'esm', contents: readFileSync(bundle, 'utf8') };

@@ -10,7 +10,7 @@
 | esbuild / zod / yaml | 0.28.2 / 4.6.7 / 2.9.1 |
 | c8 / TypeScript | 12.0.0 / 7.0.2 |
 | Node型 | Node 24系列に合わせ24.19.2 |
-| DockerのNode | 24.8.0から24.22.3へ更新（[公式配布物](https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt)で確認） |
+| Node / pnpm | CI・Nix・Dockerで24.22.3 / 12.22.0を固定 |
 | 間接依存の修正版 | Vite 8.2.4、source-map-js 1.2.2、glob 14.0.2、minimatch 11.0.1をoverride |
 | Haskell index-state | host/WASMとも2026-11-14T00:00:00Z |
 | Haskell修正版の下限 | aeson 2.2.5.1、text-iso8601 0.1.1.2、scientific 0.3.10.0、host warp 3.4.17 |
@@ -23,4 +23,10 @@ Haskellでは[HSEC-2026-0007](https://haskell.github.io/security-advisories/advi
 
 解決されたHaskell依存はhost/WASMともaeson 2.2.5.1・text-iso8601 0.1.1.2・scientific 0.3.10.0、hostのwarpは3.4.21です。
 
-公開Git版`@cloudflare-workers-hs/runtime`は既存のコミット固定を維持します。上流差分にruntime APIの変更がないことを確認し、不要なGit依存更新を避けています。Pythonのcoverageは7.17.3へ更新しました。
+公開Git版`@cloudflare-workers-hs/runtime`は既存のコミット固定を維持します。上流差分にruntime APIの変更がないことを確認し、不要なGit依存更新を避けています。
+
+## CIの依存監査
+
+PRで依存・ツールチェーン・ワークフローの設定が変わった場合と、定期実行時に、ロック済みのnpm依存を監査します。High/Criticalの検出時と、監査結果を取得できない場合はジョブが失敗します。ローカルでも `node scripts/testing/dependency-audit.mts` を使えます。
+
+GitHub ActionsはコミットSHAで固定し、PRのジョブは読み取り権限で実行します。固定ロックでインストールし、公開後24時間の待機と個別にレビューした例外を適用します。依存のライフサイクルは既存のGitコミット固定パッケージだけを許可します。[Node.js 24.22.3](https://nodejs.org/en/blog/release/v24.22.3/) [pnpm 12.22.0](https://pnpm.io/blog/releases/12.22.0)

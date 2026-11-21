@@ -13,68 +13,65 @@ test-runtime-distribution:
     pnpm test:package
 
 test-host:
-    python3 scripts/testing/run.py host
+    node scripts/testing/run.mts host
 
 test-conformance:
-    python3 scripts/testing/run.py conformance
+    node scripts/testing/run.mts conformance
 
 test-integration:
-    python3 scripts/testing/run.py integration
+    node scripts/testing/run.mts integration
 
 test-dev:
-    python3 scripts/testing/run.py dev
+    node scripts/testing/run.mts dev
 
 test-docker:
-    python3 scripts/testing/run.py docker
+    node scripts/testing/run.mts docker
 
 test-static-assets:
-    python3 scripts/testing/run.py static-assets
+    node scripts/testing/run.mts static-assets
 
 test-realtime:
-    python3 scripts/testing/run.py realtime
+    node scripts/testing/run.mts realtime
 
 test-workflows:
-    python3 scripts/testing/run.py workflows
+    node scripts/testing/run.mts workflows
 
 test-minimal:
-    python3 scripts/testing/run.py minimal
+    node scripts/testing/run.mts minimal
 
 test-api-catalog:
-    python3 scripts/testing/run.py api-catalog
+    node scripts/testing/run.mts api-catalog
 
 test-model:
-    python3 scripts/testing/run.py model --examples 10
+    node scripts/testing/run.mts model --examples 10
 
 test-coverage:
-    python3 scripts/testing/run.py coverage
+    node scripts/testing/run.mts coverage
 
 test-coverage-report:
-    python3 scripts/testing/run.py coverage --report-only
+    node scripts/testing/run.mts coverage --report-only
 
 test-replay target seed="42":
-    python3 scripts/testing/run.py replay --target {{quote(target)}} --seed {{quote(seed)}}
+    node scripts/testing/run.mts replay --target {{quote(target)}} --seed {{quote(seed)}}
 
 test-registration:
-    python3 scripts/testing/registration.py --output artifacts/testing/registration.json
+    node scripts/testing/registration.mts --output artifacts/testing/registration.json
 
 test-internal-boundary-manifest:
-    python3 scripts/testing/internal-module-boundaries.py manifest
+    node scripts/testing/internal-module-boundaries.mts manifest
 
 test-internal-boundaries: test-internal-boundary-manifest
-    python3 scripts/testing/internal-module-boundaries.py consumer
+    node scripts/testing/internal-module-boundaries.mts consumer
 
 test-tools:
     pnpm test:tools
-    python3 -m unittest discover -s scripts/testing/test -t scripts/testing -p 'test_*.py'
-    python3 scripts/testing/test/coverage_checks.py
-    python3 scripts/testing/test/mutation_checks.py
 
 test-mutations:
-    python3 scripts/testing/mutations.py
+    node scripts/testing/mutations.mts
 
 lint: test-registration test-internal-boundary-manifest
-    python3 scripts/testing/test-boundaries.py
+    node scripts/testing/test-boundaries.mts
     scripts/hlint
 
 test-queued-jobs:
-    python3 scripts/testing/run.py queued-jobs
+    node scripts/testing/run.mts queued-jobs

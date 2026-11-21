@@ -20,7 +20,7 @@ tests/runtime/                       # 開発専用のライブラリ契約実�
 
 scripts/testing/                     # ローカル・CI・証跡収集の入口
   Support/                           # 起動停止、計測、入力ハッシュ検証
-  test/                              # テスト基盤自身のPython/Nodeテスト
+  test/                              # テスト基盤自身のNodeテスト
 
 examples/<name>/
   test/unit/                         # example固有のドメイン/API契約
@@ -34,21 +34,21 @@ JavaScriptの手書きテスト・実行補助はTypeScriptへ統一します。
 
 ## 実行
 
-リポジトリルートで`pnpm install --frozen-lockfile`を実行します。WASMビルドには`wasm32-wasi-cabal`、ホストテストにはプロジェクト指定のGHCが必要です。api-catalogのローカルTLS fixtureにはOpenSSLを使います。Dockerイメージには含めています。
+Nodeとpnpmは`.node-version`と`package.json`で固定しています。CI・Nix・Dockerでも同じバージョンを使います。リポジトリルートで`pnpm install --frozen-lockfile`を実行します。WASMビルドには`wasm32-wasi-cabal`、ホストテストにはプロジェクト指定のGHCが必要です。api-catalogのローカルTLS fixtureにはOpenSSLを使います。Dockerイメージには含めています。
 
 | コマンド | 確認すること |
 | --- | --- |
 | `pnpm typecheck` | Wranglerの構成別型、全example、共通ツール、ライブラリランタイムの型 |
 | `pnpm test:tools` | Nodeでテスト基盤の実動作を検証 |
-| `just test-tools` | PythonとNodeのテスト基盤検証 |
-| `python3 scripts/testing/registration.py` | テスト入口と分割caseの静的登録 |
-| `python3 scripts/testing/test-boundaries.py` | exampleとライブラリ・共通基盤の依存方向 |
-| `python3 scripts/testing/run.py host` | ホスト単体テストと探索の契約 |
-| `python3 scripts/testing/run.py conformance` | Servantとの互換性 |
+| `just test-tools` | Nodeでテスト基盤を検証 |
+| `node scripts/testing/registration.mts` | テスト入口と分割caseの静的登録 |
+| `node scripts/testing/test-boundaries.mts` | exampleとライブラリ・共通基盤の依存方向 |
+| `node scripts/testing/run.mts host` | ホスト単体テストと探索の契約 |
+| `node scripts/testing/run.mts conformance` | Servantとの互換性 |
 | `pnpm --dir tests/runtime build:runtime` | ライブラリ契約用reactorの生成 |
 | `pnpm --dir tests/runtime test:runtime` | ライブラリの実WASM契約 |
-| `python3 scripts/testing/run.py model` | 実WASMを使った状態モデル検証 |
-| `python3 scripts/testing/run.py integration` | ライブラリ、アプリfixture、本番構成の統合検証 |
+| `node scripts/testing/run.mts model` | 実WASMを使った状態モデル検証 |
+| `node scripts/testing/run.mts integration` | ライブラリ、アプリfixture、本番構成の統合検証 |
 | `just test-docker` | 7例のLinux workerd検証 |
 
 各exampleの実行方法は[examples/README.md](examples/README.md)を参照してください。
@@ -64,15 +64,15 @@ Workflowの計測では、キャンセルによって終了した実行コンテ
 
 計測は次の順序で実行します。WASM計測用ビルドと通常ビルドは同じ生成物を更新するため、並行して実行しません。
 
-1. `python3 scripts/testing/Support/python_coverage.py`でPythonの行・分岐と子プロセスを計測します。
-2. `python3 scripts/testing/shell-coverage.py --output artifacts/testing/shell-coverage-<run>`で8つのビルドスクリプトを実Bash/kcovで計測します。コンパイラ・post-link・manifestは外部境界の代替です。シェルの分岐率は未計測のまま残します。
-3. `python3 scripts/testing/compile-validation.py`で18の型宣言・型契約を検証します。型宣言に実行カバレッジの割合を付けません。
-4. `python3 scripts/testing/native-tools-coverage.py`でネイティブCLIとGHCプラグインを実行・計測します。
-5. `python3 scripts/testing/wasm-coverage.py --all-examples`でライブラリと7例のHaskellを実WASMで計測します。
-6. 通常ビルドを復元して、統合テスト・`workerd-js-coverage.py`・`shared-node-coverage.py`・`example-node-coverage.py`の証跡を採取します。
-7. `python3 scripts/testing/run.py coverage --skip-runtime-build --report-only`でホストHPCを採取し、現在の入力と一致する各collectorの最新証跡を集約します。
+1. `node scripts/testing/example-node-coverage.mts --tools-only`でテスト基盤の行・分岐・関数をV8/c8で計測します。テストが起動するNodeの子プロセスも対象です。
+2. `node scripts/testing/shell-coverage.mts --output artifacts/testing/shell-coverage-<run>`で8つのビルドスクリプトを実Bash/kcovで計測します。コンパイラ・post-link・manifestは外部境界の代替です。シェルの分岐率は未計測のまま残します。
+3. `node scripts/testing/compile-validation.mts`で18の型宣言・型契約を検証します。型宣言に実行カバレッジの割合を付けません。
+4. `node scripts/testing/native-tools-coverage.mts`でネイティブCLIとGHCプラグインを実行・計測します。
+5. `node scripts/testing/wasm-coverage.mts --all-examples`でライブラリと7例のHaskellを実WASMで計測します。
+6. 通常ビルドを復元して、統合テスト・`workerd-js-coverage.mts`・`shared-node-coverage.mts`・`example-node-coverage.mts`の証跡を採取します。
+7. `node scripts/testing/run.mts coverage --skip-runtime-build --report-only`でホストHPCを採取し、現在の入力と一致する各collectorの最新証跡を集約します。
 
-集約だけをやり直す場合は`python3 scripts/testing/run.py coverage --host-proof artifacts/testing/<run>/host/proof.json --report-only`を使います。ホストの再実行やモデルの再ビルドは行いません。Python・WASM・Node/workerd・型検証・シェルの証跡を自動探索し、改変・失敗・入力不一致の証跡を受理しません。`--report-only`の終了成功はカバレッジ達成を意味しません。生成レポートの`errors`・`unmeasured_sources`・`complete`を確認します。
+集約だけをやり直す場合は`node scripts/testing/run.mts coverage --host-proof artifacts/testing/<run>/host/proof.json --report-only`を使います。ホストの再実行やモデルの再ビルドは行いません。WASM・Node/workerd・型検証・シェルの証跡を自動探索し、改変・失敗・入力不一致の証跡を受理しません。`--report-only`の終了成功はカバレッジ達成を意味しません。生成レポートの`errors`・`unmeasured_sources`・`complete`を確認します。
 
 Imagesの実WASMテストでは、Binding境界へ制御可能な代替サービスを渡し、画像情報・変換順序・出力形式・アニメーション・ストリームと異常応答を検証します。Cloudflare上の画像変換サービス自体の動作保証とは区別します。
 
@@ -80,7 +80,7 @@ Haskellの型・再exportは`haskell-interface`、探索用`Spec.hs`は`haskell-
 
 WASM collectorはコンパイラ実体・target・バージョン・toolchain設定と各build planを保存します。同一ソース、同一コンパイラ、同一ランタイム、完全に同じラベル付きtick mapのreactorだけを集約します。CPPを含むソースはcomponent間投影しません。
 
-ホストHPCとWASM採取後、`python3 scripts/testing/haskell-validation.py --host-proof <host/proof.json> --wasm-proof <wasm/proof.json>`でHaskell契約を検証し、`run.py coverage --host-proof ... --report-only`で再集約します。型契約・探索契約は実行カバレッジの割合を持ちません。
+ホストHPCとWASM採取後、`node scripts/testing/haskell-validation.mts --host-proof <host/proof.json> --wasm-proof <wasm/proof.json>`でHaskell契約を検証し、`run.mts coverage --host-proof ... --report-only`で再集約します。型契約・探索契約は実行カバレッジの割合を持ちません。
 
 `otherwise`のFalse側は、`runtime-scope.json`にソースの指紋と正確なGuardBinBox位置を記録したものだけを到達不能として区別します。元のmetricsとカウンターはレポートに保持します。未知の条件・変更されたソース・False側に実カウンターがある条件を自動免除しません。
 

@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-workers-hs-workspace",
   "private": true,
-  "packageManager": "pnpm@12.4.1",
+  "packageManager": "pnpm@12.22.0",
   "scripts": {
     "test:package": "node scripts/testing/git-runtime-consumer.mts",
     "typecheck": "node scripts/testing/typecheck.mts && tsc -p tsconfig.tools.json",

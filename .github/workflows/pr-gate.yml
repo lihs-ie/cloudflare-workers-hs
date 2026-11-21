@@ -19,15 +19,29 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Python test dependencies
-        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
       - name: Check test registration and tooling regressions
         run: |
-          python3 scripts/testing/registration.py --output artifacts/testing/registration.json
-          python3 scripts/testing/internal-module-boundaries.py manifest
-          python3 scripts/testing/test-boundaries.py
-          python3 -m unittest discover -s scripts/testing/test -t scripts/testing -p 'test_*.py'
-          python3 scripts/testing/test/mutation_checks.py
+          node scripts/testing/registration.mts --output artifacts/testing/registration.json
+          node scripts/testing/internal-module-boundaries.mts manifest
+          node scripts/testing/test-boundaries.mts
+          node --test scripts/testing/test/*.policy.spec.mts
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+      - name: Scan dependencies changed by the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/testing/dependency-audit.mts --base-sha "$PR_BASE_SHA"
+      - name: Scan locked dependencies on schedule
+        if: github.event_name == 'schedule'
+        run: node scripts/testing/dependency-audit.mts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -40,8 +54,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Python test dependencies
-        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
       - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
@@ -79,8 +97,6 @@ jobs:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          version: 12.4.1
       - id: wasm-cabal-index-cache
         name: Restore WASM Cabal package index
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -104,19 +120,19 @@ jobs:
           pnpm typecheck
       - name: HLint
         run: nix develop --command scripts/hlint
-      - name: Coverage collector regressions
-        run: python3 scripts/testing/test/coverage_checks.py
+      - name: Testing tool regressions and coverage
+        run: node scripts/testing/example-node-coverage.mts --tools-only
       - name: Host tests
-        run: python3 scripts/testing/run.py host
+        run: node scripts/testing/run.mts host
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Internal modules are hidden from external consumers
-        run: python3 scripts/testing/internal-module-boundaries.py consumer
+        run: node scripts/testing/internal-module-boundaries.mts consumer
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Servant differential tests
         if: success() || failure()
-        run: python3 scripts/testing/run.py conformance
+        run: node scripts/testing/run.mts conformance
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Coverage evidence report
@@ -124,19 +140,19 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           nix develop --command pnpm build:runtime-tests
-          python3 scripts/testing/run.py coverage --skip-runtime-build --report-only
+          node scripts/testing/run.mts coverage --skip-runtime-build --report-only
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Broader generated input exploration
         if: github.event_name == 'schedule' && (success() || failure())
         run: |
-          python3 scripts/testing/run.py host --seed "$GITHUB_RUN_NUMBER" --examples 1000
-          python3 scripts/testing/run.py conformance --seed "$GITHUB_RUN_NUMBER" --examples 1000
+          node scripts/testing/run.mts host --seed "$GITHUB_RUN_NUMBER" --examples 1000
+          node scripts/testing/run.mts conformance --seed "$GITHUB_RUN_NUMBER" --examples 1000
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Representative mutation checks
         if: github.event_name == 'schedule' && (success() || failure())
-        run: python3 scripts/testing/mutations.py --output artifacts/testing/mutations
+        run: node scripts/testing/mutations.mts --output artifacts/testing/mutations
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -151,8 +167,12 @@ jobs:
       WASM_BUILD_DIR: dist-newstyle-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Python test dependencies
-        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
       - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
@@ -190,8 +210,6 @@ jobs:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          version: 12.4.1
       - id: wasm-cabal-index-cache
         name: Restore WASM Cabal package index
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -214,17 +232,17 @@ jobs:
       - name: Pinned Git runtime consumer
         run: nix develop --command pnpm test:package
       - name: Real WASM integration including production entrypoint
-        run: nix develop --command python3 scripts/testing/run.py integration
+        run: nix develop --command node scripts/testing/run.mts integration
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Production APIs through wrangler dev
         if: success() || failure()
-        run: nix develop --command python3 scripts/testing/run.py dev
+        run: nix develop --command node scripts/testing/run.mts dev
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Production APIs through Docker and wrangler dev
         if: success() || failure()
-        run: nix develop --command python3 scripts/testing/run.py docker
+        run: nix develop --command node scripts/testing/run.mts docker
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -243,8 +261,12 @@ jobs:
       WASM_BUILD_DIR: dist-newstyle-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Python test dependencies
-        run: python3 -m pip install --requirement scripts/testing/requirements.txt
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
       - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
         with:
           ghc-version: '9.14.1'
@@ -282,8 +304,6 @@ jobs:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          version: 12.4.1
       - id: wasm-cabal-index-cache
         name: Restore WASM Cabal package index
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -308,12 +328,12 @@ jobs:
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Generated state model against real WASM
-        run: python3 scripts/testing/run.py model --examples 10 --skip-runtime-build
+        run: node scripts/testing/run.mts model --examples 10 --skip-runtime-build
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - name: Broader state exploration
         if: github.event_name == 'schedule' && (success() || failure())
-        run: python3 scripts/testing/run.py model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
+        run: node scripts/testing/run.mts model --seed "$GITHUB_RUN_NUMBER" --examples 100 --skip-runtime-build
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-host
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
