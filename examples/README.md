@@ -28,6 +28,6 @@
 
 UrlShortenerだけはアプリが複数あるため、`apps/`に4つのHTTPアプリ、`workers/`にバックグラウンド処理、`packages/`に共有ドメインとD1アダプタを置きます。`app/`は実行ファイルの入口、`apps/`はアプリケーションの実装という違いがあります。
 
-Cabalの依存関係とコンパイラ設定はルートの`cabal.project`・`cabal-wasm.project`、Wrangler等の開発用JavaScript依存はルートの`package.json`、ロックファイルとpnpm workspace設定はリポジトリルートに集約しています。各exampleは、pnpm catalogで固定した公開Gitリポジトリ版`@cloudflare-workers-hs/runtime`を利用します。初回はリポジトリルートで`just setup-js`を実行してください。独立プロジェクトへコピーする場合の変更点は[minimalの説明](minimal/README.md#独立したプロジェクトにする場合)を参照してください。
+Cabalの依存関係とコンパイラ設定はルートの`cabal.project`・`cabal-wasm.project`、Wrangler等の開発用JavaScript依存はルートの`package.json`、ロックファイルとpnpm workspace設定はリポジトリルートに集約しています。各exampleは、同じワークスペースの`@cloudflare-workers-hs/runtime`を利用します。初回はリポジトリルートで`just setup-js`を実行してください。独立プロジェクトへコピーする場合の変更点は[minimalの説明](minimal/README.md#独立したプロジェクトにする場合)を参照してください。
 
 各機能の実装先・検証先は[機能一覧](features.md)にまとめます。テスト結果はルートの`artifacts/testing/`に保存します。

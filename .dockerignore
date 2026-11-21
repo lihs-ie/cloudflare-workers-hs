@@ -3,6 +3,8 @@
 **/.wrangler
 **/.hpc
 dist*
+packages/runtime/dist
+packages/runtime/coverage
 artifacts
 **/test-artifacts
 **/.dev-test-*

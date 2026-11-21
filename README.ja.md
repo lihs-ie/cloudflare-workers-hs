@@ -18,7 +18,7 @@
 | [`conformance-oracle/`](conformance-oracle/) | `servant-server` を使う比較オラクル | リポジトリ専用テストパッケージ |
 | `testing-support/` | レイヤー化したテスト検出の共通処理 | リポジトリ専用テストパッケージ |
 
-TypeScript runtimeは別リポジトリの [`cloudflare-workers-hs-runtime`](https://github.com/lihs-ie/cloudflare-workers-hs-runtime) で管理します。このworkspaceはpnpm catalogで正確なGit revisionを参照し、アプリケーションは `@cloudflare-workers-hs/runtime` としてimportします。
+TypeScript runtimeは [`packages/runtime`](packages/runtime) のpnpmワークスペースパッケージです。サンプルとランタイムテストは `@cloudflare-workers-hs/runtime` をimportします。
 
 ```text
 applications
@@ -83,9 +83,9 @@ just test-coverage-report   # 計測済み・未計測を明示したcoverageを
 
 ## 試運転での利用
 
-試運転中は、checkoutしたソースツリーまたはCabal projectで固定したGit revisionからHaskellパッケージを利用してください。Hackageのリリースにはまだ依存できません。TypeScript runtimeも [`pnpm-workspace.yaml`](pnpm-workspace.yaml) で固定されています。利用側で `pnpm pack` を実行する必要はありません。
+試運転中は、checkoutしたソースツリーまたはCabal projectで固定したGit revisionからHaskellパッケージを利用してください。Hackageのリリースにはまだ依存できません。外部アプリでは、同じGit revisionから [TypeScript runtimeをインストール](packages/runtime/README.ja.md#試運転中のインストール)してください。
 
-[minimal exampleの切り出し手順](examples/minimal/README.md#独立したプロジェクトにする場合)から始めてください。バージョンと配布方針は [ADR-0018](docs/adr/0018-versioning-release-distribution.md)、runtimeを別リポジトリに分離した判断は [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md) に記録しています。
+[minimal exampleの切り出し手順](examples/minimal/README.md#独立したプロジェクトにする場合)から始めてください。バージョンと配布方針は [ADR-0018](docs/adr/0018-versioning-release-distribution.md) に記録しています。 runtimeの配置と配布は [ADR-0029](docs/adr/0029-integrate-typescript-runtime-workspace.md) に記録しています。
 
 ## 提供範囲
 

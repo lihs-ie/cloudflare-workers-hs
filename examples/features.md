@@ -51,7 +51,7 @@ HTTP APIはアプリごとに1つの`NamedRoutes`ルートを持ちます。Queu
 - api-catalog: 宣言的cache/colo、HTTP timeout/retry、R2 metadata/SSE-C。
 - queued-jobs: RPC・Queue一括送信・DO SQL重複防止、D1の処理設定、DO KV設定履歴。
 - workflows: 承認後のUTC予約実行と、予定時刻前に業務書込みをしない検証。
-- 全example: pnpm workspace経由の公開npm package import。独立したpack consumer検証は`pnpm test:package`。
+- 全example: pnpm workspace経由の公開npm package import。ワークスペース外からのGit SHA固定インストール検証は`pnpm test:package`。
 - ライブラリ契約は`tests/runtime/`へ集約し、example固有のfixtureは各exampleの専用WASMへ分離。
 
 実装と最終検証の結果は[検証台帳](../docs/specs/testing-modernization-status.md)に記録します。

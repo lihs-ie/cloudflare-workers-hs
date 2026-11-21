@@ -2,7 +2,7 @@
 
 ## ステータス
 
-承認
+[ADR-0029](./0029-integrate-typescript-runtime-workspace.md) に置き換え
 
 ## コンテキスト
 

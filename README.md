@@ -18,7 +18,7 @@ The libraries are in a pre-release trial stage. They are not published to Hackag
 | [`conformance-oracle/`](conformance-oracle/) | `servant-server` comparison oracle | Repository-only test package |
 | `testing-support/` | Shared layered test discovery | Repository-only test package |
 
-The TypeScript runtime is maintained separately in [`cloudflare-workers-hs-runtime`](https://github.com/lihs-ie/cloudflare-workers-hs-runtime). This workspace consumes an exact Git revision through the pnpm catalog; applications import it as `@cloudflare-workers-hs/runtime`.
+The TypeScript runtime lives in [`packages/runtime`](packages/runtime) as the `@cloudflare-workers-hs/runtime` workspace package. Examples and runtime tests import it by package name.
 
 ```text
 applications
@@ -83,9 +83,9 @@ just test-coverage-report   # Preserve measured and unmeasured coverage
 
 ## Trial consumption
 
-During the trial stage, consume the Haskell packages from a checked-out source tree or a pinned Git revision in your Cabal project. Do not depend on a Hackage release yet. The TypeScript runtime is pinned in [`pnpm-workspace.yaml`](pnpm-workspace.yaml); consumers do not need to run `pnpm pack`.
+During the trial stage, consume the Haskell packages from a checked-out source tree or a pinned Git revision in your Cabal project. Do not depend on a Hackage release yet. For external applications, [install the TypeScript runtime](packages/runtime/README.md#trial-installation) from the same Git revision.
 
-Start with the [minimal example's extraction notes](examples/minimal/README.md#独立したプロジェクトにする場合). Versioning and distribution decisions are in [ADR-0018](docs/adr/0018-versioning-release-distribution.md), and the runtime repository split is in [ADR-0025](docs/adr/0025-separate-typescript-runtime-repository.md).
+Start with the [minimal example's extraction notes](examples/minimal/README.md#独立したプロジェクトにする場合). The versioning and distribution policy is documented in [ADR-0018](docs/adr/0018-versioning-release-distribution.md). See [ADR-0029](docs/adr/0029-integrate-typescript-runtime-workspace.md) for the runtime workspace and distribution layout.
 
 ## Scope
 
