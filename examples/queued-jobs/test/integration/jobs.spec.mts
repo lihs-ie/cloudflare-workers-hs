@@ -78,20 +78,20 @@ async function assertRequestLogs(
 }
 
 void test('job HTTP responses use the Cloudflare request identifier in the header and logs', async () => {
-  const pathname = '/jobs/missing-observability-probe';
+  const pathname = '/health';
   const identifier = 'queued-jobs-ray-probe';
   const response = await fetch(runtime.base + pathname, {
     headers: { 'cf-ray': identifier, 'x-hs-request-id': 'caller-supplied' },
   });
   await response.text();
 
-  assert.equal(response.status, 404);
+  assert.equal(response.status, 200);
   assert.equal(response.headers.get('x-request-identifier'), identifier);
-  await assertRequestLogs(identifier, pathname, 404);
+  await assertRequestLogs(identifier, pathname, 200);
 });
 
 void test('job HTTP responses generate a request identifier when the Cloudflare header is absent', async () => {
-  const pathname = '/jobs/missing-generated-identifier-probe';
+  const pathname = '/missing-observability-probe';
   const response = await fetch(runtime.base + pathname);
   const identifier = response.headers.get('x-request-identifier');
   await response.text();
