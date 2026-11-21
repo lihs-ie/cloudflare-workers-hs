@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@cloudflare-workers-hs/runtime": "catalog:"
+    "@cloudflare-workers-hs/runtime": "workspace:*"
   }
 }

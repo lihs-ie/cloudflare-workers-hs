@@ -229,7 +229,9 @@ jobs:
         run: nix develop --command wasm32-wasi-cabal update
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
-      - name: Pinned Git runtime consumer
+      - name: TypeScript runtime package checks
+        run: pnpm --filter @cloudflare-workers-hs/runtime check
+      - name: External Git runtime install at the checked-out SHA
         run: nix develop --command pnpm test:package
       - name: Real WASM integration including production entrypoint
         run: nix develop --command node scripts/testing/run.mts integration

@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    "curly": "error",
+    "no-else-return": "error",
+    "no-underscore-dangle": ["error", { "allow": ["_initialize"] }],
+    "typescript/no-unnecessary-type-parameters": "off"
+  },
+  "ignorePatterns": ["dist/**", "coverage/**", "scripts/**/*.mjs", "test/**/*.mjs"]
+}

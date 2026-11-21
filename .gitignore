@@ -25,7 +25,10 @@ artifacts/
 /docs/*
 !/docs/adr/
 !/docs/adr/**
-/packages/
+/packages/*
+!/packages/runtime/
+/packages/runtime/coverage/
+/packages/runtime/*.tgz
 *.tix
 __pycache__/
 **/.wrangler/

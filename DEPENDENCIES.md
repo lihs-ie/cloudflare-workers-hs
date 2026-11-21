@@ -23,10 +23,10 @@ Haskellでは[HSEC-2026-0007](https://haskell.github.io/security-advisories/advi
 
 解決されたHaskell依存はhost/WASMともaeson 2.2.5.1・text-iso8601 0.1.1.2・scientific 0.3.10.0、hostのwarpは3.4.21です。
 
-公開Git版`@cloudflare-workers-hs/runtime`は既存のコミット固定を維持します。上流差分にruntime APIの変更がないことを確認し、不要なGit依存更新を避けています。
+`@cloudflare-workers-hs/runtime`の開発依存もルートのロックファイルとCI監査の対象です。外部プロジェクトでGit SHAを固定する手順は[runtimeのREADME](packages/runtime/README.ja.md#試運転中のインストール)に記載しています。
 
 ## CIの依存監査
 
 PRで依存・ツールチェーン・ワークフローの設定が変わった場合と、定期実行時に、ロック済みのnpm依存を監査します。High/Criticalの検出時と、監査結果を取得できない場合はジョブが失敗します。ローカルでも `node scripts/testing/dependency-audit.mts` を使えます。
 
-GitHub ActionsはコミットSHAで固定し、PRのジョブは読み取り権限で実行します。固定ロックでインストールし、公開後24時間の待機と個別にレビューした例外を適用します。依存のライフサイクルは既存のGitコミット固定パッケージだけを許可します。[Node.js 24.22.3](https://nodejs.org/en/blog/release/v24.22.3/) [pnpm 12.22.0](https://pnpm.io/blog/releases/12.22.0)
+GitHub ActionsはコミットSHAで固定し、PRのジョブは読み取り権限で実行します。固定ロックでインストールし、公開後24時間の待機と個別にレビューした例外を適用します。ワークスペース内のruntimeは`prepare`でビルドします。外部Gitインストールの検証では、一時プロジェクトで検証対象のSHAにだけビルドを許可します。[Node.js 24.22.3](https://nodejs.org/en/blog/release/v24.22.3/) [pnpm 12.22.0](https://pnpm.io/blog/releases/12.22.0)

@@ -17,6 +17,6 @@
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "^0.4.2",
-    "@cloudflare-workers-hs/runtime": "catalog:"
+    "@cloudflare-workers-hs/runtime": "workspace:*"
   }
 }

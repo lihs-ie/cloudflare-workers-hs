@@ -3,13 +3,13 @@
   "private": true,
   "packageManager": "pnpm@12.22.0",
   "scripts": {
-    "test:package": "node scripts/testing/git-runtime-consumer.mts",
+    "test:package": "node scripts/testing/check-git-runtime-install.mts",
     "typecheck": "node scripts/testing/typecheck.mts && tsc -p tsconfig.tools.json",
     "test:tools": "node --experimental-test-module-mocks --test scripts/testing/test/*.spec.mts",
     "build:runtime-tests": "pnpm --dir tests/runtime build:runtime && pnpm --dir examples/url-shortener build:runtime"
   },
   "devDependencies": {
-    "@cloudflare-workers-hs/runtime": "catalog:",
+    "@cloudflare-workers-hs/runtime": "workspace:*",
     "@cloudflare/vitest-plugin": "1.8.2",
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/istanbul-lib-instrument": "^1.7.8",

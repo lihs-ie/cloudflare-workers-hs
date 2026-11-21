@@ -40,7 +40,7 @@ pnpm exec wrangler dev --config ../minimal/wrangler.jsonc --port 8787
 独立先では次を用意・変更します。
 
 - `cabal.project`/WASM用projectファイルで、このパッケージと`cloudflare-workers`・`servant-cloudflare-workers`を参照する。GHCと依存の固定値はルートの`cabal-wasm.project`を基準にする。
-- `package.json`のruntime依存を`catalog:`から、ルートの`pnpm-workspace.yaml`に記載された固定Git参照または公開バージョンへ変更し、`wrangler`を追加する。WASI shimはruntime自身の依存なので直接導入する必要はない。
+- `package.json`のruntime依存を`workspace:*`から[サブディレクトリとSHAを指定するGit依存](../../packages/runtime/README.ja.md#試運転中のインストール)へ変更し、`wrangler`を追加する。WASI shimはruntime自身の依存に含まれる。
 - runtimeは引き続き`@cloudflare-workers-hs/runtime`でimportする。利用側の`pack`実行は不要。
 - `wrangler.jsonc`の`$schema`とテストのWrangler実行パスを独立先の`node_modules`へ変更する。
 - `support/interop/src/WorkersSupport/Interop.hs`もコピーし、Cabalの`hs-source-dirs`をコピー先に合わせる。

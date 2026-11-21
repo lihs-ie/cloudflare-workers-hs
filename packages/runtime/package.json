@@ -1,0 +1,54 @@
+{
+  "name": "@cloudflare-workers-hs/runtime",
+  "version": "0.0.0-development",
+  "description": "Typed Cloudflare Workers bridges for GHC WASM reactors",
+  "license": "BSD-3-Clause",
+  "files": [
+    "dist",
+    "README.md",
+    "README.ja.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint --type-aware --tsconfig tsconfig.json --deny-warnings .",
+    "docs:check": "node scripts/check-docs.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "package:check": "pnpm build && publint && attw --pack --profile esm-only .",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test:coverage && pnpm package:check",
+    "prepare": "pnpm build",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "0.4.2"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
+    "@microsoft/tsdoc": "0.16.0",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.1.0",
+    "oxc-parser": "0.149.0",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "publint": "0.3.24",
+    "tsdown": "0.23.0",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=24.11 <25"
+  },
+  "packageManager": "pnpm@12.22.0"
+}
