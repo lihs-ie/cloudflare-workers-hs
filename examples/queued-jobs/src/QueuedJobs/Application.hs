@@ -5,12 +5,14 @@ import Cloudflare.Workers.Binding.DurableObject (DurableObjectNamespace)
 import Cloudflare.Workers.Binding.KV (KV)
 import Cloudflare.Workers.Binding.Queue (QueueProducer)
 import Cloudflare.Workers.Binding.ServiceBinding (ServiceBinding)
-import Cloudflare.Workers.HTTP (createResponse, Status(..), ResponseBody(..))
-import Cloudflare.Workers.Headers (headersFromList)
-import Cloudflare.Workers.Middleware (Middleware)
+import Cloudflare.Workers.HTTP (Request (requestHeaders), Response (responseHeaders), ResponseBody (..), Status (..), createResponse)
+import Cloudflare.Workers.Headers (headerInsert, headerLookup, headersFromList)
+import Cloudflare.Workers.Middleware (Middleware, requestIdHeaderName, withRequestId, withStructuredLogging)
+import Cloudflare.Workers.Observability (defaultLoggerConfig, tailLog)
 import Control.Exception (SomeException, catch)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (object, (.=))
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import QueuedJobs.API (API, Routes(..))
 import QueuedJobs.Jobs qualified as Jobs
@@ -36,7 +38,15 @@ mapped action = mapExceptionsToServerError (\case
   Jobs.JobConflict -> ServerError 409 "Conflict" [] Nothing) (liftIO action)
 
 protectFailures :: Middleware env
-protectFailures handler request env context =
-    handler request env context `catch` \(_ :: SomeException) ->
-        pure (createResponse (Status 500) (headersFromList [("content-type", "application/json")])
-            (ResponseBodyBytes "{\"error\":\"internal_error\"}"))
+protectFailures handler = withRequestId $ withStructuredLogging defaultLoggerConfig $ \request env context -> do
+    response <-
+        handler request env context `catch` \(_ :: SomeException) -> do
+            tailLog "configuration_application_failed"
+            pure
+                ( createResponse
+                    (Status 500)
+                    (headersFromList [("content-type", "application/json")])
+                    (ResponseBodyBytes "{\"error\":\"internal_error\"}")
+                )
+    let identifier = fromMaybe "unknown" (headerLookup requestIdHeaderName (requestHeaders request))
+    pure response{responseHeaders = headerInsert "x-request-identifier" identifier (responseHeaders response)}

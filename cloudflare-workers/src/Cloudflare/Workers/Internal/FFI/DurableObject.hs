@@ -1,8 +1,10 @@
 module Cloudflare.Workers.Internal.FFI.DurableObject (
     doIdFromNameViaFFI,
     doNewUniqueIdViaFFI,
+    doNewUniqueIdInJurisdictionViaFFI,
     doIdFromStringViaFFI,
     doIdToStringViaFFI,
+    doJurisdictionViaFFI,
     doGetViaFFI,
     doGetByNameViaFFI,
     doFetchViaFFI,
@@ -22,6 +24,9 @@ module Cloudflare.Workers.Internal.FFI.DurableObject (
     doStorageGetAlarmViaFFI,
     doStorageSetAlarmViaFFI,
     doStorageDeleteAlarmViaFFI,
+    doAlarmRetryCountViaFFI,
+    doAlarmIsRetryViaFFI,
+    doAlarmScheduledTimeMillisViaFFI,
 ) where
 
 import Cloudflare.Workers.HTTP (Request (requestHeaders), Response, ResponseBody (ResponseBodyBytes, ResponseBodyWebSocket), PassthroughResponse (PassthroughResponse), Status (Status), createResponse, methodToText, requestBodyReader, requestMethod, requestURL)
@@ -46,6 +51,18 @@ doIdFromNameViaFFI namespaceJSVal name = do
 
 doNewUniqueIdViaFFI :: JSVal -> IO JSVal
 doNewUniqueIdViaFFI = jsDoNewUniqueId
+
+doNewUniqueIdInJurisdictionViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
+doNewUniqueIdInJurisdictionViaFFI namespaceJSVal jurisdiction = do
+    jurisdictionJSVal <- textToJSVal jurisdiction
+    envelopeJSVal <- jsDoNewUniqueIdJurisdictionEnveloped namespaceJSVal jurisdictionJSVal
+    decodeEnveloped pure envelopeJSVal
+
+doJurisdictionViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
+doJurisdictionViaFFI namespaceJSVal jurisdiction = do
+    jurisdictionJSVal <- textToJSVal jurisdiction
+    envelopeJSVal <- jsDoJurisdictionEnveloped namespaceJSVal jurisdictionJSVal
+    decodeEnveloped pure envelopeJSVal
 
 doIdFromStringViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
 doIdFromStringViaFFI namespaceJSVal hexId = do
@@ -126,6 +143,42 @@ foreign import javascript unsafe "$1.idFromName($2)"
 
 foreign import javascript unsafe "$1.newUniqueId()"
     jsDoNewUniqueId :: JSVal -> IO JSVal
+
+foreign import javascript unsafe
+    """
+    (() => {
+      try {
+        return {
+          ok: true,
+          value: $1.newUniqueId({ jurisdiction: $2 })
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          message: `${error}`
+        };
+      }
+    })()
+    """
+    jsDoNewUniqueIdJurisdictionEnveloped :: JSVal -> JSVal -> IO JSVal
+
+foreign import javascript unsafe
+    """
+    (() => {
+      try {
+        return {
+          ok: true,
+          value: $1.jurisdiction($2)
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          message: `${error}`
+        };
+      }
+    })()
+    """
+    jsDoJurisdictionEnveloped :: JSVal -> JSVal -> IO JSVal
 
 foreign import javascript unsafe
     """
@@ -429,6 +482,20 @@ doStorageDeleteAlarmViaFFI storageJSVal = do
     envelopeJSVal <- jsDoStorageDeleteAlarmEnveloped storageJSVal
     decodeEnveloped (const (pure ())) envelopeJSVal
 
+doAlarmRetryCountViaFFI :: JSVal -> IO Int
+doAlarmRetryCountViaFFI = jsDoAlarmRetryCount
+
+doAlarmIsRetryViaFFI :: JSVal -> IO Bool
+doAlarmIsRetryViaFFI = jsDoAlarmIsRetry
+
+doAlarmScheduledTimeMillisViaFFI :: JSVal -> IO (Maybe Integer)
+doAlarmScheduledTimeMillisViaFFI alarmInfoJSVal = do
+    scheduledTimeJSVal <- jsDoAlarmScheduledTime alarmInfoJSVal
+    isNullish <- jsIsNullishStorageValue scheduledTimeJSVal
+    if isNullish
+        then pure Nothing
+        else Just . round <$> jsAlarmTimeMillis scheduledTimeJSVal
+
 maxSafeJavaScriptInteger :: Integer
 maxSafeJavaScriptInteger = 9007199254740991
 
@@ -648,3 +715,34 @@ foreign import javascript unsafe
     })()
     """
     jsAlarmTimeMillis :: JSVal -> IO Double
+
+foreign import javascript unsafe
+    """
+    (() => {
+      const retryCount = $1?.retryCount ?? 0;
+
+      if (!Number.isSafeInteger(retryCount) || retryCount < 0 || retryCount > 2147483647) {
+        throw new TypeError('the Durable Object alarm retryCount is not a non-negative 32-bit integer: ' + typeof retryCount);
+      }
+
+      return retryCount;
+    })()
+    """
+    jsDoAlarmRetryCount :: JSVal -> IO Int
+
+foreign import javascript unsafe
+    """
+    (() => {
+      const isRetry = $1?.isRetry ?? false;
+
+      if (isRetry !== true && isRetry !== false) {
+        throw new TypeError('the Durable Object alarm isRetry field is not a boolean: ' + typeof isRetry);
+      }
+
+      return isRetry;
+    })()
+    """
+    jsDoAlarmIsRetry :: JSVal -> IO Bool
+
+foreign import javascript unsafe "$1?.scheduledTime ?? null"
+    jsDoAlarmScheduledTime :: JSVal -> IO JSVal

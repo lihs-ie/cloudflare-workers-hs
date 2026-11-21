@@ -70,6 +70,7 @@ library
   other-modules:
     Cloudflare.Workers.Internal.Abort
     Cloudflare.Workers.Internal.ByteArray
+    Cloudflare.Workers.Internal.FFI.Abort
     Cloudflare.Workers.Internal.FFI.BindingEnv
     Cloudflare.Workers.Internal.FFI.Bytes
     Cloudflare.Workers.Internal.FFI.Cache
@@ -82,6 +83,7 @@ library
     Cloudflare.Workers.Internal.FFI.Headers
     Cloudflare.Workers.Internal.FFI.Images
     Cloudflare.Workers.Internal.FFI.KV
+    Cloudflare.Workers.Internal.FFI.NativeResponse
     Cloudflare.Workers.Internal.FFI.Queue
     Cloudflare.Workers.Internal.FFI.R2
     Cloudflare.Workers.Internal.FFI.Reactor

@@ -46,6 +46,65 @@ async function completed(identifier: string): Promise<unknown> {
   return response.json();
 }
 
+async function assertRequestLogs(
+  identifier: string,
+  pathname: string,
+  status: number,
+): Promise<void> {
+  const field = (name: string): RegExp => new RegExp(`["']?${name}["']?:\\s*["']([^"']*)["']`);
+  const requestIdentifier = field('request_id');
+  const path = field('path');
+  const message = field('message');
+  const responseStatus = new RegExp(`["']?status["']?:\\s*${status}\\b`);
+
+  await poll({
+    observe: () => Promise.resolve(runtime.logs().match(/\{[^{}]*\}/g) ?? []),
+    complete: (records) => {
+      const request = records.filter(
+        (record) =>
+          requestIdentifier.exec(record)?.[1] === identifier && path.exec(record)?.[1] === pathname,
+      );
+      return (
+        request.some((record) => message.exec(record)?.[1] === 'request started') &&
+        request.some(
+          (record) =>
+            message.exec(record)?.[1] === 'request completed' && responseStatus.test(record),
+        )
+      );
+    },
+    timeout: 5000,
+    diagnostic: () => `Missing structured request logs for ${identifier}`,
+  });
+}
+
+void test('job HTTP responses use the Cloudflare request identifier in the header and logs', async () => {
+  const pathname = '/jobs/missing-observability-probe';
+  const identifier = 'queued-jobs-ray-probe';
+  const response = await fetch(runtime.base + pathname, {
+    headers: { 'cf-ray': identifier, 'x-hs-request-id': 'caller-supplied' },
+  });
+  await response.text();
+
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('x-request-identifier'), identifier);
+  await assertRequestLogs(identifier, pathname, 404);
+});
+
+void test('job HTTP responses generate a request identifier when the Cloudflare header is absent', async () => {
+  const pathname = '/jobs/missing-generated-identifier-probe';
+  const response = await fetch(runtime.base + pathname);
+  const identifier = response.headers.get('x-request-identifier');
+  await response.text();
+
+  assert.equal(response.status, 404);
+  assert.ok(identifier);
+  assert.match(
+    identifier,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  );
+  await assertRequestLogs(identifier, pathname, 404);
+});
+
 void test(
   'batch RPC validation, D1 decoding, Queue delivery and DO RPC persist jobs',
   { timeout: 45000 },
@@ -325,14 +384,19 @@ void test('native settings description is decoded and returned with accepted job
 
 void test('validator RPC failure never dispatches Queue and the next submission succeeds', async () => {
   const job = { identifier: 'validator-recovery', payload: 'after RPC recovery' };
+  const identifier = 'queued-jobs-validator-failure';
   const failed = await fetch(`${runtime.base}/jobs?fixture=validator-failure`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'cf-ray': identifier },
     body: JSON.stringify({ jobs: [job] }),
   });
+
   assert.equal(failed.status, 500);
+  assert.equal(failed.headers.get('x-request-identifier'), identifier);
   assert.equal(failed.headers.get('X-Fixture-Queue-Producer-Calls'), '0');
   assert.deepEqual(await failed.json(), { error: 'internal_error' });
+  await assertRequestLogs(identifier, '/jobs', 500);
+
   const accepted = await submit([job]);
   assert.equal(accepted.status, 200, await accepted.text());
   assert.deepEqual(await completed(job.identifier), { ...job, updates: 1 });
