@@ -275,7 +275,7 @@ async function collect(selected: readonly string[], output: string): Promise<num
   return Number(reportErrors.length > 0);
 }
 
-runCli(import.meta.url, async () => {
+runCli(import.meta.url, '[--all-examples | --example NAME ...] [--output DIR]', async () => {
   const { values } = parseArgs({
     options: {
       output: { type: 'string' },

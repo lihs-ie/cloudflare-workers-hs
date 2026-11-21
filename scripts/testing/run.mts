@@ -341,25 +341,29 @@ function runLane(lane: string, args: Args): number {
   return code;
 }
 
-runCli(import.meta.url, () => {
-  const { values, positionals } = parseArgs({ options, allowPositionals: true });
+runCli(
+  import.meta.url,
+  '<host|conformance|integration|model|coverage|replay|dev|docker|EXAMPLE>\n  [--seed N] [--examples N] [--target CABAL_TARGET] [--match FILTER]\n  [--skip-runtime-build] [--report-only] [--host-proof FILE]\n  [--compile-proof FILE] [--native-compile-proof FILE] [--shell-json FILE]',
+  () => {
+    const { values, positionals } = parseArgs({ options, allowPositionals: true });
 
-  if (
-    positionals.length !== 1 ||
-    ![
-      ...otherExamples,
-      'host',
-      'conformance',
-      'replay',
-      'model',
-      'integration',
-      'dev',
-      'docker',
-      'coverage',
-    ].includes(positionals[0])
-  ) {
-    throw new Error('Specify one valid test lane');
-  }
+    if (
+      positionals.length !== 1 ||
+      ![
+        ...otherExamples,
+        'host',
+        'conformance',
+        'replay',
+        'model',
+        'integration',
+        'dev',
+        'docker',
+        'coverage',
+      ].includes(positionals[0])
+    ) {
+      throw new Error('Specify one valid test lane');
+    }
 
-  return runLane(positionals[0], values);
-});
+    return runLane(positionals[0], values);
+  },
+);

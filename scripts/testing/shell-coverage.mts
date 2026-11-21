@@ -276,7 +276,7 @@ function collect(work: string, tests: ScriptCase[], image: string): Record<strin
   };
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '--output DIR [--image IMAGE]', () => {
   const { values } = parseArgs({
     options: { output: { type: 'string' }, image: { type: 'string', default: kcov } },
   });

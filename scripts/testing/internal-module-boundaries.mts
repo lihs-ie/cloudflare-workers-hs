@@ -171,7 +171,7 @@ export function consumerErrors(root: string, run: CommandRunner = command): stri
   });
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '<manifest|consumer> [--root DIR]', () => {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: { root: { type: 'string', default: repositoryRoot } },

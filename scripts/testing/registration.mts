@@ -286,7 +286,7 @@ export function registration(
   return { scope, inventory, errors: [...new Set(errors)].sort() };
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--root DIR] [--layer DIR]... [--output FILE]', () => {
   const { values } = parseArgs({
     options: {
       root: { type: 'string', default: repositoryRoot },

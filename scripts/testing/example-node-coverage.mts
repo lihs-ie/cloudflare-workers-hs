@@ -205,7 +205,7 @@ function collect(output: string, selected: string[], tools: boolean, only: boole
   return proof.exit_code;
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--example NAME]... [--tools | --tools-only] [--output DIR]', () => {
   const { values } = parseArgs({
     options: {
       output: { type: 'string' },

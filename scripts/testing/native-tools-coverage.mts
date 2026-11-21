@@ -263,7 +263,7 @@ function collect(output: string): number {
   return proof.exit_code;
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--output DIR]', () => {
   const { values } = parseArgs({ options: { output: { type: 'string' } } });
   return collect(evidencePath(root, 'native-tools-coverage', values.output));
 });

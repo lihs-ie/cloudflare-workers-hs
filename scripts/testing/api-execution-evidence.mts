@@ -64,38 +64,42 @@ export function correlate(
     });
 }
 
-runCli(import.meta.url, () => {
-  const { values } = parseArgs({
-    options: {
-      inventory: { type: 'string' },
-      coverage: { type: 'string', multiple: true },
-      output: { type: 'string' },
-    },
-  });
+runCli(
+  import.meta.url,
+  '--inventory FILE --coverage FILE [--coverage FILE]... --output FILE',
+  () => {
+    const { values } = parseArgs({
+      options: {
+        inventory: { type: 'string' },
+        coverage: { type: 'string', multiple: true },
+        output: { type: 'string' },
+      },
+    });
 
-  if (!values.inventory || !values.coverage || !values.output) {
-    throw new Error('Expected --inventory, --coverage and --output');
-  }
+    if (!values.inventory || !values.coverage || !values.output) {
+      throw new Error('Expected --inventory, --coverage and --output');
+    }
 
-  const rows = correlate(
-    object(jsonFile(values.inventory)),
-    values.coverage.map((path) => [path, jsonFile(path)]),
-  );
-  const summary = {
-    candidates: rows.length,
-    bindingEntriesObserved: rows.filter(
-      ({ execution_status }) => execution_status === 'binding_entry_observed',
-    ).length,
-  };
-  writeJson(values.output, {
-    method:
-      'Match exact source SHA-256, module source mapping and positive HPC TopLevelBox entry ticks. This proves binding evaluation. No API completeness percentage is inferred.',
-    inputs: Object.fromEntries(
-      [values.inventory, ...values.coverage].map((path) => [path, digest(path)]),
-    ),
-    summary,
-    rows,
-  });
-  console.log(JSON.stringify(summary));
-  return 0;
-});
+    const rows = correlate(
+      object(jsonFile(values.inventory)),
+      values.coverage.map((path) => [path, jsonFile(path)]),
+    );
+    const summary = {
+      candidates: rows.length,
+      bindingEntriesObserved: rows.filter(
+        ({ execution_status }) => execution_status === 'binding_entry_observed',
+      ).length,
+    };
+    writeJson(values.output, {
+      method:
+        'Match exact source SHA-256, module source mapping and positive HPC TopLevelBox entry ticks. This proves binding evaluation. No API completeness percentage is inferred.',
+      inputs: Object.fromEntries(
+        [values.inventory, ...values.coverage].map((path) => [path, digest(path)]),
+      ),
+      summary,
+      rows,
+    });
+    console.log(JSON.stringify(summary));
+    return 0;
+  },
+);

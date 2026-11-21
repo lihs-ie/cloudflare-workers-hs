@@ -150,8 +150,19 @@ export function withTemp<T>(prefix: string, work: (directory: string) => T): T {
   }
 }
 
-export function runCli(url: string, run: () => number | Promise<number>): void {
+export function runCli(
+  url: string,
+  usage: string | null,
+  run: () => number | Promise<number>,
+): void {
   if (process.argv[1] === undefined || fileURLToPath(url) !== resolve(process.argv[1])) {
+    return;
+  }
+
+  const argumentsEnd = process.argv.indexOf('--', 2);
+  const flags = process.argv.slice(2, argumentsEnd < 0 ? undefined : argumentsEnd);
+  if (usage !== null && (flags.includes('--help') || flags.includes('-h'))) {
+    console.log('Usage: node ' + relative(repositoryRoot, fileURLToPath(url)) + ' ' + usage);
     return;
   }
 

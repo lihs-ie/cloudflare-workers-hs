@@ -73,7 +73,7 @@ export function collectAudit(run: CommandRunner = command): ReturnType<typeof au
   }
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--base-sha COMMIT] [--output FILE]', () => {
   const { values } = parseArgs({
     options: {
       'base-sha': { type: 'string' },

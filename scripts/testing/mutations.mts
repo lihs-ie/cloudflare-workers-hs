@@ -221,36 +221,40 @@ async function runMutations(
   return report.status === 'passed' ? 0 : 1;
 }
 
-runCli(import.meta.url, async () => {
-  const { values } = parseArgs({
-    options: {
-      output: { type: 'string' },
-      seed: { type: 'string', default: '73' },
-      timeout: { type: 'string', default: '1800' },
-      mutation: { type: 'string', multiple: true },
-    },
-  });
-  const seed = Number(values.seed);
-  const timeout = Number(values.timeout);
-  if (
-    !Number.isSafeInteger(seed) ||
-    !Number.isSafeInteger(timeout) ||
-    timeout <= 0 ||
-    timeout > 2_147_483
-  ) {
-    throw new Error('Expected an integer seed and a positive timeout in seconds');
-  }
+runCli(
+  import.meta.url,
+  '[--mutation NAME]... [--seed N] [--timeout SECONDS] [--output DIR]',
+  async () => {
+    const { values } = parseArgs({
+      options: {
+        output: { type: 'string' },
+        seed: { type: 'string', default: '73' },
+        timeout: { type: 'string', default: '1800' },
+        mutation: { type: 'string', multiple: true },
+      },
+    });
+    const seed = Number(values.seed);
+    const timeout = Number(values.timeout);
+    if (
+      !Number.isSafeInteger(seed) ||
+      !Number.isSafeInteger(timeout) ||
+      timeout <= 0 ||
+      timeout > 2_147_483
+    ) {
+      throw new Error('Expected an integer seed and a positive timeout in seconds');
+    }
 
-  const names = mutations.map(([name]) => name);
-  const selected = new Set(values.mutation ?? names);
-  if ([...selected].some((name) => !names.some((entry) => entry === name))) {
-    throw new Error('Unknown mutation');
-  }
+    const names = mutations.map(([name]) => name);
+    const selected = new Set(values.mutation ?? names);
+    if ([...selected].some((name) => !names.some((entry) => entry === name))) {
+      throw new Error('Unknown mutation');
+    }
 
-  return await runMutations(
-    evidencePath(repositoryRoot, 'mutations', values.output),
-    seed,
-    timeout * 1000,
-    selected,
-  );
-});
+    return await runMutations(
+      evidencePath(repositoryRoot, 'mutations', values.output),
+      seed,
+      timeout * 1000,
+      selected,
+    );
+  },
+);

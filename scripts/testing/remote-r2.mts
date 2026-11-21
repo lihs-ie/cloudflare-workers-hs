@@ -273,56 +273,60 @@ async function execute(manifest: Manifest, path: string): Promise<number> {
   return manifest.status === 'passed' ? 0 : 1;
 }
 
-runCli(import.meta.url, async () => {
-  const { values, positionals } = parseArgs({
-    allowPositionals: true,
-    options: {
-      account: { type: 'string' },
-      approval: { type: 'string' },
-      manifest: { type: 'string' },
-    },
-  });
-  const [mode = 'plan'] = positionals;
+runCli(
+  import.meta.url,
+  '[plan|execute|cleanup] [--account ACCOUNT] [--approval FILE] [--manifest FILE]',
+  async () => {
+    const { values, positionals } = parseArgs({
+      allowPositionals: true,
+      options: {
+        account: { type: 'string' },
+        approval: { type: 'string' },
+        manifest: { type: 'string' },
+      },
+    });
+    const [mode = 'plan'] = positionals;
 
-  if (positionals.length > 1 || !['plan', 'execute', 'cleanup'].includes(mode)) {
-    throw new Error('Expected plan, execute or cleanup');
-  }
+    if (positionals.length > 1 || !['plan', 'execute', 'cleanup'].includes(mode)) {
+      throw new Error('Expected plan, execute or cleanup');
+    }
 
-  if (mode === 'plan') {
-    console.log(JSON.stringify(plan(values.account), null, 2));
-    return 0;
-  }
-
-  if (!values.manifest || !values.account) {
-    throw new Error('Execution and cleanup require --manifest and --account');
-  }
-
-  const path = resolve(values.manifest);
-  try {
-    if (mode === 'cleanup') {
-      const manifest = validateManifest(jsonFile(path));
-      if (values.account !== manifest.account) {
-        throw new Error('Cleanup requires the matching account');
-      }
-
-      await cleanup(manifest, path);
+    if (mode === 'plan') {
+      console.log(JSON.stringify(plan(values.account), null, 2));
       return 0;
     }
 
-    if (!values.approval || existsSync(path)) {
-      throw new Error('Execution requires --approval and a new manifest path');
+    if (!values.manifest || !values.account) {
+      throw new Error('Execution and cleanup require --manifest and --account');
     }
 
-    const manifest = validateManifest(plan(values.account));
-    const approval = jsonFile(values.approval);
-    validateApproval(approval, values.account);
-    manifest.buildEvidence = verifyBuild();
-    manifest.approval = approval;
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
-    return await execute(manifest, path);
-  } catch {
-    console.error('Remote validation failed; inspect the manifest. Secret diagnostics omitted.');
-    return 1;
-  }
-});
+    const path = resolve(values.manifest);
+    try {
+      if (mode === 'cleanup') {
+        const manifest = validateManifest(jsonFile(path));
+        if (values.account !== manifest.account) {
+          throw new Error('Cleanup requires the matching account');
+        }
+
+        await cleanup(manifest, path);
+        return 0;
+      }
+
+      if (!values.approval || existsSync(path)) {
+        throw new Error('Execution requires --approval and a new manifest path');
+      }
+
+      const manifest = validateManifest(plan(values.account));
+      const approval = jsonFile(values.approval);
+      validateApproval(approval, values.account);
+      manifest.buildEvidence = verifyBuild();
+      manifest.approval = approval;
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+      return await execute(manifest, path);
+    } catch {
+      console.error('Remote validation failed; inspect the manifest. Secret diagnostics omitted.');
+      return 1;
+    }
+  },
+);

@@ -209,7 +209,7 @@ async function collect(output: string, examples: string[]): Promise<number> {
   return proof.exit_code;
 }
 
-runCli(import.meta.url, async () => {
+runCli(import.meta.url, '[--example NAME]... [--output DIR]', async () => {
   const { values } = parseArgs({
     options: { output: { type: 'string' }, example: { type: 'string', multiple: true } },
   });

@@ -127,7 +127,7 @@ function collect(output: string, sources: Sources): string[] {
   return errors;
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '--workerd DIR [--output DIR]', () => {
   const { values } = parseArgs({
     options: { output: { type: 'string' }, workerd: { type: 'string' } },
   });

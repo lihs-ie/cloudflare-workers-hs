@@ -236,16 +236,20 @@ function parseCoverageArgs(args: string[]): CoverageArgs {
   return parseArgs({ args, options }).values;
 }
 
-runCli(import.meta.url, () => {
-  const args = parseCoverageArgs(process.argv.slice(2));
-  if (args.output === undefined) {
-    throw new Error('Coverage requires --output');
-  }
+runCli(
+  import.meta.url,
+  '--output FILE [--root DIR] [--scope-manifest FILE] [--report-only]\n  [--tix FILE]... [--mix-dir DIR]... [--wasm-tix FILE]... [--wasm-mix-dir DIR]...\n  [--host-proof FILE] [--wasm-proof FILE] [--haskell-proof FILE]\n  [--compile-proof FILE] [--native-compile-proof FILE] [--shell-json FILE]\n  [--istanbul FILE]... [--shared-js-proof FILE] [--workerd-only FILE]',
+  () => {
+    const args = parseCoverageArgs(process.argv.slice(2));
+    if (args.output === undefined) {
+      throw new Error('Coverage requires --output');
+    }
 
-  const report = coverageReport(args);
-  writeJson(args.output, report);
-  console.log(
-    `Coverage evidence: ${args.output}; ${report.unmeasured_sources.length} unmeasured sources; complete=${report.complete}`,
-  );
-  return args['report-only'] || report.complete ? 0 : 1;
-});
+    const report = coverageReport(args);
+    writeJson(args.output, report);
+    console.log(
+      `Coverage evidence: ${args.output}; ${report.unmeasured_sources.length} unmeasured sources; complete=${report.complete}`,
+    );
+    return args['report-only'] || report.complete ? 0 : 1;
+  },
+);

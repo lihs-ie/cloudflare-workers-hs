@@ -102,7 +102,7 @@ export function violations(directory: string): string[] {
   return errors;
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--root DIR]', () => {
   const { values } = parseArgs({ options: { root: { type: 'string', default: repositoryRoot } } });
   const errors = violations(values.root);
   errors.forEach((error) => console.log(error));

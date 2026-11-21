@@ -291,7 +291,7 @@ function collect(output: string, hostProof: string, wasmProof: string): number {
   return proof.exit_code;
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '--host-proof FILE --wasm-proof FILE [--output DIR]', () => {
   const { values } = parseArgs({
     options: {
       'host-proof': { type: 'string' },

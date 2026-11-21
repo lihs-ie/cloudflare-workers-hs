@@ -228,7 +228,7 @@ export function operationInventory(root: string): Record<string, unknown> {
   };
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--output FILE]', () => {
   const { values } = parseArgs({
     options: {
       output: { type: 'string', default: 'docs/audits/public-api-operations-20260908.json' },

@@ -53,4 +53,4 @@ export function runDockerTests(
   });
 }
 
-runCli(import.meta.url, () => runDockerTests(repositoryRoot, process.argv.slice(2)));
+runCli(import.meta.url, null, () => runDockerTests(repositoryRoot, process.argv.slice(2)));

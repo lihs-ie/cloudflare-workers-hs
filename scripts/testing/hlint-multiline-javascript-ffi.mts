@@ -43,7 +43,7 @@ export function maskMultilineJavaScriptFfi(source: string): string {
     .join('');
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '< HASKELL_FILE', () => {
   const result = command([process.env.HLINT_REAL || 'hlint', ...process.argv.slice(2), '-'], {
     input: maskMultilineJavaScriptFfi(readFileSync(0, 'utf8')),
     stdio: ['pipe', 'inherit', 'inherit'],

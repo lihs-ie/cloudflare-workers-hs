@@ -63,7 +63,7 @@ export function apiExampleInventory(root: string): {
   };
 }
 
-runCli(import.meta.url, () => {
+runCli(import.meta.url, '[--output FILE]', () => {
   const { values } = parseArgs({
     options: { output: { type: 'string', default: 'docs/audits/api-example-inventory.json' } },
   });
