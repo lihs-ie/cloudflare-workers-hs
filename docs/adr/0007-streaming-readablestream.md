@@ -102,7 +102,7 @@ Cloudflare Workers は本文を `ReadableStream` として授受し、`Response`
 
 `/echo-stream`（zero-copy pass-through）へ 3 enqueue（17B / 64KiB / 3B）の `ReadableStream` を
 POST し、応答を `read()` ループで観測した結果、**3 read()・各サイズ完全一致**（再チャンク化・
-結合なし）。T2 常設 regression `examples/quickstart/test/integration/stream-chunk-boundary.spec.ts`
+結合なし）。T2 常設 regression `examples/url-shortener/test/integration/stream-chunk-boundary.spec.ts`
 として commit 済み。帰結: server push 側の設計目標を「1 handler yield = 1 `controller.enqueue` =
 1 consumer `read()`」に置けることが確定した（実際にそう実装され、
 `stream-incremental.spec.ts` が end-to-end で検証している）。

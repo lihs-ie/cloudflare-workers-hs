@@ -1,0 +1,29 @@
+cabal-version: 3.0
+name: url-shortener-management
+version: 0.1.0.0
+synopsis: Management application for the URL shortener example
+description:
+  Implements the management API and use cases for the url-shortener URL
+  shortener. It connects the shared domain model to Cloudflare-backed
+  infrastructure while keeping HTTP handling in
+  @servant-cloudflare-workers@.
+build-type: Simple
+license: BSD-3-Clause
+library
+  hs-source-dirs: src
+  exposed-modules: UrlShortener.Management
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall
+  build-depends: base, aeson, text, time, mtl, servant, servant-cloudflare-workers, cloudflare-workers, url-shortener-domain, url-shortener-infrastructure
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test/unit, test
+  other-modules: UrlShortener.ManagementSpec, Support.Management
+  default-language: GHC2024
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends: base, url-shortener-management, url-shortener-infrastructure, url-shortener-domain, servant, servant-cloudflare-workers, cloudflare-workers, mtl, sydtest, text, time

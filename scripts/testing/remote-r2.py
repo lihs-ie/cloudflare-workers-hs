@@ -21,7 +21,7 @@ import urllib.request
 import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-WRANGLER = ROOT / 'examples/quickstart/node_modules/.bin/wrangler'
+WRANGLER = ROOT / 'node_modules/.bin/wrangler'
 PREFIX = 'hs-remote-ssec-'
 OBJECT = 'attachments/encrypted/remote-probe.bin'
 ARCHIVE_OBJECT = 'archives/encrypted/remote-archive.bin'
@@ -204,11 +204,11 @@ def verify_build():
     """Reject missing, stale or altered WASM before any Cloudflare access."""
     result = subprocess.run([
         'node', '--input-type=module', '-e',
-        'import { verifyBuild } from "./examples/library-examples/test/Support/build-manifest.mjs"; verifyBuild();',
+        'import { verifyBuild } from "./examples/api-catalog/test/Support/build-manifest.mts"; verifyBuild();',
     ], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
     if result.returncode != 0:
-        raise RuntimeError('Production WASM build verification failed; rebuild library-examples')
-    proof = ROOT / 'examples/library-examples/worker/build.json'
+        raise RuntimeError('Production WASM build verification failed; rebuild api-catalog')
+    proof = ROOT / 'examples/api-catalog/worker/build.json'
     return {'manifestSha256': hashlib.sha256(proof.read_bytes()).hexdigest()}
 
 def run_worker(manifest, entry, variables, payload):
@@ -218,8 +218,8 @@ def run_worker(manifest, entry, variables, payload):
     with tempfile.TemporaryDirectory(prefix='hs-remote-r2-') as directory:
         config = pathlib.Path(directory) / 'wrangler.json'
         config.write_text(json.dumps({'name': manifest['resource']['identifier'], 'account_id': manifest['account'],
-            'main': str(ROOT / 'examples/library-examples/test/Support/Remote' / entry),
-            'compatibility_date': json.loads((ROOT / 'examples/library-examples/wrangler.jsonc').read_text())['compatibility_date'], 'compatibility_flags': ['nodejs_compat'],
+            'main': str(ROOT / 'examples/api-catalog/test/Support/Remote' / entry),
+            'compatibility_date': json.loads((ROOT / 'examples/api-catalog/wrangler.jsonc').read_text())['compatibility_date'], 'compatibility_flags': ['nodejs_compat'],
             'rules': [{'type': 'CompiledWasm', 'globs': ['**/*.wasm']}],
             'vars': {'EXAMPLE_MODE': 'remote-test', 'EXAMPLE_SECRET': 'non-sensitive-test-marker', **variables},
             'r2_buckets': [{'binding': 'EXAMPLE_BUCKET', 'bucket_name': manifest['resource']['identifier'], 'remote': True}]}))

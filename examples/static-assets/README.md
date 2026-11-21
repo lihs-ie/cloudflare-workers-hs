@@ -7,7 +7,7 @@
 just test-static-assets
 # 画面を開く場合
 cd examples/static-assets
-../quickstart/node_modules/.bin/wrangler dev --local --config wrangler.jsonc
+../../node_modules/.bin/wrangler dev --local --config wrangler.jsonc
 # http://localhost:8787/
 ```
 
@@ -19,7 +19,7 @@ cd examples/static-assets
 - `app/Main.hs`: 型付き`ASSETS` Bindingと`serveWithAssets [["api"]]`でAPI・Assetsを接続。
 - `worker/`: WASIの起動コードと生成WASM/JSFFI。
 - `wrangler.jsonc`: AssetsディレクトリとBinding、`run_worker_first: true`を指定。
-- `test/integration/assets.spec.mjs`: 実Wranglerで配信・API優先・HEAD・条件付きGET・404を検証。
+- `test/integration/assets.spec.mts`: 実Wranglerで配信・API優先・HEAD・条件付きGET・404を検証。
 
 Assetsは`Cloudflare.Workers.Binding.Assets`の`Assets`と`assetsFetch`で扱えます。Request・Responseを使い、ストリーミング本文とネイティブのヘッダーを維持します。通信失敗は`AssetsError`となります。公開API `Servant.Cloudflare.Workers.Assets.serveWithAssets` は失敗を呼出元へ伝え、例外ポリシーはアプリ側で設定できます。
 

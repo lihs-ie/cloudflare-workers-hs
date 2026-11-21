@@ -1,6 +1,6 @@
 # 最小のHaskell Worker
 
-最初に読む例です。`NamedRoutes`で定義した1つのAPIハンドラが、`GET /health`へ`{"status":"ok"}`を返します。Binding・認証・データベースは不要です。実用アプリは[Quickstart](../quickstart/README.md)、用途別の機能は[library-examples](../library-examples/README.md)を参照してください。
+最初に読む例です。`NamedRoutes`で定義した1つのAPIハンドラが、`GET /health`へ`{"status":"ok"}`を返します。Binding・認証・データベースは不要です。実用アプリは[UrlShortener](../url-shortener/README.md)、用途別の機能は[api-catalog](../api-catalog/README.md)を参照してください。
 
 ## ファイル
 
@@ -10,24 +10,24 @@
 - `worker/runtime.ts`: GHCのWASMとWASIの初期化。
 - `worker/index.ts`: Wranglerが読み込む入口。
 - `wrangler.jsonc`: Binding不要のWorker設定。
-- `test/integration/http.spec.mjs`: 実wrangler devで200・JSON本文・404・405を確認。
-- `test/Support/build-manifest.mjs`: ビルド前後の入力ハッシュとWASM・JSFFI生成物のハッシュを記録し、古い生成物や改変された生成物をテスト開始前に拒否。
-- `test/Support/dev.mjs`: 一時ポート・ローカル状態・プロセスの起動と後片付け。
+- `test/integration/http.spec.mts`: 実wrangler devで200・JSON本文・404・405を確認。
+- `test/Support/build-manifest.mts`: ビルド前後の入力ハッシュとWASM・JSFFI生成物のハッシュを記録し、古い生成物や改変された生成物をテスト開始前に拒否。
+- `test/Support/dev.mts`: 一時ポート・ローカル状態・プロセスの起動と後片付け。
 
 ## リポジトリ内で実行
 
-リポジトリルートでWASM GHC環境を用意し、Node.jsとpnpmをインストールします。JavaScript依存はQuickstartと共有します。
+リポジトリルートでWASM GHC環境を用意し、Node.jsとpnpmをインストールします。JavaScript依存はUrlShortenerと共有します。
 
 ```sh
 just setup-js
 bash examples/minimal/scripts/build.sh
-node --test --test-concurrency=1 examples/minimal/test/integration/*.spec.mjs
+node --test --test-concurrency=1 examples/minimal/test/integration/*.spec.mts
 ```
 
 手動で試す場合:
 
 ```sh
-cd examples/quickstart
+cd examples/url-shortener
 pnpm exec wrangler dev --config ../minimal/wrangler.jsonc --port 8787
 ```
 
@@ -40,9 +40,11 @@ pnpm exec wrangler dev --config ../minimal/wrangler.jsonc --port 8787
 独立先では次を用意・変更します。
 
 - `cabal.project`/WASM用projectファイルで、このパッケージと`cloudflare-workers`・`servant-cloudflare-workers`を参照する。GHCと依存の固定値はルートの`cabal-wasm.project`を基準にする。
-- `package.json`のruntime依存を`workspace:*`から公開バージョン（未公開期間は提供されたtarball）に変更し、`wrangler`を追加する。WASI shimはruntime自身の依存なので直接導入する必要はない。
+- `package.json`のruntime依存を`catalog:`から、ルートの`pnpm-workspace.yaml`に記載された固定Git参照または公開バージョンへ変更し、`wrangler`を追加する。WASI shimはruntime自身の依存なので直接導入する必要はない。
 - runtimeは引き続き`@cloudflare-workers-hs/runtime`でimportする。利用側の`pack`実行は不要。
 - `wrangler.jsonc`の`$schema`とテストのWrangler実行パスを独立先の`node_modules`へ変更する。
-- `scripts/build.sh`のリポジトリルート・projectファイル・生成先と、`test/Support/build-manifest.mjs`の入力一覧を独立先に合わせる。
+- `support/interop/src/WorkersSupport/Interop.hs`もコピーし、Cabalの`hs-source-dirs`をコピー先に合わせる。
+- テストとビルドの共通ツールはルートの`scripts/testing/`にあるため、必要なモジュールをコピーしてimportと入力一覧を更新する。
+- `scripts/build.sh`のリポジトリルート・projectファイル・生成先と、`test/Support/build-manifest.mts`の入力一覧を独立先に合わせる。
 
 このディレクトリはリポジトリ内の最小実行例であり、そのままコピーするだけで依存まで揃うテンプレートではありません。

@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 module Main (main) where
-import Support.RoomFixture qualified as RoomFixture
 #ifdef WASM_COVERAGE
 import Support.Coverage (withCoverage)
 #endif
@@ -11,7 +10,7 @@ import Cloudflare.Workers.Env (BindingEnv)
 import Data.Aeson (encode, object, (.=))
 import Cloudflare.Workers.HTTP (Response(..), Status(..))
 import Cloudflare.Workers.Headers (headersFromList)
-import ExampleSupport.Interop (jsValToText, responseToJSVal, textToJSVal)
+import WorkersSupport.Interop (jsValToText, responseToJSVal, textToJSVal)
 import Control.Exception (SomeException, try, catch, throwIO)
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Text.Encoding (decodeUtf8)
@@ -20,7 +19,6 @@ import GHC.Wasm.Prim (JSVal)
 import Realtime.API
 import Realtime.Application qualified as Application
 import Realtime.Room qualified as Room
-import Support.SQLFixture qualified as SQLFixture
 import Servant.Cloudflare.Workers.Server
 
 main :: IO ()
@@ -84,48 +82,4 @@ coverage_roomClose argument0 argument1 argument2 argument3 argument4 argument5 =
 foreign export javascript "roomClose" coverage_roomClose :: JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> IO ()
 #else
 foreign export javascript "roomClose" roomClose :: JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> IO ()
-#endif
-
-sqlChecks :: JSVal -> IO JSVal
-sqlChecks storage = textToJSVal . decodeUtf8 . Lazy.toStrict . encode =<< SQLFixture.sqlChecks (DurableObjectStorage storage)
-#ifdef WASM_COVERAGE
-coverage_sqlChecks :: JSVal -> IO JSVal
-coverage_sqlChecks argument0 = withCoverage (sqlChecks argument0)
-foreign export javascript "sqlChecks" coverage_sqlChecks :: JSVal -> IO JSVal
-#else
-foreign export javascript "sqlChecks" sqlChecks :: JSVal -> IO JSVal
-#endif
-
-upgradeChecks :: IO JSVal
-upgradeChecks = do
-  (client, _) <- webSocketPair
-  response <- webSocketUpgradeResponse client
-  accepted <- responseToJSVal response{responseHeaders = headersFromList [("x-upgrade", "retained")]}
-  header <- jsHeader accepted >>= jsValToText
-  rejected <- try @SomeException (responseToJSVal response{responseStatus = Status 403})
-  invalidIdentifier <- try @DurableObjectError (doIDToString . DurableObjectID =<< jsInvalidIdentifier)
-  throwingIdentifier <- try @DurableObjectError (doIDToString . DurableObjectID =<< jsThrowingIdentifier)
-  let identifierRejected value = case value of Left (DurableObjectIDSerializationFailed _) -> True; _ -> False
-      failed = case rejected of Left _ -> True; Right _ -> False
-  textToJSVal (decodeUtf8 (Lazy.toStrict (encode (object ["header" .= header, "statusMutationRejected" .= failed, "invalidIdentifierRejected" .= identifierRejected invalidIdentifier, "throwingIdentifierRejected" .= identifierRejected throwingIdentifier]))))
-#ifdef WASM_COVERAGE
-coverage_upgradeChecks :: IO JSVal
-coverage_upgradeChecks  = withCoverage (upgradeChecks )
-foreign export javascript "upgradeChecks" coverage_upgradeChecks :: IO JSVal
-#else
-foreign export javascript "upgradeChecks" upgradeChecks :: IO JSVal
-#endif
-foreign import javascript unsafe "$1.headers.get('x-upgrade')" jsHeader :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "({ toString() { return 42; } })" jsInvalidIdentifier :: IO JSVal
-foreign import javascript unsafe "({ toString() { throw new Error('identifier fixture failure'); } })" jsThrowingIdentifier :: IO JSVal
-
-roomOversizeCheck :: JSVal -> JSVal -> JSVal -> IO ()
-roomOversizeCheck storage state socket = RoomFixture.oversizedMessage (DurableObjectStorage storage) (WebSocketState state) (WebSocketConnection socket)
-#ifdef WASM_COVERAGE
-coverage_roomOversizeCheck :: JSVal -> JSVal -> JSVal -> IO ()
-coverage_roomOversizeCheck storage state socket = withCoverage (roomOversizeCheck storage state socket)
-foreign export javascript "roomOversizeCheck" coverage_roomOversizeCheck :: JSVal -> JSVal -> JSVal -> IO ()
-#else
-foreign export javascript "roomOversizeCheck" roomOversizeCheck :: JSVal -> JSVal -> JSVal -> IO ()
 #endif

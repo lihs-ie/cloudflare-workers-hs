@@ -170,8 +170,8 @@ null 判定は「`safe` method 呼び出し → `unsafe` null probe → （非 n
 ### 決定 6: probe 用 foreign export は examples 限定、直接呼びは macrotask yield が要る
 
 `_probe*` foreign export（`_probeKvRoundtrip`/`_probeD1Roundtrip`/`_probeR2Roundtrip` 等）は
-`examples/quickstart` 内でのみ宣言し、学習者向け本番 `Main.hs` へ複製しない。既存 A2 規約
-（`foreign import/export javascript` の許容 site は `Internal/FFI/*` と `examples/quickstart` に限る、
+`examples/url-shortener` 内でのみ宣言し、学習者向け本番 `Main.hs` へ複製しない。既存 A2 規約
+（`foreign import/export javascript` の許容 site は `Internal/FFI/*` と `examples/url-shortener` に限る、
 [ADR-0019](./0019-monorepo-package-layout.md) 追補）の再確認である。理由: `foreign export` はリンカの
 dead-code-elimination の対象にならず、production `fetch` エントリが呼ばなくても wasm バンドルに残り
 続けるため、probe を本番コードに複製すると内部テスト専用の到達経路を出荷物へ露出させてしまう。
@@ -193,15 +193,15 @@ probe を直接呼ぶ（実 `fetch()` を経由しない）テストハーネス
 - 「Workers API へのアクセスは本バインディング層を経由し、ハンドラに生の `foreign import` を散在
   させない。」
   → **追補により明確化**: `foreign import/export javascript` の許容 site は `Internal/FFI/*` と
-  `examples/quickstart`（[ADR-0019](./0019-monorepo-package-layout.md) 追補）に限る。`_probe*` 系
-  export は `examples/quickstart` 限定とし、学習者向け production `Main.hs` へ複製しない（決定 6）。
+  `examples/url-shortener`（[ADR-0019](./0019-monorepo-package-layout.md) 追補）に限る。`_probe*` 系
+  export は `examples/url-shortener` 限定とし、学習者向け production `Main.hs` へ複製しない（決定 6）。
 
 ### 参考資料（追補分）
 
 - [ADR-0008](./0008-cloudflare-platform-bindings.md) 追補（KV/D1/R2 実装で確定した設計 — D1 エラー
   分類・R2 の 3 値 get 等）
 - [ADR-0019](./0019-monorepo-package-layout.md) 追補（`Internal/FFI/*` 隔離の適用範囲・
-  `examples/quickstart` の位置付け）
+  `examples/url-shortener` の位置付け）
 - GHC User's Guide — WebAssembly backend（JSFFI `safe`/`unsafe`/`interruptible` セマンティクス）:
   https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 - MDN — TextEncoder: https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder

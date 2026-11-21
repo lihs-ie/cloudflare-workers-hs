@@ -1,0 +1,18 @@
+{
+  "name": "cloudflare-workers-hs-runtime-contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Development-only library contracts in real WASM/workerd",
+  "type": "module",
+  "scripts": {
+    "build:runtime": "bash scripts/build.sh",
+    "test:runtime": "vitest run && node --test test/Support/*.spec.mts ../../cloudflare-workers/test/Support/Runtime/*.spec.mts ../../servant-cloudflare-workers-access/test/integration/runtime/*.spec.mts",
+    "test:runtime:coverage": "vitest run --coverage && node --test test/Support/*.spec.mts ../../cloudflare-workers/test/Support/Runtime/*.spec.mts ../../servant-cloudflare-workers-access/test/integration/runtime/*.spec.mts",
+    "build:model": "node model/build-model.mts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "@cloudflare-workers-hs/runtime": "catalog:"
+  }
+}

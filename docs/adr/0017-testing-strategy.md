@@ -71,7 +71,7 @@ reactor 初期化・`Request`/`Response` 変換・ストリーミング・`env` 
   生成した JSFFI グルーを用い、Node.js 上で `_initialize` 後に `fetch` export を呼ぶ。JSFFI 単体の
   健全性確認に向く。
 - **workerd 上の実行**: `wrangler dev` / Miniflare、あるいは vitest の Workers プール
-  （`@cloudflare/vitest-pool-workers`）でテストを Workers ランタイム内で走らせる。Miniflare は
+  （`@cloudflare/vitest-plugin`）でテストを Workers ランタイム内で走らせる。Miniflare は
   ローカルで workerd 互換の挙動を再現するため、実デプロイに近い条件で `fetch` ハンドラの統合挙動を
   検証できる。
 
@@ -114,7 +114,7 @@ stock GHC / `cabal` / `ghc-wasm-meta`）はロック・固定し、(a) vanilla G
   シムと実 JSFFI の差異が「単体では緑だが統合で赤」を生む可能性がある。
 - `servant-server` を参照実装として扱うが、依存はしない（[ADR-0006](./0006-servant-execution-engine.md)）。
   互換性の基準は同ライブラリの**文書化された挙動**に基づき、振る舞いの差は golden の更新で明示管理する。
-- workerd 統合テスト基盤（Miniflare / `@cloudflare/vitest-pool-workers`）と WASM ビルドを CI で
+- workerd 統合テスト基盤（Miniflare / `@cloudflare/vitest-plugin`）と WASM ビルドを CI で
   常時動かすため、CI 時間とキャッシュ設計の負担が増える。
 
 ### 中立・フォローアップ (Neutral / Follow-up)
@@ -152,7 +152,7 @@ stock GHC / `cabal` / `ghc-wasm-meta`）はロック・固定し、(a) vanilla G
 - [ ] vanilla GHC ビルドは `ghc-wasm-compat` 相当の互換シムを用い、WASM 向けコードを stock GHC で
       型検査・実行できる状態を維持する。
 - [ ] 実 `.wasm` reactor モジュールを Node.js ハーネスおよび／または workerd（`wrangler dev` /
-      Miniflare / `@cloudflare/vitest-pool-workers`）で実行する統合テストを用意する。
+      Miniflare / `@cloudflare/vitest-plugin`）で実行する統合テストを用意する。
 - [ ] [ADR-0006](./0006-servant-execution-engine.md) のエラーモデル（400/404/405/406/415）を golden ケースとして固定し、
       状態コードとエラー本文を `servant-server` の文書化挙動と突き合わせる互換性テストを持つ。
 - [ ] ルーティング／コンテンツネゴシエーションをプロパティベースで `servant-server` 仕様と照合する。
@@ -164,7 +164,7 @@ stock GHC / `cabal` / `ghc-wasm-meta`）はロック・固定し、(a) vanilla G
 - GHC User's Guide — WebAssembly backend（JSFFI / reactor / `wasm32-wasi`）: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html
 - konn/ghc-wasm-earthly（`ghc-wasm-compat` で vanilla GHC でも型検査可能・設計参照のみ）: https://github.com/konn/ghc-wasm-earthly
 - Cloudflare Workers — Testing（概要）: https://developers.cloudflare.com/workers/testing/
-- Cloudflare Workers — Vitest integration（`@cloudflare/vitest-pool-workers` / Miniflare でランタイム内実行）: https://developers.cloudflare.com/workers/testing/vitest-integration/
+- Cloudflare Workers — Vitest integration（`@cloudflare/vitest-plugin` / Miniflare でランタイム内実行）: https://developers.cloudflare.com/workers/testing/vitest-integration/
 - Cloudflare Workers — Miniflare: https://developers.cloudflare.com/workers/testing/miniflare/
 - Haskell Discourse — Serverless Haskell with GHC WASM + JSFFI on Cloudflare Workers: https://discourse.haskell.org/t/serverless-haskell-with-ghc-wasm-jsffi-cloudflare-workers/9784
 

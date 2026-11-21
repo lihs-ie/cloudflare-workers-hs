@@ -1,5 +1,6 @@
 packages:
   - examples/*
+  - tests/runtime
 
 catalog:
   "@cloudflare-workers-hs/runtime": "github:lihs-ie/cloudflare-workers-hs-runtime#46c21ba3d61ba4564bdef5cb167e7797dc73a6a0"
@@ -51,3 +52,12 @@ minimumReleaseAgeExclude:
   - "@oxlint/binding-win32-x64-msvc@1.82.0"
   - oxc-parser@0.149.0
   - oxlint@1.82.0
+  - '@cloudflare/vitest-plugin@1.8.2'
+  - miniflare@5.20261113.0-beta
+  - wrangler@4.162.0
+
+overrides:
+  vite: 8.2.4
+  source-map-js: 1.2.2
+  glob: 14.0.2
+  minimatch: 11.0.1

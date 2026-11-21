@@ -101,7 +101,7 @@ auth = `Servant.Cloudflare.Workers.Access.*`。**全パッケージで複数形 
 ### example ワーカー（単一正典・統合 fixture 兼用）
 
 ライブラリは利用者の foreign export を所有できないため、全結線（Servant API 型 → 自前 `HasServer` 解釈 →
-`foreign export javascript "fetch"`）を通した実例を `examples/quickstart/` に1つ置く。これは `cabal.project` に載る
+`foreign export javascript "fetch"`）を通した実例を `examples/url-shortener/` に1つ置く。これは `cabal.project` に載る
 **非公開 executable パッケージ**であり、foreign export を持つ唯一の場所である。[ADR-0015](./0015-build-deploy-ci-pipeline.md) の
 重い WASM ビルドを踏まえ、維持する完全ビルドを1本に絞るため、この example を [ADR-0017](./0017-testing-strategy.md) の
 tier2（実 `.wasm` reactor を workerd/Miniflare/Node post-link ハーネスで回す統合）の fixture として兼用する。
@@ -122,7 +122,7 @@ vendor せず nix-pin した GHC libdir から呼ぶ。
 で純ロジック）を置き、server パッケージに `compat` スイートを別 stanza で持つ（tier3: [ADR-0017](./0017-testing-strategy.md)）。
 互換性の oracle は checked-in golden（400/404/405/406/415）と手書き spec モデルとし、[ADR-0006](./0006-servant-execution-engine.md)/
 [ADR-0017](./0017-testing-strategy.md) の方針どおり `servant-server` には**テスト時も依存しない**（stock GHC 上でビルド可能でも
-oracle に使わない）。tier2 は `examples/quickstart/test/integration/*.ts` に置く。
+oracle に使わない）。tier2 は `examples/url-shortener/test/integration/*.ts` に置く。
 
 ### 二重ビルド（stock GHC ↔ wasm32-wasi）
 
@@ -173,8 +173,8 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
 ### 中立・フォローアップ (Neutral / Follow-up)
 
 - `wiring_manifest.yml` の `src/**/Api*.hs`・`app/Main.hs`・`src/**/Binding/**.hs`・`src/**/Entrypoint/**.hs` 系ルールを、
-  多パッケージ + `examples/quickstart/` スコープへ再スコープする（`binding-type-matches-wrangler` は
-  `cloudflare-workers/src/**/Env/**.hs` ↔ `examples/quickstart/wrangler.toml`）。
+  多パッケージ + `examples/url-shortener/` スコープへ再スコープする（`binding-type-matches-wrangler` は
+  `cloudflare-workers/src/**/Env/**.hs` ↔ `examples/url-shortener/wrangler.toml`）。
 - `AGENTS.md` の「予定モジュール構成」節（単一パッケージ前提・`Http*`）と ADR 本数表記、`CLAUDE.md` の ADR 範囲表記、
   `docs/adr/README.md` 索引を本決定に合わせて更新する。
 - JS ランタイムの npm 公開へ昇格する場合は、Haskell↔JS ABI を定義する新規 ADR を起こす。
@@ -216,7 +216,7 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
       auth `…​.Access.*`、複数形 `Workers` 統一、コード識別子の略語は許可略語（`URL`/`URI`/`UUID`/`ULID`/`HTTP` 等）のみ。
 - [ ] 型レベル機構は `*.Internal.*` に置き、生 `foreign import javascript` は `Internal/FFI/*` に隔離する。
       [ADR-0028](./0028-hide-internal-modules-from-consumers.md) に従い、Internal module は expose しない。
-- [ ] foreign export を持つのは `examples/quickstart/` のみとし、これを [ADR-0017](./0017-testing-strategy.md) tier2 の統合
+- [ ] foreign export を持つのは `examples/url-shortener/` のみとし、これを [ADR-0017](./0017-testing-strategy.md) tier2 の統合
       fixture として用いる。`packages` 相当の公開パッケージに `app/Main.hs` 的 foreign export を置かない。
 - [ ] 各パッケージ `src/` は単一ツリーとし、stock GHC 型検査は `ghc-wasm-compat` を `!arch(wasm32)` 限定依存で用いる。
       並行 `hs-source-dirs` を作らない。
@@ -224,7 +224,7 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
       依存しない（[ADR-0006](./0006-servant-execution-engine.md)/[ADR-0017](./0017-testing-strategy.md)）。
 - [ ] root に `flake.nix`+`flake.lock` / `cabal.project`（`index-state` pin・freeze なし）/ `justfile` / `fourmolu.yaml` を置き、
       post-link.mjs / WASI shim は vendor せず nix-pin libdir から呼ぶ。
-- [ ] `wiring_manifest.yml` を本構成（多パッケージ + `examples/quickstart/`）に再スコープする。
+- [ ] `wiring_manifest.yml` を本構成（多パッケージ + `examples/url-shortener/`）に再スコープする。
 
 ## 参考資料 (References)
 
@@ -269,11 +269,11 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
 
 - 対象は**公開ライブラリ 4 パッケージ**（`cloudflare-workers` / `servant-cloudflare-workers` /
   `servant-cloudflare-workers-client` / `servant-cloudflare-workers-access`）であり、
-  `examples/quickstart` はこの隔離規則の対象外とする。`examples/quickstart` は probe／配線
+  `examples/url-shortener` はこの隔離規則の対象外とする。`examples/url-shortener` は probe／配線
   fixture として、`foreign import`/`foreign export` を持つ正当な site である
   （本文「example ワーカー」節の tier2 統合 fixture との役割に合致）。
 - 機械検査 `scripts/verify-ffi-boundary.sh` の allowlist は
-  `*/Internal/FFI/*.hs` + `examples/quickstart/app/Main.hs` とする。
+  `*/Internal/FFI/*.hs` + `examples/url-shortener/app/Main.hs` とする。
 
 ### 決定 3（関連）: 移植コードの attribution
 
@@ -291,8 +291,8 @@ root に `flake.nix` + `flake.lock`（[ADR-0015](./0015-build-deploy-ci-pipeline
   `ghc-wasm-compat` への依存は追加しない。
 - 「型レベル機構は `*.Internal.*`（exposed・Haddock で PVP 無保証明記）に置き、生
   `foreign import javascript` は `Internal/FFI/*` に隔離する。」
-  → **追補により適用範囲を公開ライブラリ 4 パッケージに限定**すると明記。`examples/quickstart` は
-  対象外（`scripts/verify-ffi-boundary.sh` の allowlist に `examples/quickstart/app/Main.hs` を含む）。
+  → **追補により適用範囲を公開ライブラリ 4 パッケージに限定**すると明記。`examples/url-shortener` は
+  対象外（`scripts/verify-ffi-boundary.sh` の allowlist に `examples/url-shortener/app/Main.hs` を含む）。
 
 ### 参考資料（追補分）
 
@@ -520,7 +520,7 @@ lihs）であり、さらに本文「遵守事項」が必須成果物として�
 ### 決定 1: ライセンスは原則 MIT
 
 `cloudflare-workers` / `servant-cloudflare-workers-client` /
-`servant-cloudflare-workers-access` / `examples/quickstart` / `conformance-oracle` は
+`servant-cloudflare-workers-access` / `examples/url-shortener` / `conformance-oracle` は
 `license: MIT`、本文は repo 直下 `LICENSE`（MIT、Copyright (c) 2026 lihs）と同一テキストを各
 パッケージに配置する。repo 直下にも同じ `LICENSE` を置き、`.cabal` は `license-file: LICENSE` で
 sdist に同梱する。

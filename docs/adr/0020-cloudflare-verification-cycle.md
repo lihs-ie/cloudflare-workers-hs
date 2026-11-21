@@ -38,7 +38,7 @@ Access の JWT 発行（[ADR-0009](./0009-auth-zero-trust-subtlecrypto.md)）、
 - 決定論的で速い per-PR ゲートと、運用重い実エッジ検証を**別 cadence**に分離できること
 - [ADR-0014](./0014-bundle-size-limits-performance.md) の「しきい値ゲート化 + 回帰検出」を機構として実装すること
 - 秘匿情報・課金アカウントを持たない repo / fork でも CI が緑になること（[ADR-0015](./0015-build-deploy-ci-pipeline.md) の opt-in 慣行）
-- 既存資産（[ADR-0019](./0019-monorepo-package-layout.md) の `examples/quickstart`・`justfile`、pr-gate の `integration_smoke`）を再利用すること
+- 既存資産（[ADR-0019](./0019-monorepo-package-layout.md) の `examples/url-shortener`・`justfile`、pr-gate の `integration_smoke`）を再利用すること
 
 ## 検討した選択肢 (Considered Options)
 
@@ -60,7 +60,7 @@ Access の JWT 発行（[ADR-0009](./0009-auth-zero-trust-subtlecrypto.md)）、
 - **CI ループ**（per-PR・ローカルエミュレーション・決定論的・秘匿不要）: `typecheck → 単体/互換([ADR-0017](./0017-testing-strategy.md))
   → wasm build([ADR-0015](./0015-build-deploy-ci-pipeline.md)) → bundle + サイズゲート([ADR-0014](./0014-bundle-size-limits-performance.md))
   → workerd/Miniflare smoke（real entrypoint で観測 assert）`。
-- **release ループ**（実エッジ・別 cadence・秘匿 opt-in）: `examples/quickstart` を実 Cloudflare へ deploy し、
+- **release ループ**（実エッジ・別 cadence・秘匿 opt-in）: `examples/url-shortener` を実 Cloudflare へ deploy し、
   実エッジで smoke + 観測（tail/Logs）+ 計測を行う。
 
 ### 検証 assertion 集合と「ローカル充足 / 実エッジ必須」の振り分け
@@ -91,7 +91,7 @@ Identity 注入の assert）。
 
 実 Cloudflare Access アプリと Cron Trigger は CI 実行ごとに生成/破棄できないため、**専用の事前プロビジョン
 検証環境**を採る。検証用 staging Worker・Access アプリ・Service Token・KV/D1 namespace・Cron 設定を一度だけ
-事前作成し、各 release は `examples/quickstart` のコードを再 deploy して実エッジ smoke を回す。run 間の状態
+事前作成し、各 release は `examples/url-shortener` のコードを再 deploy して実エッジ smoke を回す。run 間の状態
 bleed は **run-id で namespace したキー + 自己クリーンアップ smoke**（write→read→delete）で抑え、同時実行衝突は
 CI concurrency group で直列化する。
 
@@ -130,8 +130,8 @@ release ループは [ADR-0015](./0015-build-deploy-ci-pipeline.md) の opt-in �
 ### 検証ハーネス
 
 主ハーネスは **TS/vitest** とし、[ADR-0019](./0019-monorepo-package-layout.md) の
-`examples/quickstart/test/integration/` を再利用して **target でパラメタ化**する（CI=ローカル
-workerd/Miniflare/`@cloudflare/vitest-pool-workers`、release=実エッジ URL）。deploy は `wrangler`、assertion 13 の
+`examples/url-shortener/test/integration/` を再利用して **target でパラメタ化**する（CI=ローカル
+workerd/Miniflare/`@cloudflare/vitest-plugin`、release=実エッジ URL）。deploy は `wrangler`、assertion 13 の
 観測は `wrangler tail` を用いる。`servant-cloudflare-workers-client`
 （[ADR-0011](./0011-outbound-http-fetch-backend.md)）を用いた dogfooding smoke は任意の追加確証（client 自身が
 未検証のため主経路にはしない）とする。
@@ -190,7 +190,7 @@ workerd/Miniflare/`@cloudflare/vitest-pool-workers`、release=実エッジ URL�
 ## 遵守事項 (Compliance)
 
 - [ ] dev inner（`just dev`）/ CI（per-PR・ローカルエミュレーション）/ release（実エッジ）の3ループを構成し、
-      release ループの deploy 対象を `examples/quickstart` とする。
+      release ループの deploy 対象を `examples/url-shortener` とする。
 - [ ] CI ループの smoke を実行可能化する（`pr-gate.yml` の `integration_smoke` を grep から `just test-integration`
       実走へ反転し、`wiring_manifest.yml` の `smoke:` を実行コマンドとして扱う）。CI ループは PR の required merge gate とする。
 - [ ] assertion 1–8 を CI/inner（ローカル）、9–13 を release（実エッジ）で確証し、観測は read-back まで行う。
@@ -200,13 +200,13 @@ workerd/Miniflare/`@cloudflare/vitest-pool-workers`、release=実エッジ URL�
 - [ ] 両ループは `.agent-evidence/verify/{ci,edge}-report.json` に assertion 結果・到達 entrypoint・計測値を出力する。
 - [ ] サイズは圧縮前 64 MB を blocking、圧縮後 10 MiB を budget / 3 MiB を warn とする。コールドスタート・レイテンシ・
       メモリは `ci/perf-budget.yml` の baseline 比で回帰判定し、baseline 更新は reviewable な PR 差分とする。
-- [ ] 検証ハーネスは TS/vitest を主とし、`examples/quickstart/test/integration/` を local/edge の target で
+- [ ] 検証ハーネスは TS/vitest を主とし、`examples/url-shortener/test/integration/` を local/edge の target で
       パラメタ化して再利用する。
 
 ## 参考資料 (References)
 
 - Cloudflare Workers — Limits（サイズ/CPU/メモリ/サブリクエスト）: https://developers.cloudflare.com/workers/platform/limits/
-- Cloudflare Workers — Testing（Miniflare / `@cloudflare/vitest-pool-workers`）: https://developers.cloudflare.com/workers/testing/
+- Cloudflare Workers — Testing（Miniflare / `@cloudflare/vitest-plugin`）: https://developers.cloudflare.com/workers/testing/
 - Cloudflare Workers — `wrangler` versions & deployments: https://developers.cloudflare.com/workers/configuration/versions-and-deployments/
 - Cloudflare Workers — Tail / Workers Logs: https://developers.cloudflare.com/workers/observability/logs/tail-workers/
 - Cloudflare Access — Validating JWTs / Service Tokens: https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/validating-json/

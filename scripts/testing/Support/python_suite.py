@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 import unittest
+import sys
 
 
 def main():
@@ -13,9 +14,12 @@ def main():
     args = parser.parse_args()
     suite = unittest.TestSuite()
     test_directory = str(args.test_directory.resolve())
+    test_root = str(args.test_directory.resolve().parent)
+    sys.path.insert(0, test_root)
+    discovery_root = test_root if (args.test_directory / '__init__.py').is_file() else test_directory
     for pattern in ['test_*.py', 'coverage_checks.py']:
         loader = unittest.TestLoader()
-        suite.addTests(loader.discover(test_directory, pattern=pattern, top_level_dir=test_directory))
+        suite.addTests(loader.discover(test_directory, pattern=pattern, top_level_dir=discovery_root))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     successful = result.wasSuccessful() and result.testsRun > 0
     args.result.write_text(json.dumps({'tests': result.testsRun, 'successful': successful}) + '\n')

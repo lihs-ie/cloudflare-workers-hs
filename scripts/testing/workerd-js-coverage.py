@@ -13,7 +13,7 @@ import uuid
 from run import source_snapshot
 
 ROOT = Path(__file__).resolve().parents[2]
-EXAMPLES = ['minimal', 'static-assets', 'realtime', 'workflows', 'library-examples']
+EXAMPLES = ['minimal', 'static-assets', 'realtime', 'workflows', 'api-catalog', 'queued-jobs']
 
 
 def main():
@@ -100,14 +100,17 @@ def main():
             self.end_headers()
             self.close_connection = True
 
-    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Collector)
+    class CoverageServer(http.server.ThreadingHTTPServer):
+        request_queue_size = 64
+
+    server = CoverageServer(('127.0.0.1', 0), Collector)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     env = dict(os.environ, WORKERD_JS_COVERAGE_ENDPOINT=f'http://127.0.0.1:{server.server_port}{nonce}', WORKERD_JS_COVERAGE_DIRECTORY=str(output))
     try:
         for example in args.example or EXAMPLES:
             before = len(received)
-            tests = sorted((ROOT / 'examples' / example / 'test/integration').glob('*.spec.mjs'))
+            tests = sorted((ROOT / 'examples' / example / 'test/integration').glob('*.spec.mts'))
             if not tests:
                 errors.append('No integration tests for ' + example)
                 break
@@ -124,7 +127,7 @@ def main():
         thread.join()
         server.server_close()
     with (output / 'report.log').open('w') as log:
-        result = subprocess.run(['node', 'scripts/testing/Support/workerd_js_report.mjs', str(output)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
+        result = subprocess.run(['node', 'scripts/testing/Support/workerd_js_report.mts', str(output)], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
     if result.returncode:
         errors.append('Report failed')
     if source_snapshot() != sources:

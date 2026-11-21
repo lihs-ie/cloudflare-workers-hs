@@ -1,0 +1,1 @@
+-- Catalogue tables are created by the individual operation examples.

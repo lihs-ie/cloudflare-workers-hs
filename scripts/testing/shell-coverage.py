@@ -13,9 +13,24 @@ KCOV_IMAGE = "kcov/kcov@sha256:481289ae32e55e5b733019515acd10948a4f76dfed3817655
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = [f"examples/{name}/scripts/{script}" for name, script in [
-    ("quickstart", "build-wasm.sh"), ("library-examples", "build.sh"),
+    ("url-shortener", "build-wasm.sh"), ("api-catalog", "build.sh"),
     ("minimal", "build.sh"), ("static-assets", "build.sh"),
-    ("realtime", "build.sh"), ("workflows", "build.sh")]]
+    ("realtime", "build.sh"), ("workflows", "build.sh"),
+    ("queued-jobs", "build.sh")]] + ["tests/runtime/scripts/build.sh"]
+
+HOME_TOOLCHAIN_ONLY = {
+    "examples/api-catalog/scripts/build.sh",
+    "examples/workflows/scripts/build.sh",
+    "examples/queued-jobs/scripts/build.sh",
+    "tests/runtime/scripts/build.sh",
+}
+
+FIXTURE_BUILDS = {
+    "examples/api-catalog/scripts/build.sh",
+    "examples/realtime/scripts/build.sh",
+    "examples/workflows/scripts/build.sh",
+    "examples/queued-jobs/scripts/build.sh",
+}
 
 
 def executable(path: Path, text: str) -> None:
@@ -56,13 +71,13 @@ esac
     cases = []
     for index, relative in enumerate(SCRIPTS):
         modes = ["direct", "home", "missing", "build-failure", "override", "capture", "list-bin", "post-link", "write"]
-        if index not in (1, 5):
+        if relative not in HOME_TOOLCHAIN_ONLY:
             modes.append("opt")
         if index == 0:
             modes += ["runtime-tests", "invalid-target"]
         for mode in modes:
             cases.append({"identifier": f"{index}-{mode}", "source": relative, "mode": mode,
-                          "expected": {"capture": 45, "list-bin": 43, "post-link": 44, "write": 46}.get(mode, 42 if mode == "build-failure" else 2 if mode == "invalid-target" else (1 if index in (1,5) else 127) if mode == "missing" else 0)})
+                          "expected": {"capture": 45, "list-bin": 43, "post-link": 44, "write": 46}.get(mode, 42 if mode == "build-failure" else 2 if mode == "invalid-target" else (1 if relative in HOME_TOOLCHAIN_ONLY else 127) if mode == "missing" else 0)})
     commands = ['set -eu', 'kcov --version > /work/version.txt', 'mkdir -p /opt/ghc-wasm']
     for case in cases:
         identifier, mode = case["identifier"], case["mode"]
@@ -103,7 +118,11 @@ def collect(work: Path, cases: list[dict]) -> dict:
         assert not list((directory / "tmp").iterdir()), f"Snapshot cleanup failed: {case}"
         calls = (directory / "calls.log").read_text() if (directory / "calls.log").exists() else ""
         if actual == 0:
-            assert "cabal <build> <exe:" in calls and "cabal <list-bin>" in calls
+            assert "cabal <build>" in calls and "cabal <list-bin>" in calls
+            expected_builds = 2 if case["source"] in FIXTURE_BUILDS else 1
+            assert calls.count("cabal <build>") == expected_builds
+            assert calls.count("cabal <list-bin>") == expected_builds
+            assert calls.count("post-link <--input>") == expected_builds
             assert "post-link <--input> </work/binary.wasm> <--output>" in calls
             assert calls.count("node <") == 2
             if case["mode"] == "override":
@@ -152,7 +171,14 @@ def main() -> None:
         subprocess.run(["docker", "run", "--rm", "--security-opt", "seccomp=unconfined", "--entrypoint", "/bin/bash", "-v", f"{work}:/work", args.image, "/work/run.sh"], stdout=log, stderr=subprocess.STDOUT, check=True)
     result = collect(work, cases)
     result["collector"]["image"] = args.image
-    (output / "coverage.json").write_text(json.dumps(result, indent=2) + "\n")
+    report = output / "coverage.json"
+    report.write_text(json.dumps(result, indent=2) + "\n")
+    if output.is_relative_to(ROOT / "artifacts/testing"):
+        pointer = ROOT / "artifacts/testing/shell-coverage-latest.json"
+        temporary = pointer.with_suffix(".tmp")
+        temporary.write_text(json.dumps({"report": str(report.relative_to(ROOT)),
+                                         "sha256": hashlib.sha256(report.read_bytes()).hexdigest()}) + "\n")
+        temporary.replace(pointer)
     print(json.dumps({"report": str(output / "coverage.json"), "contracts": len(cases)}))
 
 if __name__ == "__main__":

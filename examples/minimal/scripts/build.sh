@@ -14,11 +14,11 @@ if ! command -v wasm32-wasi-cabal >/dev/null 2>&1; then
 fi
 SNAPSHOT="$(mktemp "${TMPDIR:-/tmp}/minimal-build.XXXXXX")"
 trap 'rm -f "${SNAPSHOT}"' EXIT
-node "${EXAMPLE_DIR}/test/Support/build-manifest.mjs" capture "${SNAPSHOT}"
+node "${EXAMPLE_DIR}/test/Support/build-manifest.mts" capture "${SNAPSHOT}"
 cd "${REPO_ROOT}"
 BUILD_DIR="${WASM_BUILD_DIR:-dist-newstyle-runtime}"
 wasm32-wasi-cabal build exe:minimal-worker --project-file="${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}" -j2
 WASM_BIN="$(wasm32-wasi-cabal list-bin exe:minimal-worker --project-file="${WASM_PROJECT_FILE:-cabal-wasm.project}" --builddir="${BUILD_DIR}")"
 "$(wasm32-wasi-ghc --print-libdir)/post-link.mjs" --input "${WASM_BIN}" --output "${EXAMPLE_DIR}/worker/minimal-worker-jsffi.mjs"
 cp "${WASM_BIN}" "${EXAMPLE_DIR}/worker/minimal-worker.wasm"
-node "${EXAMPLE_DIR}/test/Support/build-manifest.mjs" write "${SNAPSHOT}"
+node "${EXAMPLE_DIR}/test/Support/build-manifest.mts" write "${SNAPSHOT}"

@@ -12,13 +12,14 @@
       "node"
     ],
     "typeRoots": [
-      "../quickstart/node_modules/@types"
+      "../../node_modules/@types"
     ]
   },
   "include": [
     "worker/**/*.ts",
     "worker/**/*.d.mts",
     "test/**/*.ts",
-    ".wrangler/types/worker-configuration.d.ts"
+    ".wrangler/types/worker-configuration.d.ts",
+    "test/**/*.mts"
   ]
 }

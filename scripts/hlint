@@ -6,5 +6,5 @@ set -euo pipefail
 # the masking wrapper so the surrounding Haskell remains linted as well.
 hlint . --ignore='Parse error'
 
-git grep -lz '"""' -- '*.hs' |
+rg -l -0 '"""' --glob '*.hs' |
     xargs -0 -r -n 1 -P 4 sh -c 'scripts/hlint-multiline-javascript-ffi --no-summary < "$1"' _

@@ -116,11 +116,7 @@ def collect(root, output, snapshot):
                 ghc = Path(shutil.which('ghc')).resolve()
                 version = subprocess.check_output(['ghc', '--numeric-version'], text=True).strip()
                 proof['commands'].append({'command': ['ghc', '--show-iface', str(saved_interface)], 'exitCode': 0, **log_evidence(output, 'Prim.interface')})
-                proof['compileValidations'] = [{'path': 'cloudflare-workers/shim/compat/GHC/Wasm/Prim.hs', 'kind': 'haskell-reexport',
-                    'interface': {'path': saved_interface.name, 'sha256': hashlib.sha256(saved_interface.read_bytes()).hexdigest()},
-                    'dump': {'path': dump_file.name, 'sha256': hashlib.sha256(dump_file.read_bytes()).hexdigest()},
-                    'compiler': {'path': str(ghc), 'sha256': hashlib.sha256(ghc.read_bytes()).hexdigest(), 'version': version},
-                    'probe': {'path': 'compiler-compat/probe.log', 'sha256': hashlib.sha256((output / 'compiler-compat/probe.log').read_bytes()).hexdigest()}}]
+
 
         for mix in build.rglob('*.mix'):
             relative = Path('mix') / mix.relative_to(build)

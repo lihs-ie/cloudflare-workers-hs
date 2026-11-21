@@ -315,7 +315,7 @@ isolate の heap が攻撃者制御の入力で無制限に膨らむ（SEC-3 の
   **A5 で記録された既存 8 ケースは 1 行も変更せず通る**（arming が「再取得が空振りした後」に限られる
   ため、既存の "a kid absent from an otherwise-fresh cached document triggers an immediate refetch"
   は依然として再取得する）。
-- T2（`examples/quickstart/test/integration/access-jwks-fetch.spec.ts`）: 同じ増幅 pin を実 wasm
+- T2（`examples/url-shortener/test/integration/access-jwks-fetch.spec.ts`）: 同じ増幅 pin を実 wasm
   reactor と実 `globalThis.fetch` 越しに（注入クロックではなく `Internal.Clock.currentEpochSeconds`
   で）確認する 1 ケースを追加。
 

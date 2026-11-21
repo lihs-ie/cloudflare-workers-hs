@@ -39,8 +39,8 @@ test-workflows:
 test-minimal:
     python3 scripts/testing/run.py minimal
 
-test-library-examples:
-    python3 scripts/testing/run.py library-examples
+test-api-catalog:
+    python3 scripts/testing/run.py api-catalog
 
 test-model:
     python3 scripts/testing/run.py model --examples 10
@@ -64,12 +64,17 @@ test-internal-boundaries: test-internal-boundary-manifest
     python3 scripts/testing/internal-module-boundaries.py consumer
 
 test-tools:
-    python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
-    python3 scripts/testing/Support/coverage_checks.py
-    python3 scripts/testing/Support/mutation_checks.py
+    pnpm test:tools
+    python3 -m unittest discover -s scripts/testing/test -t scripts/testing -p 'test_*.py'
+    python3 scripts/testing/test/coverage_checks.py
+    python3 scripts/testing/test/mutation_checks.py
 
 test-mutations:
     python3 scripts/testing/mutations.py
 
 lint: test-registration test-internal-boundary-manifest
+    python3 scripts/testing/test-boundaries.py
     scripts/hlint
+
+test-queued-jobs:
+    python3 scripts/testing/run.py queued-jobs

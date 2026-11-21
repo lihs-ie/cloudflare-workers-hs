@@ -381,7 +381,7 @@ Entrypoint.Fetch` の marshal 境界で一度パースされた時点で捨て�
 - Service Binding / DO の RPC stub は Proxy-backed で `Function.prototype.apply` を受け付けない —
   `stub[methodName](...args)`/`service[methodName](...args)` の spread-call 構文が必須
   （`doCall`/`serviceCall` 双方で確認）。
-- 自己参照 `[[services]]` binding は `@cloudflare/vitest-pool-workers` 0.18.7 上で補助 Worker
+- 自己参照 `[[services]]` binding は `@cloudflare/vitest-plugin` 0.18.7 上で補助 Worker
   無しに解決できる。
 - 非 `WorkerEntrypoint`（プレーンな `{ fetch, ... }` export）の Service Binding に対する RPC 呼び出し
   は、汎用の "method does not exist" `TypeError` ではなく、区別可能な自己記述的エラーとして分類

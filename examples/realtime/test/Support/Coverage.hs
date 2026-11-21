@@ -1,7 +1,7 @@
 module Support.Coverage (withCoverage) where
 
 import Control.Exception (finally, throwIO)
-import ExampleSupport.Interop (decodeEnveloped, textToJSVal)
+import WorkersSupport.Interop (decodeEnveloped, textToJSVal)
 import Trace.Hpc.Reflect (examineTix)
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)

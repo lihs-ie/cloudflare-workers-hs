@@ -18,11 +18,11 @@ runJWKSCacheScenarios =
         [ scenario "ttl-boundary" $ do
             calls <- newIORef (0 :: Int)
             let fetch = modifyIORef' calls (+ 1) >> pure (Right (document ["known"]))
-                lookupAt time = lookupOrFetchJWKWith fetch (pure time) 300 "url" "known"
-            expect (Right (key "known")) =<< lookupAt 1000
-            expect (Right (key "known")) =<< lookupAt 1299
+                lookupKnownAt time = lookupOrFetchJWKWith fetch (pure time) 300 "url" "known"
+            expect (Right (key "known")) =<< lookupKnownAt 1000
+            expect (Right (key "known")) =<< lookupKnownAt 1299
             expect 1 =<< readIORef calls
-            expect (Right (key "known")) =<< lookupAt 1300
+            expect (Right (key "known")) =<< lookupKnownAt 1300
             expect 2 =<< readIORef calls
         , scenario "url-isolation" $ do
             expect (Right (key "known")) =<< lookupAt 1000 "first" (Right (document ["known"])) "known"

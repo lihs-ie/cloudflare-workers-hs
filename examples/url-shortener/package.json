@@ -1,0 +1,22 @@
+{
+  "name": "cloudflare-workers-hs-url-shortener",
+  "private": true,
+  "version": "0.1.0",
+  "description": "URL shortener example and real WASM/workerd test harness",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --config apps/redirect/wrangler.jsonc",
+    "deploy": "wrangler deploy --config apps/redirect/wrangler.jsonc",
+    "test:integration": "vitest run",
+    "test:runtime": "vitest run --config vitest.runtime.config.mts",
+    "build:runtime": "bash scripts/build-wasm.sh runtime-tests",
+    "typecheck": "tsc --noEmit",
+    "test:runtime:coverage": "vitest run --config vitest.runtime.config.mts --coverage && node test/Support/Runtime/coverage-inventory.mts",
+    "test:dev": "node test/Support/Dev/run.mts",
+    "test:docker": "python3 ../../scripts/testing/dev-docker.py"
+  },
+  "dependencies": {
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "@cloudflare-workers-hs/runtime": "catalog:"
+  }
+}

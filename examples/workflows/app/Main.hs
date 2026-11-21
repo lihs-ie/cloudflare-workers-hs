@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Main (main) where
 #ifdef WASM_COVERAGE
-import Support.Coverage (withCoverage)
+import Support.Coverage (withCoverage, withDeferredCoverage)
 #endif
 import Cloudflare.Workers.Binding.D1 (D1 (..))
 import Cloudflare.Workers.Binding.Workflow (Workflow)
@@ -34,7 +34,7 @@ workflow = createWorkflowHandler $ \event step (env :: WorkflowBindings) ->
     runApproval (getBinding (Proxy @"AUDIT") env) event step
 #ifdef WASM_COVERAGE
 coverage_workflow :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
-coverage_workflow argument0 argument1 argument2 argument3 = withCoverage (workflow argument0 argument1 argument2 argument3)
+coverage_workflow argument0 argument1 argument2 argument3 = withDeferredCoverage (workflow argument0 argument1 argument2 argument3)
 foreign export javascript "workflow" coverage_workflow :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
 #else
 foreign export javascript "workflow" workflow :: JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal

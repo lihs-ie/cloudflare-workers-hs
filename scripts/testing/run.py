@@ -11,14 +11,16 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-EXAMPLE = ROOT / 'examples/quickstart'
+EXAMPLE = ROOT / 'examples/url-shortener'
+LIBRARY_RUNTIME = ROOT / 'tests/runtime'
 HOST = [
     'cloudflare-workers:test:unit', 'cloudflare-workers:test:host-testkit-unit',
     'servant-cloudflare-workers:test:unit', 'servant-cloudflare-workers-client:test:unit',
-    'servant-cloudflare-workers-access:test:unit', 'quickstart:test:unit',
-    'conformance-oracle:test:unit', 'quickstart-domain:test:unit',
-    'quickstart-management:test:unit',
+    'servant-cloudflare-workers-access:test:unit', 'url-shortener:test:unit',
+    'conformance-oracle:test:unit', 'url-shortener-domain:test:unit',
+    'url-shortener-management:test:unit',
     'testing-support:test:integration', 'workflow-example:test:unit',
+    'minimal-worker:test:unit', 'static-assets-worker:test:unit', 'realtime-worker:test:unit',
 ]
 
 
@@ -61,8 +63,17 @@ def wasm_coverage_arguments(root, sources):
             if not path.is_relative_to(output) or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
                 return []
         arguments = ['--wasm-mix-dir', str(output / 'mix')]
+        if proof.get('compiler'):
+            from Support.coverage_evidence import host_projection_proof
+            host_projection_proof(root, proof_file, runtime='wasm')
+            arguments.extend(['--wasm-proof', str(proof_file)])
         for name in sorted(proof['snapshots']):
             arguments.extend(['--wasm-tix', str(output / name)])
+        for report in proof.get('javascriptReports', []):
+            path = (output / report['path']).resolve()
+            if not path.is_relative_to(output) or hashlib.sha256(path.read_bytes()).hexdigest() != report['sha256']:
+                return []
+            arguments.extend(['--istanbul', str(path)])
         return arguments
     except (OSError, ValueError, KeyError, TypeError):
         return []
@@ -144,7 +155,27 @@ def npm_coverage_arguments(root, sources):
 
 
 def example_node_coverage_arguments(root, sources):
-    return istanbul_pointer_arguments(root, sources, 'example-node-coverage-latest.json')
+    arguments = istanbul_pointer_arguments(root, sources, 'example-node-coverage-latest.json')
+    if not arguments:
+        return []
+    try:
+        from Support.v8_queries import canonical_report
+        pointer = json.loads((root / 'artifacts/testing/example-node-coverage-latest.json').read_text())
+        path = (root / pointer['proof']).resolve()
+        proof = json.loads(path.read_text())
+        for record in proof.get('queryProvenance', []):
+            inputs = []
+            for field in ['raw', 'canonical']:
+                artifact = (path.parent / record[field]).resolve()
+                if not artifact.is_relative_to(path.parent) or hashlib.sha256(artifact.read_bytes()).hexdigest() != record[field + 'Sha256']:
+                    return []
+                inputs.append(json.loads(artifact.read_text()))
+            expected, rewrites = canonical_report(root, inputs[0], sources, proof['nodeSources'])
+            if expected != inputs[1] or rewrites != record['rewrites']:
+                return []
+        return arguments
+    except (OSError, ValueError, TypeError, KeyError):
+        return []
 
 
 def workerd_javascript_coverage_arguments(root, sources):
@@ -190,6 +221,61 @@ def shared_javascript_coverage_arguments(root, sources):
         return fallback + ['--workerd-only', fallback[1]] if fallback else []
 
 
+def haskell_coverage_arguments(root, sources):
+    try:
+        pointer = json.loads((root / 'artifacts/testing/haskell-validation-latest.json').read_text())
+        path = (root / pointer['proof']).resolve()
+        if not path.is_relative_to(root.resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != pointer['sha256']:
+            return []
+        proof = json.loads(path.read_text())
+        if proof['sources'] != sources or proof['exit_code'] != 0 or proof['errors']:
+            return []
+        return ['--haskell-proof', str(path)]
+    except (OSError, ValueError, TypeError, KeyError):
+        return []
+
+
+def shell_coverage_arguments(root, sources):
+    """Discover successful kcov output while preserving per-script source matching."""
+    try:
+        pointer = json.loads((root / 'artifacts/testing/shell-coverage-latest.json').read_text())
+        report_path = (root / pointer['report']).resolve()
+        if not report_path.is_relative_to(root.resolve()):
+            return []
+        if hashlib.sha256(report_path.read_bytes()).hexdigest() != pointer['sha256']:
+            return []
+        report = json.loads(report_path.read_text())
+        if (report['schema'] != 1 or report['collector']['name'] != 'kcov'
+                or not report['files'] or type(report['contracts']['passed']) is not int
+                or report['contracts']['passed'] <= 0):
+            return []
+        if any(sources.get(path) != entry['sha256'] for path, entry in report['files'].items()):
+            return []
+        return ['--shell-json', str(report_path)]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+
+
+def compile_coverage_arguments(root, sources):
+    """Accept only the compiler producer's current, content-matched pointer."""
+    try:
+        pointer = json.loads((root / 'artifacts/testing/compile-validation-latest.json').read_text())
+        proof_path = (root / pointer['proof']).resolve()
+        if not proof_path.is_relative_to(root.resolve()):
+            return []
+        if hashlib.sha256(proof_path.read_bytes()).hexdigest() != pointer['sha256']:
+            return []
+        proof = json.loads(proof_path.read_text())
+        if (proof['sources'] != sources or proof['errors']
+                or type(proof['exit_code']) is not int or proof['exit_code'] != 0
+                or not proof['validated'] or not proof['commands']
+                or any(type(command['exitCode']) is not int or command['exitCode'] != 0 for command in proof['commands'])):
+            return []
+        return ['--compile-proof', str(proof_path)]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+
+
 def production_coverage_arguments(example, sources):
     report = example / 'test-artifacts/coverage/production/coverage-final.json'
     proof = report.with_name('run-proof.json')
@@ -205,11 +291,12 @@ def successful_summaries(log, target_count):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('lane', choices=['host', 'conformance', 'integration', 'model', 'coverage', 'replay', 'dev', 'docker', 'library-examples', 'minimal', 'static-assets', 'realtime', 'workflows'])
+    parser.add_argument('lane', choices=['host', 'conformance', 'integration', 'model', 'coverage', 'replay', 'dev', 'docker', 'api-catalog', 'queued-jobs', 'minimal', 'static-assets', 'realtime', 'workflows'])
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--examples', type=int, default=100)
     parser.add_argument('--target', help='Cabal test target for replay')
     parser.add_argument('--match', help='Sydtest test-name filter for replay')
+    parser.add_argument('--host-proof', type=Path, help='Aggregate existing authenticated host evidence without rerunning suites')
     parser.add_argument('--report-only', action='store_true', help='Coverage evidence only; does not assert completion')
     parser.add_argument('--compile-proof', type=Path, help='Successful compiler input/source proof for the coverage lane')
     parser.add_argument('--native-compile-proof', type=Path, help='Native compiler evidence for verified Haskell reexports')
@@ -283,10 +370,21 @@ def main():
     elif args.lane == 'replay':
         codes.append(cabal([args.target]))
     elif args.lane in ('integration', 'model'):
-        build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
+        library_build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], ROOT / 'tests/runtime')
+        codes.append(library_build)
+        build = library_build if library_build else (0 if args.skip_runtime_build or args.lane == 'model' else run(['pnpm', 'run', 'build:runtime'], EXAMPLE))
         codes.append(build)
         if build == 0:
             if args.lane == 'integration':
+                library_tests = run(['pnpm', 'run', 'test:runtime:coverage'], ROOT / 'tests/runtime')
+                codes.append(library_tests)
+                library_report = ROOT / 'tests/runtime/test-artifacts/coverage/runtime/coverage-final.json'
+                if library_tests == 0 and library_report.exists() and initial_sources == source_snapshot():
+                    library_report.with_name('run-proof.json').write_text(json.dumps({
+                        'sources': initial_sources, 'exit_code': 0,
+                        'sha256': hashlib.sha256(library_report.read_bytes()).hexdigest(),
+                        'run': str(output.relative_to(ROOT)),
+                    }, indent=2) + '\n')
                 runtime = run(['pnpm', 'run', 'test:runtime:coverage'], EXAMPLE)
                 codes.append(runtime)
                 if runtime == 0 and javascript.exists() and initial_sources == source_snapshot():
@@ -306,10 +404,10 @@ def main():
                             'run': str(output.relative_to(ROOT)),
                         }, indent=2) + '\n')
             else:
-                bundle = run(['pnpm', 'run', 'build:model'], EXAMPLE)
+                bundle = run(['pnpm', 'run', 'build:model'], ROOT / 'tests/runtime')
                 codes.append(bundle)
                 if bundle == 0:
-                    codes.append(cabal(['quickstart:test:model']))
+                    codes.append(cabal(['runtime-contracts:test:model']))
     elif args.lane in ('dev', 'docker'):
         for target in [['runtime-tests'], []]:
             codes.append(run(['bash', 'scripts/build-wasm.sh', *target], EXAMPLE))
@@ -317,73 +415,84 @@ def main():
                 break
         if all(code == 0 for code in codes):
             if args.lane == 'docker':
-                codes.append(run(['node', 'scripts/testing/typecheck.mjs', 'quickstart']))
-                for example in ['library-examples', 'minimal', 'static-assets', 'realtime', 'workflows']:
+                codes.append(run(['node', 'scripts/testing/typecheck.mts', 'url-shortener']))
+                for example in ['api-catalog', 'queued-jobs', 'minimal', 'static-assets', 'realtime', 'workflows']:
                     if any(code != 0 for code in codes):
                         break
                     code = run(['bash', 'examples/' + example + '/scripts/build.sh'])
                     codes.append(code)
                     if code != 0:
                         break
-                    code = run(['node', 'scripts/testing/typecheck.mjs', example])
+                    code = run(['node', 'scripts/testing/typecheck.mts', example])
                     codes.append(code)
                     if code != 0:
                         break
             if all(code == 0 for code in codes):
                 codes.append(run(['pnpm', 'run', 'test:' + args.lane], EXAMPLE))
-    elif args.lane in ('library-examples', 'minimal', 'static-assets', 'realtime', 'workflows'):
+    elif args.lane in ('api-catalog', 'queued-jobs', 'minimal', 'static-assets', 'realtime', 'workflows'):
         example = 'examples/' + args.lane
         library = run(['bash', example + '/scripts/build.sh'])
         codes.append(library)
         if library == 0:
-            library = run(['node', 'scripts/testing/typecheck.mjs', args.lane])
+            library = run(['node', 'scripts/testing/typecheck.mts', args.lane])
             codes.append(library)
         if library == 0:
-            tests = sorted(str(path.relative_to(ROOT)) for path in (ROOT / example / 'test/integration').glob('*.spec.mjs'))
+            tests = sorted(str(path.relative_to(ROOT)) for path in (ROOT / example / 'test/integration').glob('*.spec.mts'))
             if not tests:
                 raise RuntimeError('No integration tests found for ' + example)
             codes.append(run(['node', '--test', '--test-concurrency=1', *tests]))
     elif args.lane == 'coverage':
-        directory = ROOT / 'dist-testing-coverage'
-        model_build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], EXAMPLE)
-        codes.append(model_build)
-        if model_build == 0:
-            model_build = run(['pnpm', 'run', 'build:model'], EXAMPLE)
+        host_proof_path = args.host_proof
+        if host_proof_path is None:
+            directory = ROOT / 'dist-testing-coverage'
+            model_build = 0 if args.skip_runtime_build else run(['pnpm', 'run', 'build:runtime'], ROOT / 'tests/runtime')
             codes.append(model_build)
-        targets = HOST + ['servant-cloudflare-workers:test:conformance']
-        if model_build == 0:
-            targets.append('quickstart:test:model')
-        from Support.host_coverage import collect
-        host_output = output / 'host'
-        host_proof = collect(ROOT, host_output, targets, source_snapshot,
-                             match=args.match, build_directory=directory, environment=env)
-        codes.append(host_proof['exit_code'])
-        host_arguments = verified_hpc_arguments(ROOT, host_output / 'proof.json', initial_sources)
+            if model_build == 0:
+                model_build = run(['pnpm', 'run', 'build:model'], ROOT / 'tests/runtime')
+                codes.append(model_build)
+            targets = HOST + ['servant-cloudflare-workers:test:conformance']
+            if model_build == 0:
+                targets.append('runtime-contracts:test:model')
+            from Support.host_coverage import collect
+            host_output = output / 'host'
+            host_proof = collect(ROOT, host_output, targets, source_snapshot,
+                                 match=args.match, build_directory=directory, environment=env)
+            codes.append(host_proof['exit_code'])
+            host_proof_path = host_output / 'proof.json'
+        host_arguments = verified_hpc_arguments(ROOT, host_proof_path, initial_sources)
         if not host_arguments:
             print('Host coverage evidence is incomplete or invalid; refusing it.', file=sys.stderr)
             codes.append(1)
         command = [sys.executable, 'scripts/testing/coverage.py', '--output', str(output / 'coverage.json')]
         command.extend(host_arguments)
         if host_arguments:
-            command.extend(['--host-proof', str(host_output / 'proof.json')])
+            command.extend(['--host-proof', str(host_proof_path.resolve())])
         if javascript.exists():
             if valid_javascript_proof(javascript, javascript_proof, initial_sources):
                 command.extend(['--istanbul', str(javascript)])
             else:
                 print('JS coverage has no matching successful run/source proof; leaving it unmeasured.', file=sys.stderr)
+        for report in [ROOT / 'tests/runtime/test-artifacts/coverage/runtime/coverage-final.json',
+                       EXAMPLE / 'test-artifacts/coverage/production/coverage-final.json']:
+            if report.exists() and valid_javascript_proof(report, report.with_name('run-proof.json'), initial_sources):
+                command.extend(['--istanbul', str(report)])
         command.extend(wasm_coverage_arguments(ROOT, initial_sources))
         command.extend(native_coverage_arguments(ROOT, initial_sources))
         command.extend(python_coverage_arguments(ROOT, initial_sources))
+        command.extend(haskell_coverage_arguments(ROOT, initial_sources))
         command.extend(npm_coverage_arguments(ROOT, initial_sources))
         command.extend(example_node_coverage_arguments(ROOT, initial_sources))
         command.extend(shared_javascript_coverage_arguments(ROOT, initial_sources))
-        command.extend(production_coverage_arguments(EXAMPLE, initial_sources))
         if args.compile_proof:
             command.extend(['--compile-proof', str(args.compile_proof.resolve())])
+        else:
+            command.extend(compile_coverage_arguments(ROOT, initial_sources))
         if args.native_compile_proof:
             command.extend(['--native-compile-proof', str(args.native_compile_proof.resolve())])
         if args.shell_json:
             command.extend(['--shell-json', str(args.shell_json.resolve())])
+        else:
+            command.extend(shell_coverage_arguments(ROOT, initial_sources))
         if args.report_only:
             command.append('--report-only')
         codes.append(run(command))

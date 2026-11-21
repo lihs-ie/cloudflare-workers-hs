@@ -30,13 +30,18 @@ def apply_scope(root, sources, manifest=None):
     exclusions = entries('exclusions')
     overrides = entries('runtimes')
     validations = entries('validations')
+    constant_guards = entries('constant_guards')
     if exclusions.keys() & overrides.keys() or validations.keys() & (exclusions.keys() | overrides.keys()):
         raise ValueError('Scope path cannot be both excluded and assigned runtimes')
     known = {source['path'] for source in sources}
-    if (set(exclusions) | set(overrides) | set(validations)) - known:
+    if (set(exclusions) | set(overrides) | set(validations) | set(constant_guards)) - known:
         raise ValueError('Scope manifest references a missing source')
     for source in sources:
         path = source['path']
+        if path in constant_guards:
+            guard = constant_guards[path]
+            if source['language'] != 'haskell' or not guard.get('reason') or hashlib.sha256((root / path).read_bytes()).hexdigest() != guard.get('source_sha256'):
+                raise ValueError('Constant-guard review source changed: ' + path)
         if source['language'] == 'haskell':
             # Tests and native oracle run only on host by default. Production modules
             # and example programs require both host and WASM evidence.
@@ -72,12 +77,16 @@ def apply_scope(root, sources, manifest=None):
             source['runtime_basis'] = overrides[path]
         if path in validations:
             validation = validations[path]
-            expected_language = 'haskell' if validation.get('kind') == 'haskell-reexport' else 'javascript'
-            if source['language'] != expected_language or validation.get('kind') not in ('declaration', 'type-contract', 'haskell-reexport'):
+            expected_language = 'haskell' if validation.get('kind') in ('haskell-reexport', 'haskell-interface', 'haskell-test-entry') else 'javascript'
+            if source['language'] != expected_language or validation.get('kind') not in ('declaration', 'type-contract', 'haskell-reexport', 'haskell-interface', 'haskell-test-entry'):
                 raise ValueError('Invalid compile validation kind: ' + path)
             if validation['kind'] == 'declaration' and not path.endswith(('.d.ts', '.d.mts', '.d.cts')):
                 raise ValueError('Declaration validation requires an ambient declaration file: ' + path)
             source['validation_basis'] = validation
+            if validation['kind'] in ('haskell-interface', 'haskell-reexport'):
+                source['source_kind'] = 'compiler-interface'
+            elif validation['kind'] == 'haskell-test-entry':
+                source['source_kind'] = 'test-discovery-entry'
             required = ['compile']
         source['required_runtimes'] = required
         source['evidence'] = {runtime: {'status': 'unmeasured'} for runtime in required}
@@ -126,7 +135,7 @@ def validated_shared_javascript(root, proof_path, sources=None):
     expected_sources = repository_source_snapshot(root) if sources is None else sources
     if not isinstance(proof, dict) or proof.get('sources') != expected_sources or type(proof.get('exit_code')) is not int or proof['exit_code'] != 0 or proof.get('errors') != []:
         raise ValueError('Shared JavaScript proof failed or source snapshot differs')
-    command = ['node', str(root / 'scripts/testing/Support/shared_js_report.mjs'), '--verify', str(proof_path)]
+    command = ['node', str(root / 'scripts/testing/Support/shared_js_report.mts'), '--verify', str(proof_path)]
     result = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=60)
     if result.returncode != 0:
         raise ValueError('Shared JavaScript raw evidence verification failed: ' + result.stderr[-1000:])
@@ -479,7 +488,7 @@ def repository_source_snapshot(root):
             and Path(name).parts[0] != 'docs' and name != 'README.md'}
 
 
-def host_projection_proof(root, proof_path):
+def host_projection_proof(root, proof_path, runtime="host"):
     """Authenticate the compiler and exact counters eligible for host projection."""
     if proof_path is None:
         return {}
@@ -499,7 +508,34 @@ def host_projection_proof(root, proof_path):
     commands = proof['commands']
     if not commands or any(type(command.get('exitCode')) is not int or command['exitCode'] != 0 for command in commands):
         raise ValueError('Failed host projection command')
-    if not any(command['command'][:2] == ['cabal', 'build'] and '--with-compiler=' + compiler['path'] in command['command'] for command in commands):
+    if runtime == 'wasm':
+        from Support.wasm_compiler import digest
+        import shutil
+        toolchain = proof.get('toolchainEnvironment')
+        if toolchain and digest(Path(toolchain['path'])) != toolchain['sha256']:
+            raise ValueError('WASM toolchain environment changed')
+        if digest(Path(compiler['cabal_path'])) != compiler['cabal_sha256']:
+            raise ValueError('WASM Cabal compiler binding changed')
+        alias = shutil.which('wasm32-wasi-ghc', path=compiler['search_path'])
+        if alias is None or Path(alias).resolve() != Path(compiler['path']):
+            raise ValueError('WASM compiler resolution changed')
+        if compiler.get('platform') not in ('wasm32-wasi', 'wasm32-unknown-wasi') or not proof.get('buildPlans'):
+            raise ValueError('Missing WASM compiler/build-plan provenance')
+        for plan in proof['buildPlans']:
+            saved = (proof_path.parent / plan['path']).resolve()
+            if not saved.is_relative_to(proof_path.parent) or digest(saved) != plan['sha256']:
+                raise ValueError('WASM build plan changed')
+            metadata = json.loads(saved.read_text())
+            if metadata['compiler-id'] != 'ghc-' + compiler['version'] or metadata['arch'] != 'wasm32' or metadata['os'] != 'wasi':
+                raise ValueError('WASM plan/compiler mismatch')
+        commands = [*commands, *proof['compilerCommands']]
+        if any(type(command.get('exitCode')) is not int or command['exitCode'] != 0 for command in commands):
+            raise ValueError('Failed WASM compiler command')
+        if not any(command['command'] == [compiler['path'], '--print-target-platform']
+                   and (proof_path.parent / command['log']).read_text().strip() == compiler['platform']
+                   for command in commands):
+            raise ValueError('Missing WASM compiler target command')
+    if runtime == 'host' and not any(command['command'][:2] == ['cabal', 'build'] and '--with-compiler=' + compiler['path'] in command['command'] for command in commands):
         raise ValueError('Compiler is not bound to the host build')
     if not any(command['command'] == [compiler['path'], '--numeric-version'] for command in commands):
         raise ValueError('Missing host compiler version command')

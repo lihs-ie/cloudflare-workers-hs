@@ -26,7 +26,7 @@ skeleton は当初 `GHC2021` を `default-language` として書き起こされ�
   `LambdaCase` 等）を、パッケージごとの `default-extensions` 重複宣言なしに得られること
 - 固定済みツールチェーン（GHC 9.12.2、[ADR-0001](./0001-ghc-native-wasm-backend.md)/
   [ADR-0015](./0015-build-deploy-ci-pipeline.md)）が対象言語版をサポートすること
-- [ADR-0019](./0019-monorepo-package-layout.md) の4パッケージ + `examples/quickstart` +
+- [ADR-0019](./0019-monorepo-package-layout.md) の4パッケージ + `examples/url-shortener` +
   （dev-only）`conformance-oracle`（[ADR-0017](./0017-testing-strategy.md) 追補）間で言語版が
   一致し、ドリフトを生まないこと
 
@@ -42,7 +42,7 @@ skeleton は当初 `GHC2021` を `default-language` として書き起こされ�
 
 全パッケージ（`cloudflare-workers` / `servant-cloudflare-workers` /
 `servant-cloudflare-workers-client` / `servant-cloudflare-workers-access`、および
-`examples/quickstart`、dev-only `conformance-oracle`）の library / executable / test-suite
+`examples/url-shortener`、dev-only `conformance-oracle`）の library / executable / test-suite
 stanza すべてで `default-language: GHC2024` を用いる。`GHC2024` に含まれるようになった拡張と
 重複する `default-extensions` エントリは削除する。
 
@@ -95,7 +95,7 @@ stanza すべてで `default-language: GHC2024` を用いる。`GHC2024` に含�
 
 - [ ] 全パッケージ（`cloudflare-workers` / `servant-cloudflare-workers` /
       `servant-cloudflare-workers-client` / `servant-cloudflare-workers-access` /
-      `examples/quickstart` / dev-only `conformance-oracle`）の `.cabal` の library / executable /
+      `examples/url-shortener` / dev-only `conformance-oracle`）の `.cabal` の library / executable /
       test-suite すべての stanza で `default-language: GHC2024` を明記する。
 - [ ] `GHC2024` に含まれるようになった拡張と重複する `default-extensions` エントリを削除する。
 - [ ] 固定済み GHC 9.12.2（[ADR-0001](./0001-ghc-native-wasm-backend.md)/

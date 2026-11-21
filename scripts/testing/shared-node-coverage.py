@@ -17,12 +17,14 @@ def digest(path):
 
 
 def contract_commands(root):
-    tests = sorted(path for path in (root / 'examples').glob('*/test/Support/**/*contract*.spec.mjs'))
-    tests.extend((root / 'scripts/testing/Support').glob('*contract*.spec.mjs'))
-    tests.append(root / 'examples/quickstart/test/Support/Runtime/storage-bridge.spec.mjs')
-    tests.append(root / 'examples/library-examples/test/integration/log-records.spec.mjs')
+    tests = sorted(path for path in (root / 'examples').glob('*/test/Support/**/*contract*.spec.mts'))
+    tests.extend((root / 'scripts/testing/test').glob('*.spec.mts'))
+    tests.extend((root / 'cloudflare-workers/test/Support').rglob('*.spec.mts'))
+    tests.append(root / 'tests/runtime/model/storage-bridge.spec.mts')
+    tests.extend((root / 'tests/runtime/test/Support').glob('*.spec.mts'))
+    tests.append(root / 'examples/api-catalog/test/integration/log-records.spec.mts')
     tests = sorted(set(tests))
-    return [['node', '--import', str(root / 'scripts/testing/Support/node_shared_coverage.mjs'),
+    return [['node', '--import', str(root / 'scripts/testing/Support/node_shared_coverage.mts'),
              '--experimental-test-module-mocks', '--test', '--test-concurrency=1',
              str(path.relative_to(root))] for path in tests]
 
@@ -36,7 +38,7 @@ def collect(output, sources):
     inputs.write_text(json.dumps(sorted(sources)))
     env = dict(os.environ, SHARED_JS_COVERAGE_DIRECTORY=str(output), SHARED_JS_COVERAGE_INPUTS=str(inputs))
     env.pop('NODE_V8_COVERAGE', None)
-    preload = (ROOT / 'scripts/testing/Support/node_shared_coverage.mjs').as_uri()
+    preload = (ROOT / 'scripts/testing/Support/node_shared_coverage.mts').as_uri()
     env['NODE_OPTIONS'] = (env.get('NODE_OPTIONS', '') + ' --import=' + preload).strip()
     for index, command in enumerate(contract_commands(ROOT)):
         log_path = output / f'contract-{index}.log'
@@ -52,7 +54,7 @@ def collect(output, sources):
     if not manifests or not snapshots:
         errors.append('Missing shared instrumentation manifests or snapshots')
     with (output / 'report.log').open('w') as log:
-        result = subprocess.run(['node', 'scripts/testing/Support/workerd_js_report.mjs', str(output)],
+        result = subprocess.run(['node', 'scripts/testing/Support/workerd_js_report.mts', str(output)],
                                 cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
     report = output / 'coverage-final.json'
     if result.returncode or not report.is_file():
@@ -80,7 +82,7 @@ def main():
     if proof['errors']:
         print(json.dumps({'output': str(output), 'errors': proof['errors']}))
         return 1
-    result = subprocess.run(['node', 'scripts/testing/Support/shared_js_report.mjs',
+    result = subprocess.run(['node', 'scripts/testing/Support/shared_js_report.mts',
                              str(args.workerd.resolve()), str(output / 'node'), str(output / 'combined')], cwd=ROOT)
     if result.returncode:
         return result.returncode

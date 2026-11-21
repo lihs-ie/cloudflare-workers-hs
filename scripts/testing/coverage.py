@@ -11,6 +11,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from Support.haskell_contracts import haskell_contract_evidence
+from Support.hpc_classification import constant_guard_metrics
 from Support.coverage_evidence import apply_scope, full, hpc_lines, hpc_bindings, javascript_evidence, python_evidence, hpc_source_candidates, compile_evidence, shell_evidence, native_compile_evidence, host_projection_proof, equivalent_hpc_projection, validated_shared_javascript
 
 TIX = re.compile(r'TixModule\s+("(?:[^"\\]|\\.)*")\s+(\d+)\s+(\d+)\s+\[([\d,\s]*)\]')
@@ -96,7 +98,9 @@ def main():
     parser.add_argument('--workerd-only', type=Path, help='Fresh workerd report retained separately when shared evidence is unavailable')
     parser.add_argument('--python-json', type=Path, help='Validated coverage.py line/branch JSON')
     parser.add_argument('--shell-json', type=Path, help='Source-matched kcov shell line evidence; branch completeness remains unmeasured')
+    parser.add_argument('--haskell-proof', type=Path, help='Compiler-interface and nonempty test-discovery evidence')
     parser.add_argument('--native-compile-proof', type=Path, help='Fresh GHC re-export compiler/interface proof')
+    parser.add_argument('--wasm-proof', type=Path, help='Authenticated WASM compiler/plans/counters for identical-map projection')
     parser.add_argument('--host-proof', type=Path, help='Authenticated host compiler and counters for equivalent-map projection')
     parser.add_argument('--compile-proof', type=Path, help='Current-source successful compiler contracts, separate from runtime coverage')
     parser.add_argument('--scope-manifest', type=Path, help='Reviewed provenance exclusions and runtime requirements')
@@ -115,6 +119,7 @@ def main():
     group_inputs = {}
     try:
         host_proof = host_projection_proof(root, args.host_proof)
+        wasm_proof = host_projection_proof(root, args.wasm_proof, runtime='wasm')
         manifest_path = args.scope_manifest or root / 'scripts/testing/runtime-scope.json'
         manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
         if args.scope_manifest and manifest is None:
@@ -122,6 +127,7 @@ def main():
         report['runtime_manifest'] = {'path': str(manifest_path), 'sha256': hashlib.sha256(manifest_path.read_bytes()).hexdigest()} if manifest is not None else None
         apply_scope(root, sources, manifest)
         compiled = compile_evidence(root, sources, args.compile_proof, manifest_path)
+        compiled.update(haskell_contract_evidence(root, sources, args.haskell_proof))
         compiled.update(native_compile_evidence(root, sources, args.native_compile_proof, manifest_path))
         report['compile_validation'] = {'status': 'validated' if compiled else 'unmeasured', 'files': compiled, 'required_sources': [source['path'] for source in sources if 'compile' in source['required_runtimes']]}
         for source in sources:
@@ -207,9 +213,17 @@ def main():
                 line_metric, line_hits = hpc_lines(next(iter(matched_mix)), parse_tix(merged.read_text())[0][3])
                 values['lines'] = line_metric
                 candidates = hpc_source_candidates(root, sources, name, source_names)
+                raw_values = values
+                if len(candidates) == 1:
+                    ticks_for_guards = [int(t) for t in TIX.fullmatch(parse_tix(merged.read_text())[0][3]).group(4).split(',') if t.strip()]
+                    values, constant_guards = constant_guard_metrics(root, candidates[0]['path'], next(iter(matched_mix)), ticks_for_guards, values, manifest)
+                else:
+                    constant_guards = []
                 item = {'module': name, 'hash': fingerprint, 'suite': suite or None, 'metrics': values,
                         'bindings': hpc_bindings(next(iter(matched_mix)), parse_tix(merged.read_text())[0][3]),
                         'line_hits': line_hits, 'line_method': 'all spanning HPC expression ticks executed', 'mix_sources': sorted(source_names), 'sources': [s['path'] for s in candidates]}
+                if constant_guards:
+                    item.update(raw_metrics=raw_values, constant_guards=constant_guards)
                 report[runtime + '_hpc'].append(item)
                 generated = []
                 if not candidates:
@@ -236,11 +250,12 @@ def main():
                     layout_match = re.match(r'Mix\s+("(?:[^"\\]|\\.)*").*? UTC\s+\d+\s+(\d+\s+\[.*\])\s*$', content, re.S)
                     merged_record = parse_tix(merged.read_text())[0][3]
                     tick_text = TIX.fullmatch(merged_record).group(4)
-                    authenticated = (runtime == 'host' and bool(host_proof)
-                        and all(path in host_proof['artifacts'] for path in group_inputs[(runtime, name, fingerprint, count, suite)])
-                        and any(path in host_proof['artifacts'] for path in matched_paths)
-                        and host_proof['sources'].get(source['path']) == hashlib.sha256((root / source['path']).read_bytes()).hexdigest())
-                    compiler = host_proof.get('compiler', {})
+                    runtime_proof = host_proof if runtime == 'host' else wasm_proof
+                    authenticated = (bool(runtime_proof)
+                        and all(path in runtime_proof['artifacts'] for path in group_inputs[(runtime, name, fingerprint, count, suite)])
+                        and any(path in runtime_proof['artifacts'] for path in matched_paths)
+                        and runtime_proof['sources'].get(source['path']) == hashlib.sha256((root / source['path']).read_bytes()).hexdigest())
+                    compiler = runtime_proof.get('compiler', {})
                     variant = {'source': source['path'], 'source_sha256': hashlib.sha256((root / source['path']).read_bytes()).hexdigest(),
                         'runtime': runtime, 'compiler_sha256': compiler.get('sha256'), 'compiler_version': compiler.get('version'),
                         'layout': layout_match.group(2) if layout_match else None, 'ticks': [int(t) for t in tick_text.split(',') if t.strip()],
@@ -266,11 +281,14 @@ def main():
                 projected_tix.write_text('Tix [' + record + ']')
                 projected_metrics = metrics(run(['hpc', 'report', '--xml-output', '--per-module', '--hpcdir=' + str(projection_dir), str(projected_tix)], temp))[name]
                 projected_metrics['lines'], projected_hits = hpc_lines(first['mix'], record)
+                raw_projected_metrics = projected_metrics
+                projected_metrics, projected_guards = constant_guard_metrics(root, source_path, first['mix'], ticks, projected_metrics, manifest)
                 source = next(source for source in sources if source['path'] == source_path)
                 if runtime in source['evidence']:
                     source['evidence'][runtime]['complete'] = full(projected_metrics)
                     source['evidence'][runtime]['projection'] = {'method': 'authenticated identical source/compiler/runtime/full labelled tick map',
                         'source_sha256': first['source_sha256'], 'compiler_sha256': first['compiler_sha256'], 'compiler_version': first['compiler_version'],
+                        'raw_metrics': raw_projected_metrics, 'constant_guards': projected_guards,
                         'map_sha256': hashlib.sha256(first['layout'].encode()).hexdigest(), 'metrics': projected_metrics, 'line_hits': projected_hits,
                         'variants': [{'module': entry['item']['module'], 'hash': entry['item']['hash']} for entry in variants]}
     except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, ET.ParseError) as error:

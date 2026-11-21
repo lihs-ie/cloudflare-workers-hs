@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.wrangler
+**/.hpc
+dist*
+artifacts
+**/test-artifacts
+**/.dev-test-*
+**/.dev.vars*
+**/.env*
+**/*.tix
+**/.shared-coverage-*

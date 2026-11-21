@@ -7,7 +7,7 @@
 
 ## 背景と課題 (Context)
 
-quickstart の JS glue 層（`worker/entry.mjs` 791 行、`scripts/*.mjs` 3 本 319 行）は手書き JS
+url-shortener の JS glue 層（`worker/entry.mjs` 791 行、`scripts/*.mjs` 3 本 319 行）は手書き JS
 だった。glue は wasmExports（GHC JSFFI `foreign export javascript` の 35 export、A7 close 時点）
 を直接呼ぶが、この境界の署名ズレ（Haskell 側の export 追加・rename・引数変更に glue が追随
 しない）を検出する機械的手段が存在せず、実行時の undefined 呼出しまで顕在化しなかった。
@@ -45,7 +45,7 @@ quickstart の JS glue 層（`worker/entry.mjs` 791 行、`scripts/*.mjs` 3 本 
    （`wasm_exports:` — name / ts_signature / verified_by / doc）を SSOT とし、生成器
    （`scripts/generate-wasm-exports-dts.mts`）が `worker/wasm-exports.d.ts` を決定論 emit。
    生成物は git-tracked とし、gate で再生成 + `git diff --exit-code`（golden 方式）
-5. **実バイナリ照合**: `worker/quickstart.wasm` の `WebAssembly.Module.exports` と manifest を
+5. **実バイナリ照合**: `worker/url-shortener.wasm` の `WebAssembly.Module.exports` と manifest を
    3 規則で照合する gate（`scripts/verify-wasm-exports.mts`）:
    - 規則 A: manifest の全 name が binary の function export に存在（rename / 削除検出）
    - 規則 B: infrastructure 以外の binary function export が全て manifest に存在
@@ -70,7 +70,7 @@ quickstart の JS glue 層（`worker/entry.mjs` 791 行、`scripts/*.mjs` 3 本 
   で検出。glue↔.d.ts は tsc が検出
 - 実装で確定した注意点（A7b 実測）:
   - tsc 7 native は `node_modules/@types` を自動発見しない → `"types"` 配列の明示が必須
-  - 素の `.ts` を nodenext ESM として扱わせるため quickstart `package.json` に
+  - 素の `.ts` を nodenext ESM として扱わせるため url-shortener `package.json` に
     `"type": "module"` が必要（`.mts` は不要だが `.ts` は既定 CJS になる）
   - workerd の生成型に `RequestInit.duplex` が無い等、runtime 実挙動と型の乖離が spec 側に
     残る — spec ファイル内の局所 augmentation で吸収（生成型は編集不可のため）

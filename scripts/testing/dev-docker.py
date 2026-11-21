@@ -25,7 +25,7 @@ def main():
             stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             (evidence / f"run-{stamp}.json").write_text(json.dumps({
                 "image": image, "container": container,
-                "command": ["node", "examples/quickstart/test/Support/Dev/docker.mts"],
+                "command": ["node", "scripts/testing/docker-suites.mts"],
                 "exitCode": exit_code, "artifactCopyExitCode": copied.returncode,
             }, indent=2) + "\n")
             return exit_code

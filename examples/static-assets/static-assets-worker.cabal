@@ -22,9 +22,9 @@ executable static-assets-worker
       other-modules: Support.Coverage
       cpp-options: -DWASM_COVERAGE
       ghc-options: -fhpc -hpcdir .hpc/wasm-static-assets-worker
-  hs-source-dirs: app, src, ../support/src
+  hs-source-dirs: app, src, ../../support/interop/src
   main-is: Main.hs
-  other-modules: ExampleSupport.Interop, StaticAssets.API, StaticAssets.Application
+  other-modules: WorkersSupport.Interop, StaticAssets.API, StaticAssets.Application
   default-language: GHC2024
   default-extensions: OverloadedStrings
   ghc-options: -Wall
@@ -36,3 +36,16 @@ executable static-assets-worker
   else
     build-depends: cloudflare-workers:ghc-wasm-shim
     ghc-options: -fplugin GHC.Wasm.FFI.Plugin
+
+
+test-suite unit
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test/unit, src
+  main-is: Spec.hs
+  other-modules: APIContractsSpec, StaticAssets.API
+  default-language: GHC2024
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N2
+  build-tool-depends: testing-support:sydtest-discover-layer
+  build-depends: base, aeson, text, time, servant, sydtest
+  if os(wasi)
+    buildable: False

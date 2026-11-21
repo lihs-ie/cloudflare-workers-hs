@@ -18,12 +18,14 @@ ROOT = Path(__file__).resolve().parents[2]
 def validation_project(entry):
     explicit = entry.get('compiler_project')
     if explicit is not None:
-        if explicit != 'examples/quickstart':
+        if explicit != 'examples/url-shortener':
             raise ValueError('Unapproved explicit compiler project')
         return explicit, 'tsconfig.json'
     path = Path(entry['path'])
     if path.parts[:1] == ('examples',) and len(path.parts) >= 3:
         return 'examples/' + path.parts[1], 'tsconfig.json'
+    if path.parts[:2] == ('tests', 'runtime'):
+        return 'tests/runtime', 'tsconfig.json'
     if path.parts[:2] == ('packages', 'worker-runtime'):
         return 'packages/worker-runtime', 'tsconfig.check.json'
     raise ValueError('No approved compiler project for ' + entry['path'])
@@ -70,9 +72,9 @@ def collect(root, output, snapshot):
         examples = [Path(project).name for project in projects if project.startswith('examples/')]
         if examples:
             # --check must not regenerate tracked declarations during the frozen run.
-            command(['node', 'scripts/testing/typecheck.mjs', '--check', *examples], root)
+            command(['node', 'scripts/testing/typecheck.mts', '--check', *examples], root)
         for project, config in projects.items():
-            binary = root / ('examples/quickstart/node_modules/.bin/tsc' if project.startswith('examples/') else 'packages/worker-runtime/node_modules/.bin/tsc')
+            binary = root / ('node_modules/.bin/tsc' if project.startswith(('examples/', 'tests/runtime')) else 'packages/worker-runtime/node_modules/.bin/tsc')
             index = command([str(binary), '--project', config, '--noEmit', '--listFiles'], root / project, compiler=True)
             dependencies = compiler_config_dependencies(root, commands[index])
             if not dependencies.issubset(sources):

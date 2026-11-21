@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path)
-    parser.add_argument('--test-directory', type=Path, default=Path(__file__).parent, help='Helper test directory; defaults to the full suite')
+    parser.add_argument('--test-directory', type=Path, default=Path(__file__).parents[1] / "test", help='Helper test directory; defaults to the full suite')
     args = parser.parse_args()
     output = (args.output or ROOT / 'artifacts/testing' / ('python-coverage-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'))).resolve()
     if not output.is_relative_to(ROOT) or output.exists():

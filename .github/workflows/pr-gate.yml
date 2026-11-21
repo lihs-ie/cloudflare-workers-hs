@@ -25,8 +25,9 @@ jobs:
         run: |
           python3 scripts/testing/registration.py --output artifacts/testing/registration.json
           python3 scripts/testing/internal-module-boundaries.py manifest
-          python3 -m unittest discover -s scripts/testing/Support -p 'test_*.py'
-          python3 scripts/testing/Support/mutation_checks.py
+          python3 scripts/testing/test-boundaries.py
+          python3 -m unittest discover -s scripts/testing/test -t scripts/testing -p 'test_*.py'
+          python3 scripts/testing/test/mutation_checks.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -97,10 +98,14 @@ jobs:
         run: nix develop --command wasm32-wasi-cabal update
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
+      - name: Typecheck test tooling and examples
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
       - name: HLint
         run: nix develop --command scripts/hlint
       - name: Coverage collector regressions
-        run: python3 scripts/testing/Support/coverage_checks.py
+        run: python3 scripts/testing/test/coverage_checks.py
       - name: Host tests
         run: python3 scripts/testing/run.py host
         env:
@@ -118,7 +123,7 @@ jobs:
         if: success() || failure()
         run: |
           pnpm install --frozen-lockfile
-          nix develop --command pnpm run --dir examples/quickstart build:runtime
+          nix develop --command pnpm build:runtime-tests
           python3 scripts/testing/run.py coverage --skip-runtime-build --report-only
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
@@ -228,7 +233,7 @@ jobs:
           name: wasm-test-evidence
           path: |
             artifacts/testing/
-            examples/quickstart/test-artifacts/
+            examples/url-shortener/test-artifacts/
           if-no-files-found: error
 
   state_model:
@@ -299,7 +304,7 @@ jobs:
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Build runtime for state model
-        run: nix develop --command pnpm run --dir examples/quickstart build:runtime
+        run: nix develop --command pnpm build:runtime-tests
         env:
           CABAL_DIR: ${{ runner.temp }}/cabal-wasm
       - name: Generated state model against real WASM

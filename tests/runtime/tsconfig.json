@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [
+      "node",
+      "@cloudflare/vitest-plugin/types"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.mts",
+    "../../cloudflare-workers/test/integration/runtime/**/*.ts",
+    "../../servant-cloudflare-workers*/test/integration/runtime/**/*.ts",
+    "../../servant-cloudflare-workers-access/test/integration/runtime/**/*.mts",
+    "../../servant-cloudflare-workers-access/test/Support/**/*.ts",
+    "../../cloudflare-workers/test/Support/**/*.mts"
+  ]
+}

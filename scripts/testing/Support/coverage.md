@@ -3,7 +3,7 @@
 Run from the checkout:
 
 ```sh
-python3 scripts/testing/Support/coverage_checks.py
+python3 scripts/testing/test/coverage_checks.py
 python3 scripts/testing/coverage.py --tix path/to/suite.tix --mix-dir path/to/mix --istanbul path/to/coverage-final.json --output artifacts/coverage.json
 ```
 
@@ -48,7 +48,7 @@ Use repeated `--wasm-tix` and `--wasm-mix-dir` options with `coverage.py` to mer
 these snapshots alongside host and JavaScript evidence. Host and WASM counters
 are separate even if module names and hashes coincide. Success of the collection
 command means the collector worked; `complete=false` still means the full
-coverage requirement is unmet. The default collects the Quickstart runtime harness; use `--all-examples` for all six examples. HPC does not measure JavaScript FFI bodies.
+coverage requirement is unmet. The default collects the UrlShortener runtime harness; use `--all-examples` for all six examples. HPC does not measure JavaScript FFI bodies.
 
 The standard `run.py coverage --report-only` lane automatically merges the latest
 WASM proof only when source hashes and every snapshot/mix hash still match.
@@ -65,7 +65,7 @@ hashes match. Python subprocesses started by the helper tests are measured with 
 
 ## Library example WASM coverage
 
-Run `python3 scripts/testing/wasm-coverage.py --example quickstart --example library-examples`.
+Run `python3 scripts/testing/wasm-coverage.py --example url-shortener --example api-catalog`.
 The Cabal `wasm-coverage` flag exports snapshots only in instrumented builds.
 Library's test fixture collects three HTTP-isolate reactors before shutdown;
 separate DO/queue/service isolates are not inferred to be covered. App and
@@ -76,7 +76,7 @@ Python collector reference: https://coverage.readthedocs.io/en/latest/api_covera
 
 ## All six example reactors
 
-`python3 scripts/testing/wasm-coverage.py --all-examples` collects Quickstart,
+`python3 scripts/testing/wasm-coverage.py --all-examples` collects UrlShortener,
 Library, Minimal, Static Assets, Realtime, and Workflows. For the latter four,
 CPP wrappers are linked only by `wasm-coverage` and upload counters after each
 export invocation. This also observes per-invocation Workflow reactors and DO
@@ -109,7 +109,7 @@ Istanbul maps. The standard coverage lane also accepts
 measurement against a stable source tree. An absent, stale, tampered or outside-root
 proof leaves npm sources unmeasured.
 
-Quickstart production integration now runs with `--coverage` and stores a separate
+UrlShortener production integration now runs with `--coverage` and stores a separate
 successful source proof alongside `test-artifacts/coverage/production/coverage-final.json`.
 The coverage lane consumes that proof independently from the runtime harness proof.
 Node-only example evidence uses `artifacts/testing/example-node-coverage-latest.json`
@@ -234,5 +234,5 @@ fresh Workers-only fallback is available.
 Revalidate the complete evidence chain independently with:
 
 ```sh
-node scripts/testing/Support/shared_js_report.mjs --verify path/to/combined/proof.json
+node scripts/testing/Support/shared_js_report.mts --verify path/to/combined/proof.json
 ```

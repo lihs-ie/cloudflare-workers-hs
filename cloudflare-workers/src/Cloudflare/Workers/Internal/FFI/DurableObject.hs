@@ -1,10 +1,8 @@
 module Cloudflare.Workers.Internal.FFI.DurableObject (
     doIdFromNameViaFFI,
     doNewUniqueIdViaFFI,
-    doNewUniqueIdInJurisdictionViaFFI,
     doIdFromStringViaFFI,
     doIdToStringViaFFI,
-    doJurisdictionViaFFI,
     doGetViaFFI,
     doGetByNameViaFFI,
     doFetchViaFFI,
@@ -24,11 +22,6 @@ module Cloudflare.Workers.Internal.FFI.DurableObject (
     doStorageGetAlarmViaFFI,
     doStorageSetAlarmViaFFI,
     doStorageDeleteAlarmViaFFI,
-    doQueueIdempotencyClaimViaFFI,
-    doQueueIdempotencyTransitionViaFFI,
-    doAlarmRetryCountViaFFI,
-    doAlarmIsRetryViaFFI,
-    doAlarmScheduledTimeMillisViaFFI,
 ) where
 
 import Cloudflare.Workers.HTTP (Request (requestHeaders), Response, ResponseBody (ResponseBodyBytes, ResponseBodyWebSocket), PassthroughResponse (PassthroughResponse), Status (Status), createResponse, methodToText, requestBodyReader, requestMethod, requestURL)
@@ -53,18 +46,6 @@ doIdFromNameViaFFI namespaceJSVal name = do
 
 doNewUniqueIdViaFFI :: JSVal -> IO JSVal
 doNewUniqueIdViaFFI = jsDoNewUniqueId
-
-doNewUniqueIdInJurisdictionViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
-doNewUniqueIdInJurisdictionViaFFI namespaceJSVal jurisdiction = do
-    jurisdictionJSVal <- textToJSVal jurisdiction
-    envelopeJSVal <- jsDoNewUniqueIdJurisdictionEnveloped namespaceJSVal jurisdictionJSVal
-    decodeEnveloped pure envelopeJSVal
-
-doJurisdictionViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
-doJurisdictionViaFFI namespaceJSVal jurisdiction = do
-    jurisdictionJSVal <- textToJSVal jurisdiction
-    envelopeJSVal <- jsDoJurisdictionEnveloped namespaceJSVal jurisdictionJSVal
-    decodeEnveloped pure envelopeJSVal
 
 doIdFromStringViaFFI :: JSVal -> Text -> IO (Either Text JSVal)
 doIdFromStringViaFFI namespaceJSVal hexId = do
@@ -145,42 +126,6 @@ foreign import javascript unsafe "$1.idFromName($2)"
 
 foreign import javascript unsafe "$1.newUniqueId()"
     jsDoNewUniqueId :: JSVal -> IO JSVal
-
-foreign import javascript unsafe
-    """
-    (() => {
-      try {
-        return {
-          ok: true,
-          value: $1.newUniqueId({ jurisdiction: $2 })
-        };
-      } catch (error) {
-        return {
-          ok: false,
-          message: `${error}`
-        };
-      }
-    })()
-    """
-    jsDoNewUniqueIdJurisdictionEnveloped :: JSVal -> JSVal -> IO JSVal
-
-foreign import javascript unsafe
-    """
-    (() => {
-      try {
-        return {
-          ok: true,
-          value: $1.jurisdiction($2)
-        };
-      } catch (error) {
-        return {
-          ok: false,
-          message: `${error}`
-        };
-      }
-    })()
-    """
-    jsDoJurisdictionEnveloped :: JSVal -> JSVal -> IO JSVal
 
 foreign import javascript unsafe
     """
@@ -484,58 +429,6 @@ doStorageDeleteAlarmViaFFI storageJSVal = do
     envelopeJSVal <- jsDoStorageDeleteAlarmEnveloped storageJSVal
     decodeEnveloped (const (pure ())) envelopeJSVal
 
-doQueueIdempotencyClaimViaFFI ::
-    JSVal ->
-    Text ->
-    Text ->
-    Integer ->
-    Integer ->
-    IO (Either Text (Text, Text, Text, Maybe Integer))
-doQueueIdempotencyClaimViaFFI storageJSVal operationIdentifier claimIdentifier observedAt leaseExpiresAt = do
-    operationJSVal <- textToJSVal operationIdentifier
-    claimJSVal <- textToJSVal claimIdentifier
-    envelopeJSVal <-
-        jsDoQueueIdempotencyClaimEnveloped
-            storageJSVal
-            operationJSVal
-            claimJSVal
-            (fromInteger observedAt)
-            (fromInteger leaseExpiresAt)
-    decodeEnveloped decodeQueueIdempotencyResult =<< jsValidateQueueIdempotencyResultEnveloped envelopeJSVal
-
-doQueueIdempotencyTransitionViaFFI ::
-    JSVal -> Text -> Text -> Integer -> Text -> IO (Either Text (Text, Text, Text, Maybe Integer))
-doQueueIdempotencyTransitionViaFFI storageJSVal operationIdentifier claimIdentifier observedAt terminal = do
-    operationJSVal <- textToJSVal operationIdentifier
-    claimJSVal <- textToJSVal claimIdentifier
-    terminalJSVal <- textToJSVal terminal
-    envelopeJSVal <- jsDoQueueIdempotencyTransitionEnveloped storageJSVal operationJSVal claimJSVal (fromInteger observedAt) terminalJSVal
-    decodeEnveloped decodeQueueIdempotencyResult =<< jsValidateQueueIdempotencyResultEnveloped envelopeJSVal
-
-decodeQueueIdempotencyResult :: JSVal -> IO (Text, Text, Text, Maybe Integer)
-decodeQueueIdempotencyResult resultJSVal = do
-    tag <- jsValToText =<< jsQueueIdempotencyResultTag resultJSVal
-    status <- jsValToText =<< jsQueueIdempotencyResultStatus resultJSVal
-    claimIdentifier <- jsValToText =<< jsQueueIdempotencyResultClaimIdentifier resultJSVal
-    leaseJSVal <- jsQueueIdempotencyResultLease resultJSVal
-    leaseIsNullish <- jsIsNullishStorageValue leaseJSVal
-    maybeLease <- if leaseIsNullish then pure Nothing else Just . round <$> jsAlarmTimeMillis leaseJSVal
-    pure (tag, status, claimIdentifier, maybeLease)
-
-doAlarmRetryCountViaFFI :: JSVal -> IO Int
-doAlarmRetryCountViaFFI = jsDoAlarmRetryCount
-
-doAlarmIsRetryViaFFI :: JSVal -> IO Bool
-doAlarmIsRetryViaFFI = jsDoAlarmIsRetry
-
-doAlarmScheduledTimeMillisViaFFI :: JSVal -> IO (Maybe Integer)
-doAlarmScheduledTimeMillisViaFFI alarmInfoJSVal = do
-    scheduledTimeJSVal <- jsDoAlarmScheduledTime alarmInfoJSVal
-    isNullish <- jsIsNullishStorageValue scheduledTimeJSVal
-    if isNullish
-        then pure Nothing
-        else Just . round <$> jsAlarmTimeMillis scheduledTimeJSVal
-
 maxSafeJavaScriptInteger :: Integer
 maxSafeJavaScriptInteger = 9007199254740991
 
@@ -742,115 +635,6 @@ foreign import javascript safe
     """
     jsDoStorageDeleteAlarmEnveloped :: JSVal -> IO JSVal
 
-foreign import javascript safe
-    """
-    (async () => {
-      try {
-        const value = await $1.transaction(async (txn) => {
-          const key = `queue-idempotency:${$2}`
-          const existing = await txn.get(key);
-
-          if (existing === undefined || existing.status === 'failed' || (existing.status === 'pending' && existing.leaseExpiresAtMilliseconds <= $4))  {
-            const state = {
-              status: 'pending',
-              claimIdentifier: $3,
-              leaseExpiresAtMilliseconds: $5
-            };
-
-            await txn.put(key, state);
-            return { tag: 'acquired', ...state };
-          }
-
-          if (existing.status === 'completed') {
-              return { tag: 'alreadyCompleted', ...existing };
-          }
-
-          return { tag: 'inProgress', ...existing };
-        });
-        return { ok: true, value };
-      } catch (error) {
-        let message = 'Queue idempotency operation failed with an unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      } 
-    })()
-    """
-    jsDoQueueIdempotencyClaimEnveloped :: JSVal -> JSVal -> JSVal -> Double -> Double -> IO JSVal
-
-foreign import javascript safe
-    """
-    (async () => {
-      try {
-        const value = await $1.transaction(async (txn) => {
-          const key = `queue-idempotency:${$2}`;
-          const existing = await txn.get(key);
-          if (existing === undefined) {
-            return { tag: 'ownershipLost', status: 'missing', claimIdentifier: '', leaseExpiresAtMilliseconds: null };
-          }
-          if (existing.status === 'pending' && existing.claimIdentifier === $3 &&
-              existing.leaseExpiresAtMilliseconds > $4) {
-            const state = { status: $5, claimIdentifier: $3, leaseExpiresAtMilliseconds: null };
-            await txn.put(key, state);
-            return { tag: 'transitioned', ...state };
-          }
-          if (existing.status === $5 && existing.claimIdentifier === $3) {
-            return { tag: 'alreadyTerminal', ...existing };
-          }
-          return { tag: 'ownershipLost', ...existing };
-        });
-        return { ok: true, value };
-      } catch (error) {
-        let message = 'Queue idempotency operation failed with an unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      }
-    })()
-    """
-    jsDoQueueIdempotencyTransitionEnveloped :: JSVal -> JSVal -> JSVal -> Double -> JSVal -> IO JSVal
-
--- Validate before unsafe field readers: a malformed transaction result must
--- become a recoverable envelope failure, not unwind the WASM reactor.
-foreign import javascript unsafe
-    """
-    (() => {
-      try {
-        if (!$1.ok) {
-          return $1;
-        }
-        const result = $1.value;
-        if (result === null || typeof result !== 'object') {
-          throw new TypeError('Invalid queue idempotency result: expected object');
-        }
-        const { tag, status, claimIdentifier, leaseExpiresAtMilliseconds } = result;
-        if (typeof tag !== 'string' || typeof status !== 'string' || typeof claimIdentifier !== 'string') {
-          throw new TypeError('Invalid queue idempotency result: expected string fields');
-        }
-        if (leaseExpiresAtMilliseconds != null &&
-            (!Number.isSafeInteger(leaseExpiresAtMilliseconds) || leaseExpiresAtMilliseconds < 0)) {
-          throw new TypeError('Invalid queue idempotency result: invalid lease timestamp');
-        }
-        return { ok: true, value: { tag, status, claimIdentifier, leaseExpiresAtMilliseconds } };
-      } catch (error) {
-        let message = 'Invalid queue idempotency result: unprintable error';
-        try { message = String(error); } catch (_) {}
-        return { ok: false, message };
-      }
-    })()
-    """
-    jsValidateQueueIdempotencyResultEnveloped :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.tag"
-    jsQueueIdempotencyResultTag :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.status"
-    jsQueueIdempotencyResultStatus :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.claimIdentifier"
-    jsQueueIdempotencyResultClaimIdentifier :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.leaseExpiresAtMilliseconds"
-    jsQueueIdempotencyResultLease :: JSVal -> IO JSVal
-
 foreign import javascript unsafe
     """
     (() => {
@@ -864,34 +648,3 @@ foreign import javascript unsafe
     })()
     """
     jsAlarmTimeMillis :: JSVal -> IO Double
-
-foreign import javascript unsafe
-    """
-    (() => {
-      const retryCount = $1?.retryCount ?? 0;
-
-      if (!Number.isSafeInteger(retryCount) || retryCount < 0 || retryCount > 2147483647) {
-        throw new TypeError('the Durable Object alarm retryCount is not a non-negative 32-bit integer: ' + typeof retryCount);
-      }
-
-      return retryCount;
-    })()
-    """
-    jsDoAlarmRetryCount :: JSVal -> IO Int
-
-foreign import javascript unsafe
-    """
-    (() => {
-      const isRetry = $1?.isRetry ?? false;
-
-      if (isRetry !== true && isRetry !== false) {
-        throw new TypeError('the Durable Object alarm isRetry field is not a boolean: ' + typeof isRetry);
-      }
-
-      return isRetry;
-    })()
-    """
-    jsDoAlarmIsRetry :: JSVal -> IO Bool
-
-foreign import javascript unsafe "$1?.scheduledTime ?? null"
-    jsDoAlarmScheduledTime :: JSVal -> IO JSVal
