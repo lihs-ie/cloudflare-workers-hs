@@ -45,6 +45,7 @@
               if [ -f "$wasm_env" ]; then
                 source "$wasm_env"
               fi
+              export PATH="${jsToolchain.node}/bin:${jsToolchain.pnpm}/bin:$PATH"
             '';
           };
         }
