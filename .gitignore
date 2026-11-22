@@ -37,3 +37,10 @@ node_modules
 
 **/.dev-test-*
 **/.shared-coverage-*
+
+# Generated example build and test outputs
+/examples/*/test-artifacts/
+/examples/*/worker/*-jsffi.mjs
+/examples/*/worker/*.wasm
+/examples/*/worker/*.build.json
+/examples/library-examples/worker/build.json
