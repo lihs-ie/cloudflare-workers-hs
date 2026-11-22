@@ -71,3 +71,4 @@ ADR (Architecture Decision Record) は、プロジェクトにとって重要な
 | [0027](./0027-define-consumer-library-boundary.md) | 利用者向けライブラリの責務境界を定義する | 承認 |
 | [0028](./0028-hide-internal-modules-from-consumers.md) | Internal モジュールを利用者から隠す | 承認 |
 | [0029](./0029-integrate-typescript-runtime-workspace.md) | TypeScript runtime を pnpm ワークスペースに統合する | 承認 |
+| [0030](./0030-workers-ai-structured-output.md) | Workers AI の構造化出力を `workersAIRun` に追加する | 承認 |
