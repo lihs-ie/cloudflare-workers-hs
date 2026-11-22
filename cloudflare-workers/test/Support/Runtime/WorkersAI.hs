@@ -1,3 +1,14 @@
+module Support.Runtime.WorkersAI (probeWorkersAI) where
+
+import Cloudflare.Workers.Binding.WorkersAI (
+    AIModel (Gemma4, Llama33),
+    StructuredInput (StructuredInput),
+    StructuredMessage (StructuredSystem, StructuredUser),
+    WorkersAI,
+    WorkersAIError,
+    defaultAIOptions,
+    workersAIRun,
+ )
 import Cloudflare.Workers.Binding.WorkersAI.Gemma (
     GemmaChatChoice (gemmaChatChoiceIndex, gemmaChatChoiceMessage),
     GemmaInput (GemmaMessages, GemmaPrompt),
@@ -12,7 +23,7 @@ import Cloudflare.Workers.HTTP (Response, ResponseBody (ResponseBodyLazyBytes), 
 import Cloudflare.Workers.Headers (headersFromList)
 import Control.Exception (try)
 import Data.Aeson (Value, encode, object, (.=))
-import Data.List.NonEmpty
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
 import Data.Text qualified as Text
 import GHC.Wasm.Prim (JSVal)

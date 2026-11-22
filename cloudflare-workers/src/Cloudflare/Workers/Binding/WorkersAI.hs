@@ -27,6 +27,7 @@ import Data.Aeson (
  )
 import Data.Aeson.Types (Parser, parseEither)
 import Data.ByteString.Lazy qualified as LazyByteString
+import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -35,8 +36,8 @@ data AIModel input output where
     Gemma4 :: AIModel GemmaInput GemmaOutput
     Llama33 :: AIModel StructuredInput Value
 
-deriving stock instance Show (AIModel input ouput)
-deriving stock instance Eq (AIModel input ouput)
+deriving stock instance Show (AIModel input output)
+deriving stock instance Eq (AIModel input output)
 
 data AIOptions = AIOptions deriving stock (Show, Eq)
 
@@ -52,7 +53,7 @@ instance ToJSON StructuredMessage where
     toJSON (StructuredAssistant content) = structuredMessage "assistant" content
 
 data StructuredInput = StructuredInput
-    { structuredInputMessage :: StructuredMessage
+    { structuredInputMessages :: NonEmpty StructuredMessage
     , structuredInputSchema :: Value
     }
     deriving stock (Show, Eq)
@@ -63,7 +64,7 @@ structuredMessage role content = object ["role" .= role, "content" .= content]
 instance ToJSON StructuredInput where
     toJSON input =
         object
-            [ "messages" .= structuredInputMessage input
+            [ "messages" .= structuredInputMessages input
             , "stream" .= False
             , "response_format" .= object ["type" .= Text.pack "json_schema", "json_schema" .= structuredInputSchema input]
             ]
