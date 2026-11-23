@@ -1,7 +1,7 @@
 module Cloudflare.Workers.Internal.FFI.WorkersAI (
     WorkersAIFailure (..),
     runWorkersAIJSONViaFFI,
-    runWorkersAIResponseViaFFI,
+    runWorkersAIStreamViaFFI,
 ) where
 
 import Cloudflare.Workers.Internal.Abort (AbortSignal (AbortSignal))
@@ -26,7 +26,7 @@ runWorkersAIJSONViaFFI ::
     IO (Either WorkersAIFailure Text)
 runWorkersAIJSONViaFFI binding model input options signal = do
     envelope <- runEnvelope binding model input options signal False
-    decodeEnvelopedWithError (pure . readableStreamFromJSVal) decodeFailure malformedFailure envelope
+    decodeEnvelopedWithError jsValToText decodeFailure malformedFailure envelope
 
 runWorkersAIStreamViaFFI ::
     JSVal ->

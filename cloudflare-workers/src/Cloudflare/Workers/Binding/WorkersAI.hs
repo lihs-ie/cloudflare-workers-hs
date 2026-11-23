@@ -17,7 +17,7 @@ module Cloudflare.Workers.Binding.WorkersAI (
 ) where
 
 import Cloudflare.Workers.Binding.WorkersAI.Gemma (GemmaInput, GemmaOutput)
-import Cloudflare.Workers.Internal.FFI.WorkersAI (WorkersAIFailure (..), runWorkersAIJSONViaFFI)
+import Cloudflare.Workers.Internal.FFI.WorkersAI (WorkersAIFailure (..), runWorkersAIJSONViaFFI, runWorkersAIStreamViaFFI)
 import Cloudflare.Workers.Internal.Streaming (ReadableStream)
 import Cloudflare.Workers.Internal.WorkersAI (WorkersAI (WorkersAI))
 import Cloudflare.Workers.Internal.WorkersAI.Image (
@@ -48,7 +48,6 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Word (Word64)
-import GHC.Base (bindIO)
 
 data AIModel input output where
     Gemma4 :: AIModel GemmaInput GemmaOutput
