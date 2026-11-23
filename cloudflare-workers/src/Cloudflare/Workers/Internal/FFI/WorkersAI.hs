@@ -1,12 +1,14 @@
 module Cloudflare.Workers.Internal.FFI.WorkersAI (
     WorkersAIFailure (..),
     runWorkersAIJSONViaFFI,
-    -- runWorkersAIResponseViaFFI,
+    runWorkersAIStreamViaFFI,
 ) where
 
 import Cloudflare.Workers.Internal.Abort (AbortSignal (AbortSignal))
 import Cloudflare.Workers.Internal.FFI.Envelope (decodeEnvelopedWithError)
 import Cloudflare.Workers.Internal.FFI.Text (jsValToText, textToJSVal)
+import Cloudflare.Workers.Internal.Streaming (readableStreamFromJSVal)
+import Cloudflare.Workers.Streaming (ReadableStream)
 import Data.Text (Text)
 import GHC.Wasm.Prim (JSVal)
 
@@ -26,16 +28,16 @@ runWorkersAIJSONViaFFI binding model input options signal = do
     envelope <- runEnvelope binding model input options signal False
     decodeEnvelopedWithError jsValToText decodeFailure malformedFailure envelope
 
--- runWorkersAIResponseViaFFI ::
---    JSVal ->
---    Text ->
---    Text ->
---    Text ->
---    Maybe AbortSignal ->
---    IO (Either WorkersAIFailure WorkersAIResponse)
--- runWorkersAIResponseViaFFI binding model input options signal = do
---    envelope <- runEnvelope binding model input options signal True
---    decodeEnvelopedWithError decodeResponse decodeFailure malformedFailure envelope
+runWorkersAIStreamViaFFI ::
+    JSVal ->
+    Text ->
+    Text ->
+    Text ->
+    Maybe AbortSignal ->
+    IO (Either WorkersAIFailure ReadableStream)
+runWorkersAIStreamViaFFI binding model input options signal = do
+    envelope <- runEnvelope binding model input options signal True
+    decodeEnvelopedWithError (pure . readableStreamFromJSVal) decodeFailure malformedFailure envelope
 
 runEnvelope ::
     JSVal ->
@@ -45,12 +47,12 @@ runEnvelope ::
     Maybe AbortSignal ->
     Bool ->
     IO JSVal
-runEnvelope binding model input options signal responseMode = do
+runEnvelope binding model input options signal streamMode = do
     modelJSVal <- textToJSVal model
     inputJSVal <- textToJSVal input
     optionsJSVal <- textToJSVal options
     signalJS <- maybe jsUndefined (pure . unwrapSignal) signal
-    jsRunEnveloped binding modelJSVal inputJSVal optionsJSVal signalJS responseMode
+    jsRunEnveloped binding modelJSVal inputJSVal optionsJSVal signalJS streamMode
   where
     unwrapSignal (AbortSignal value) = value
 
@@ -75,18 +77,6 @@ decodeFailure failure = do
 
 malformedFailure :: Text -> WorkersAIFailure
 malformedFailure message = WorkersAIProviderFailure message Nothing
-
--- decodeResponse :: JSVal -> IO WorkersAIResponse
--- decodeResponse value = do
---     status <- Status <$> jsResponseStatus value
---     headers <- headersFromJSVal =<< jsResponseHeaders value
---     noBody <- jsResponseBodyIsNull value
---     body <-
---         if noBody
---             then pure Nothing
---             else
---                 Just . readableStreamFromJSVal <$> jsResponseBody value
---     pure (WorkersAIResponse value status headers body)
 
 foreign import javascript safe
     """
@@ -115,7 +105,7 @@ foreign import javascript safe
           }
         }
 
-        if ($5 !== undefined) { 
+        if ($5 !== undefined) {
           options.signal = $5;
         }
 
@@ -125,46 +115,11 @@ foreign import javascript safe
         phase = 'result';
 
         if ($6) {
-          if (!(result instanceof Response)) {
-            throw new TypeError('Workers AI returned a non-Response in response mode');
+          if (!(result instanceof ReadableStream)) {
+              throw new TypeError("Workers AI returned a non-ReadableStream");
           }
 
-          const status = result.status;
-          const headers = new Headers(result.headers);
-
-          if (!Number.isInteger(status) || status < 0 || status > 599) { 
-            throw new TypeError('Workers AI returned an invalid response status');
-          }
-
-          const body = result.body;
-          const statusText = result.statusText;
-          const webSocket = result.webSocket;
-          const cf = result.cf;
-
-          if (body !== null && !(body instanceof ReadableStream)) {
-            throw new TypeError('Workers AI returned an invalid response body');
-          }
-
-          if (typeof statusText !== 'string') {
-            throw new TypeError('Workers AI returned an invalid response status text');
-          }
-
-          if (webSocket !== undefined && webSocket !== null && !(webSocket instanceof WebSocket)) { 
-            throw new TypeError('Workers AI returned an invalid websocket'); 
-          }
-
-          return { 
-            ok: true, 
-            value: { 
-              original: result, 
-              status, 
-              headers, 
-              body, 
-              statusText, 
-              webSocket, 
-              cf 
-            }
-          };
+          return { ok: true, value: result };
         }
 
         const encoded = JSON.stringify(result, (_key, value) => {
@@ -237,26 +192,3 @@ foreign import javascript unsafe "typeof $1.name === 'string'"
 
 foreign import javascript unsafe "$1.name"
     jsFailureName :: JSVal -> IO JSVal
-
-foreign import javascript unsafe
-    """
-    (() => {
-      const status = $1.status; 
-
-      if (!Number.isSafeInteger(status) || status < 0 || status > 2147483647) {
-        throw new TypeError('invalid response status'); 
-      }
-
-      return status; 
-    })()
-    """
-    jsResponseStatus :: JSVal -> IO Int
-
-foreign import javascript unsafe "$1.headers"
-    jsResponseHeaders :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.body === null"
-    jsResponseBodyIsNull :: JSVal -> IO Bool
-
-foreign import javascript unsafe "$1.body"
-    jsResponseBody :: JSVal -> IO JSVal
